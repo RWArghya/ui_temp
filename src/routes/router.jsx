@@ -7,6 +7,9 @@ import Enterprise from "../pages/Enterprise"
 import CustomerRegister from "../pages/CustomerRegister"
 import Sponsor from "../pages/Sponsor"
 import Auth from "../pages/Auth"
+import Profile from "../pages/Profile"
+import ProfilePreview from "../pages/ProfilePreview"
+import Resume from "../pages/Resume"
 
 const router = createBrowserRouter([
   {
@@ -22,6 +25,19 @@ const router = createBrowserRouter([
       { path: "auth", element: <Auth /> },
     ],
   },
+  {
+    path: "/profile",
+    element: <Profile />,
+  },
+  {
+    path: "/profile/preview",
+    element: <ProfilePreview />,
+  },
+  {
+    path: "/profile/resume",
+    element: <Resume />,
+  },
 ])
 
 export default router
+
