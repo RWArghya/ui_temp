@@ -1,0 +1,556 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
+import { useH2S, seedDemoPatch } from './store'
+import { authStore } from '../store/auth'
+import {
+  VIEWS, initials, mentorStatus, mentorRoleLabel, selfCerts,
+  levelFor, xpFor, innovatorSteps, mentorSteps, innovatorNext, mentorNext,
+  approvedChallenges, notesFor, unreadFor, badgesFor,
+} from './data'
+import { Home, Competing, Learning, LearnCompete } from './Views'
+import Arena from './Arena'
+import Profile, { Certs, PublicPreview } from './Profile'
+import { MentorGate, mentorQueueCount, mentorTeamsCount } from './Mentor'
+import Workspace from './Workspace'
+import Evaluate from './Evaluate'
+import SupportBot from './SupportBot'
+
+const VIEW_COMPONENTS = {
+  home: Home, competing: Competing, learning: Learning, learncompete: LearnCompete,
+  arena: Arena, profile: Profile, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
+}
+
+/* Prototype-only "view as" switcher — mirrors app.js's PERSONAS. Innovator and
+   Mentor are real modes of this dashboard; Sponsor points at the marketing
+   site's sponsor placeholder (no sponsor workspace exists yet); Enabler is
+   H2S's internal staff tool and has no page in this app at all, so it's shown
+   inert rather than linked somewhere fake. */
+const PERSONAS = [
+  { k: 'innovator', ico: '🧑‍💻', label: 'Innovator', sub: 'learns and competes' },
+  { k: 'sponsor', ico: '🏢', label: 'Sponsor', sub: 'pays, runs challenges' },
+  { k: 'mentor', ico: '🧭', label: 'Mentor', sub: 'guides and evaluates' },
+  { k: 'enabler', ico: '🎛️', label: 'Enabler', sub: 'H2S success team — not in this prototype' },
+]
+function PersonaBar({ active, onSwitch, onSponsor }) {
+  return (
+    <div className="fixed bottom-4 left-4 z-40 hidden max-w-[calc(100vw-32px)] flex-wrap items-center gap-1.5 rounded-full border border-dash-line bg-white/95 px-3 py-[7px] shadow-dash-lg backdrop-blur-md md:flex">
+      <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dash-muted">View as</span>
+      {PERSONAS.map(p => {
+        const disabled = p.k === 'enabler'
+        const on = p.k === active
+        if (disabled) {
+          return (
+            <span key={p.k} title={p.sub} className="cursor-not-allowed whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium text-dash-faint">
+              {p.ico} {p.label}
+            </span>
+          )
+        }
+        return (
+          <button
+            key={p.k}
+            title={p.sub}
+            onClick={() => (p.k === 'sponsor' ? onSponsor() : onSwitch(p.k))}
+            className={`whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium ${on ? 'bg-ink-900 font-bold text-white' : 'text-dash-muted hover:bg-dash-line-soft hover:text-dash-ink'}`}
+          >
+            {p.ico} {p.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* Notification bell — reads st.notes the same shape app.js's notify()/S.save writes.
+   No producer is wired yet in this prototype (no Enabler/approval pipeline), so a
+   fresh account legitimately sees the empty state, matching the reference. */
+function NotificationBell({ st, sv, who }) {
+  const [open, setOpen] = useState(false)
+  const list = notesFor(st, who)
+  const unread = unreadFor(st, who)
+  const markRead = () => sv({ notes: (st.notes || []).map(n => (n.to === who ? { ...n, read: true } : n)) })
+  return (
+    <div className="relative">
+      <button
+        aria-label="Notifications"
+        className="relative rounded-btn px-2.5 py-1.5 text-[17px] leading-none text-dash-muted hover:bg-dash-line-soft"
+        onClick={() => { setOpen(o => !o); if (!open) markRead() }}
+      >
+        🔔
+        {unread ? (
+          <span className="absolute right-0 top-0 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-dash-live px-0.5 text-[10px] font-bold text-white">
+            {unread > 9 ? '9+' : unread}
+          </span>
+        ) : null}
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[330px] max-w-[calc(100vw-32px)] overflow-hidden rounded-card border border-dash-line bg-white shadow-dash-lg">
+          <div className="border-b border-dash-line-soft px-3.5 py-3">
+            <strong className="text-[13.5px] text-dash-ink">Notifications</strong>
+          </div>
+          <div className="max-h-[360px] overflow-y-auto">
+            {list.length ? (
+              list.map(n => (
+                <div key={n.id} className={`border-b border-dash-line-soft px-3.5 py-3 last:border-0 ${!n.read ? 'bg-signal-soft' : ''}`}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <strong className="text-[13px] text-dash-ink">{n.title}</strong>
+                  </div>
+                  <p className="mt-1 text-xs text-dash-muted">{n.body}</p>
+                </div>
+              ))
+            ) : (
+              <div className="px-4 py-7 text-center">
+                <p className="text-sm text-dash-muted">Nothing yet.</p>
+                <p className="mt-1.5 text-xs text-dash-faint">
+                  Actions by other people — an approval, a score, a stage change — land here.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export default function Dashboard() {
+  const { st, sv, reset } = useH2S()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [sp] = useSearchParams()
+  const logged = useMemo(() => authStore.read(), [])
+
+  useEffect(() => {
+    if (!logged.onboarded) navigate('/onboarding', { replace: true })
+  }, [logged.onboarded])
+
+  function go(view, id) {
+    if (id) { navigate('/dashboard/workspace?id=' + id); return }
+    navigate('/dashboard?view=' + view)
+  }
+
+  const sub = location.pathname.replace('/dashboard', '').replace(/^\//, '')
+  if (sub === 'workspace' || sub === 'initiative') return <SubShell st={st} sv={sv} go={go}><Workspace st={st} sv={sv} go={go} /></SubShell>
+  if (sub === 'evaluate') return <SubShell st={st} sv={sv} go={go}><Evaluate st={st} sv={sv} go={go} /></SubShell>
+
+  return <DashMain sp={sp} st={st} sv={sv} go={go} reset={reset} />
+}
+
+/* owns view/mode state so the sub-path early return above never
+   changes the hook count of this component across renders */
+function DashMain({ sp, st, sv, go, reset }) {
+  const navigate = useNavigate()
+  const requested = sp.get('view')
+  const valid = requested && VIEW_COMPONENTS[requested] ? requested : null
+  const [view, setView] = useState(valid || (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home'))
+  const [mode, setMode] = useState(view === 'mentor' ? 'mentor' : 'innovator')
+  const [mentorTab, setMentorTabState] = useState(sp.get('tab') || 'queue')
+
+  useEffect(() => { if (valid) setView(valid) }, [valid])
+
+  const show = (v) => {
+    const m = v === 'mentor' ? 'mentor' : v === 'profile' || v === 'certs' || v === 'publicpreview' ? mode : 'innovator'
+    setMode(m); setView(v)
+    if (v === 'home' && m === 'innovator') navigate('/dashboard')
+    else navigate('/dashboard?view=' + v)
+  }
+  const setMentorTab = (t) => {
+    setMentorTabState(t)
+    setMode('mentor'); setView('mentor')
+    navigate('/dashboard?view=mentor&tab=' + t)
+  }
+  const switchPersona = (p) => show(p === 'mentor' ? 'mentor' : 'home')
+
+  return (
+    <Shell st={st} sv={sv} view={view} mode={mode} show={show} go={go} reset={reset}
+      mentorTab={mentorTab} setMentorTab={setMentorTab} switchPersona={switchPersona} />
+  )
+}
+
+/* ================= top bar ================= */
+function AppBar({ st, sv, mode, onLogo, onExplore, onProfile, burger, onBurger }) {
+  return (
+    <header className="sticky top-0 z-40 border-b border-dash-line-soft bg-white/[.88] backdrop-blur-md">
+      <div className="flex h-[66px] items-center gap-5 px-3 sm:px-6">
+        {burger ? <button className="btn btn-ghost btn-sm lg:hidden" aria-label="Menu" onClick={onBurger}>☰</button> : null}
+        <button onClick={onLogo} className="flex shrink-0 items-center gap-[9px]">
+          <span className="grid h-7 w-7 place-items-center rounded-[8px] bg-ramp font-display text-xs font-bold tracking-[-0.02em] text-white">H2S</span>
+          <span className="font-display text-[17px] font-bold tracking-[-0.03em] text-dash-ink">Hack2skill</span>
+        </button>
+        <button onClick={onExplore} className="hidden rounded-btn px-2.5 py-2 text-sm font-medium text-dash-muted hover:bg-dash-line-soft hover:text-dash-ink sm:inline-block">
+          Explore ⌄
+        </button>
+        <div className="flex-1" />
+        <NotificationBell st={st} sv={sv} who={mode} />
+        <button onClick={onProfile} className="ml-1.5" title="Your profile">
+          <span className="grid h-[34px] w-[34px] place-items-center rounded-full bg-ink-900 text-[13px] font-bold text-white">
+            {initials(st.profile?.name || st.name)}
+          </span>
+        </button>
+      </div>
+    </header>
+  )
+}
+
+/* sub-view shell (workspace/evaluate) — no sidebar/rail */
+function SubShell({ st, sv, go, children }) {
+  const navigate = useNavigate()
+  const out = () => { sv({}); authStore.clear(); navigate('/auth') }
+  return (
+    <div className="dash-root min-h-screen bg-dash-bg text-dash-ink">
+      <AppBar st={st} sv={sv} mode="innovator" onLogo={() => go('home')} onExplore={() => navigate('/initiatives')} onProfile={() => go('profile')} />
+      <div className="mx-auto w-full max-w-[1080px] px-4 py-6 sm:px-6 lg:py-8">{children}</div>
+      <PersonaBar active="innovator" onSwitch={(p) => go(p === 'mentor' ? 'mentor' : 'home')} onSponsor={() => navigate('/sponsor')} />
+      <ResetLink sv={sv} out={out} />
+      <SupportBot st={st} sv={sv} />
+    </div>
+  )
+}
+function ResetLink({ sv, out }) {
+  return (
+    <div className="mx-auto max-w-[1080px] px-6 pb-10 text-xs text-dash-faint">
+      Prototype ·{' '}
+      <button className="text-signal hover:underline" onClick={() => { if (confirm('Reset all demo activity?')) sv({}) }}>reset</button>
+      {' · '}
+      <button className="text-signal hover:underline" onClick={out}>sign out</button>
+    </div>
+  )
+}
+
+function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, switchPersona }) {
+  const navigate = useNavigate()
+  const [navOpen, setNavOpen] = useState(false)
+  const msup = mode === 'mentor'
+  const goNav = (v) => { show(v); setNavOpen(false) }
+  const out = () => { reset(); authStore.clear(); navigate('/auth') }
+  const loadSample = () => sv(seedDemoPatch(st))
+  const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
+  return (
+    <div className="dash-root min-h-screen bg-dash-bg text-dash-ink">
+      <AppBar st={st} sv={sv} mode={mode}
+        onLogo={() => goNav(msup ? 'mentor' : 'home')}
+        onExplore={() => navigate('/initiatives')}
+        onProfile={() => goNav('profile')}
+        burger onBurger={() => setNavOpen(true)}
+      />
+      {navOpen ? <div className="fixed inset-0 z-30 bg-ink-950/40 lg:hidden" onClick={() => setNavOpen(false)} /> : null}
+      <div className="relative grid min-h-[calc(100vh-66px)] grid-cols-1 lg:grid-cols-[264px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)_320px]">
+        <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-dash-line-soft transition-transform duration-200 lg:sticky lg:top-[66px] lg:z-auto lg:h-[calc(100vh-66px)] lg:w-auto lg:translate-x-0 ${msup ? 'bg-ink-900 lg:border-ink-line' : 'bg-dash-bg-soft'} ${navOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <nav className="flex h-full flex-col overflow-y-auto px-3.5 py-5">
+            {msup
+              ? <MentorSidebar st={st} view={view} mentorTab={mentorTab} setMentorTab={setMentorTab} show={goNav} />
+              : <InnovatorSidebar st={st} view={view} show={goNav} onLoadSample={loadSample} onReset={doReset} onSignOut={out} />}
+          </nav>
+        </aside>
+
+        <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
+          <div className="w-full max-w-[1080px]">
+            {(() => {
+              const C = VIEW_COMPONENTS[view] || Home
+              return <C st={st} sv={sv} go={go} mentorTab={mentorTab} setMentorTab={setMentorTab} />
+            })()}
+          </div>
+        </main>
+
+        {/* The prototype never hides the rail — below 1240px it drops under the
+            main content (grid-column 2) instead of disappearing, and only stops
+            being sticky there. `hidden xl:block` removed it entirely on any
+            window under 1280px, which is why it looked missing. */}
+        <aside className="lg:col-start-2 xl:col-start-3 xl:row-start-1">
+          <div className="max-w-[1080px] space-y-4 px-4 pb-[60px] sm:px-6 lg:px-9 xl:sticky xl:top-[66px] xl:max-h-[calc(100vh-66px)] xl:overflow-y-auto xl:px-7 xl:py-8">
+            <Rail st={st} mode={mode} show={show} go={go} />
+          </div>
+        </aside>
+      </div>
+      <PersonaBar active={mode} onSwitch={switchPersona} onSponsor={() => navigate('/sponsor')} />
+      <SupportBot st={st} sv={sv} mode={mode} />
+    </div>
+  )
+}
+
+/* ================= sidebar ================= */
+function SideItem({ ico, label, count, hot, dim, onClick, active, tone = 'light' }) {
+  const light = tone === 'light'
+  const cls = active
+    ? (light ? 'bg-signal font-bold! text-white shadow-dash' : 'bg-white font-bold! text-ink-900')
+    : dim
+      ? (light ? 'text-dash-faint pointer-events-none' : 'text-white/30 pointer-events-none')
+      : (light ? 'text-dash-muted hover:bg-white hover:text-dash-ink' : 'text-white/70 hover:bg-white/[0.07] hover:text-white')
+  return (
+    <li>
+      <button className={`flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm font-medium ${cls}`} onClick={onClick} disabled={dim}>
+        <span className="w-[18px] shrink-0 text-center text-[15px]">{ico}</span>
+        <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+        {count != null ? (
+          <span className={`rounded-full px-1.5 text-[11px] font-bold ${hot ? 'bg-red-500 text-white' : light ? 'bg-dash-line-soft text-dash-muted' : 'bg-white/10 text-white/70'}`}>
+            {count}
+          </span>
+        ) : null}
+      </button>
+    </li>
+  )
+}
+/* .side-group carries margin-bottom:22px in the prototype; as a flat list the
+   equivalent is space above each group label. */
+function GroupTag({ children }) {
+  return <li className="px-3 pb-2 pt-[22px] font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dash-muted first:pt-0">{children}</li>
+}
+
+/* Account block, pinned to the bottom of the sidebar column. Just a name and
+   one door to the profile — matches app.html's acctHTML() note that a role
+   switcher here would duplicate the persona bar and Profile → Roles. */
+function SideFoot({ st, role, onProfile, dark, onLoadSample, onReset, onSignOut }) {
+  const name = st.profile?.name || st.name || 'Your account'
+  return (
+    <div className={`mt-auto pt-3 ${dark ? '' : 'pb-[52px]'}`}>
+      <hr className={`mb-3.5 border-t ${dark ? 'border-white/10' : 'border-dash-line-soft'}`} />
+      <button
+        className={`flex w-full items-center gap-2.5 rounded-btn border px-3 py-[11px] transition-colors ${dark ? 'border-white/10 bg-white/[0.06] hover:bg-white' : 'border-dash-line bg-[#edeff5] hover:border-dash-line hover:bg-white hover:shadow-dash'}`}
+        onClick={onProfile}
+      >
+        <strong className={`min-w-0 flex-1 truncate text-left text-[13.5px] font-semibold ${dark ? 'text-white' : 'text-dash-ink'}`}>{name}</strong>
+        <span className={dark ? 'text-white/50' : 'text-dash-faint'}>›</span>
+      </button>
+      {role ? (
+        <p className="mt-2 px-2 text-xs font-medium text-brand-violet">{role}</p>
+      ) : null}
+      {!dark ? (
+        <p className="mt-3 px-2.5 text-xs leading-[2] text-dash-faint">
+          Prototype ·{' '}
+          <button className="text-signal hover:underline" onClick={onLoadSample}>load sample activity</button>
+          <br />
+          <button className="text-signal hover:underline" onClick={onSignOut}>sign out</button>
+          {' · '}
+          <button className="text-signal hover:underline" onClick={onReset}>reset</button>
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function InnovatorSidebar({ st, view, show, onLoadSample, onReset, onSignOut }) {
+  const navigate = useNavigate()
+  return (
+    <>
+      <ul className="w-full flex-1 space-y-0.5">
+        <SideItem ico="🏠" label="My Dashboard" active={view === 'home'} onClick={() => show('home')} />
+        <SideItem ico="🎮" label="Arena" active={view === 'arena'} onClick={() => show('arena')} />
+        <GroupTag>Switch view</GroupTag>
+        {Object.keys(VIEWS).map(k => (
+          <SideItem key={k} ico={VIEWS[k].ico} label={VIEWS[k].label} active={view === k} onClick={() => show(k)} />
+        ))}
+        <GroupTag>Tools</GroupTag>
+        <SideItem ico="✨" label="AI Evaluation" onClick={() => navigate('/dashboard/evaluate')} />
+      </ul>
+      <SideFoot st={st} onProfile={() => show('profile')} onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
+    </>
+  )
+}
+
+/* Navy mentor sidebar. Structure mirrors app.html's paintNav(): before approval
+   there's just the application status and matching challenges; approved-but-
+   unmapped nudges "My challenges" as the one live door; approved-and-mapped
+   surfaces the real work queues plus Impact. */
+function MentorSidebar({ st, view, mentorTab, setMentorTab, show }) {
+  const ms = mentorStatus(st)
+  const mapped = approvedChallenges(st).length
+  const queue = ms === 'approved' ? mentorQueueCount(st) : 0
+  const teams = ms === 'approved' ? mentorTeamsCount(st) : 0
+  const item = (tab, ico, label, opts = {}) => (
+    <SideItem key={opts.listKey || tab} tone="dark" ico={ico} label={label} active={view === 'mentor' && mentorTab === tab}
+      onClick={() => setMentorTab(tab)} count={opts.count} hot={opts.hot} dim={opts.dim} />
+  )
+  return (
+    <>
+      <ul className="w-full flex-1 space-y-0.5">
+        {ms !== 'approved' ? (
+          <>
+            {item('queue', '🧭', 'Your mentor path')}
+            {item('challenges', '📋', 'Challenges matching you')}
+          </>
+        ) : !mapped ? (
+          <>
+            {item('queue', '🧭', 'Mentor home')}
+            <GroupTag>Your work</GroupTag>
+            {item('challenges', '📋', 'My challenges', { count: '!', hot: true })}
+            {item('queue', '⚖️', 'Evaluation queue', { dim: true, listKey: 'queue-dim' })}
+            {item('sessions', '🗓️', 'Booked sessions', { dim: true, listKey: 'sessions-dim' })}
+            {item('teams', '👥', 'Teams & office hours', { dim: true, listKey: 'teams-dim' })}
+          </>
+        ) : (
+          <>
+            {item('queue', '🧭', 'Mentor home', { listKey: 'home' })}
+            <GroupTag>Your work</GroupTag>
+            {item('queue', '⚖️', 'Evaluation queue', { count: queue || '', hot: queue > 0 })}
+            {item('sessions', '🗓️', 'Booked sessions')}
+            {item('teams', '👥', 'Teams & office hours', { count: teams || '' })}
+            {item('challenges', '📋', 'My challenges', { count: mapped })}
+            <GroupTag>Your record</GroupTag>
+            {item('impact', '📈', 'Impact')}
+          </>
+        )}
+      </ul>
+      <SideFoot st={st} role={ms !== 'none' ? mentorRoleLabel(st) : null} onProfile={() => show('profile')} dark />
+    </>
+  )
+}
+
+/* ================= journey rail =================
+   One unified card mirroring journey.js's journeyRail(): a checklist that
+   leads while the path is incomplete, then collapses to a one-line receipt
+   once it's done and hands the primary spot to "what's live right now". */
+function Bar({ pct, className = '' }) {
+  return (
+    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-dash-bg-soft ${className}`}>
+      <div className="h-full bg-signal transition-[width] duration-[400ms]" style={{ width: pct + '%' }} />
+    </div>
+  )
+}
+/* styles.css .check / .check .box / .check.done .ctext / .jx-chip —
+   rows carry a hairline divider, a done step strikes its label through and
+   goes muted, an unchecked box is a bordered outline rather than a fill, and
+   the XP chip is pushed to the right edge by margin-left:auto. */
+function CheckRow({ s, showXp, onGo }) {
+  const navigate = useNavigate()
+  const clickable = !!(s.go || s.href)
+  const handle = () => { if (s.go) onGo(s.go); else if (s.href) navigate('/' + s.href) }
+  return (
+    <div
+      className={`flex items-start gap-3 border-b border-dash-line-soft py-2.5 last:border-b-0 ${clickable ? 'cursor-pointer' : ''}`}
+      onClick={clickable ? handle : undefined}
+    >
+      <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-[1.5px] text-[11px] text-white ${s.done ? 'border-dash-ok bg-dash-ok' : 'border-dash-line bg-transparent'}`}>
+        {s.done ? '✓' : ''}
+      </span>
+      <span className={`min-w-0 flex-1 text-[13px] leading-[1.35] ${s.done ? 'text-dash-muted line-through' : 'text-dash-ink'}`}>
+        {s.label}
+        {s.waiting && !s.done ? <span className="ml-1.5 font-mono text-[10px] font-bold uppercase tracking-wide text-dash-warn">in review now</span> : null}
+      </span>
+      {showXp && s.xp ? (
+        <span className={`ml-auto shrink-0 self-start rounded-full px-2 py-0.5 text-[11px] font-bold tracking-[0.02em] ${s.done ? 'bg-dash-ok-soft text-dash-ok' : 'bg-dash-bg-soft text-dash-muted'}`}>
+          +{s.xp}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+function RailNextRows({ nxt, go }) {
+  return (
+    <div className="mt-2">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <strong className="text-[13px] text-dash-ink">{nxt.title}</strong>
+        <span className="text-[11px] text-dash-muted">{nxt.sub}</span>
+      </div>
+      {nxt.rows.map(r => (
+        <button key={r.name} className="flex w-full items-center gap-3 py-2 text-left" onClick={() => go(r.href.split('?')[0], (r.href.match(/id=(\S+)/) || [])[1])}>
+          <span className={`w-9 shrink-0 text-xs font-bold tabular-nums ${r.urgent ? 'text-dash-warn' : 'text-dash-faint'}`}>{r.when}</span>
+          <span className="min-w-0 flex-1">
+            <strong className="block truncate text-[13px] text-dash-ink">{r.name}</strong>
+            <span className="text-xs text-dash-muted">{r.step}{r.hint ? ' · ' + r.hint : ''}</span>
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+function JourneyRail({ opts, go }) {
+  const { steps, xp: showXp, title, blurb, levelLabel, badges, next, emptyNext } = opts
+  const doneN = steps.filter(s => s.done).length
+  const nextUp = steps.find(s => !s.done)
+  const earned = steps.filter(s => s.done).reduce((n, s) => n + (s.xp || 0), 0)
+  const total = steps.reduce((n, s) => n + (s.xp || 0), 0)
+  const pct = showXp ? (total ? Math.round((earned / total) * 100) : 0) : (steps.length ? Math.round((doneN / steps.length) * 100) : 0)
+  const complete = !nextUp
+  const [openDetails, setOpenDetails] = useState(false)
+
+  const stepList = <div className="mt-3">{steps.map(s => <CheckRow key={s.label} s={s} showXp={showXp} onGo={opts.onGo} />)}</div>
+  /* journey.js's .jx-badges block — a "Badges" tag label above the pills. */
+  const badgeRow = showXp && badges?.length ? (
+    <div className="mt-4">
+      <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dash-muted">Badges</span>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {badges.map(b => (
+          <span key={b.label} className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-dash-line-soft px-[11px] py-1 text-xs font-medium leading-[1.5] text-dash-muted">
+            <span>{b.ico}</span>{b.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  ) : null
+
+  const pathBlock = complete ? (
+    <div>
+      <button className="flex w-full items-center gap-2 text-left text-[13px] font-medium text-dash-muted" onClick={() => setOpenDetails(o => !o)}>
+        <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-dash-ok text-[11px] font-bold text-white">✓</span>
+        <span className="flex-1">{title} complete · {doneN}/{steps.length}</span>
+        <span className={`text-dash-faint transition-transform ${openDetails ? 'rotate-180' : ''}`}>⌄</span>
+      </button>
+      {openDetails ? <>{stepList}{badgeRow}</> : null}
+    </div>
+  ) : (
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-display text-[15px] font-bold text-dash-ink">{title}</h3>
+        <span className="text-xs text-dash-faint">{doneN}/{steps.length}</span>
+      </div>
+      <p className="mt-1.5 text-xs text-dash-muted">{blurb}</p>
+      <div className="mt-3">
+        {showXp ? (
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <strong className="text-[13px] text-dash-ink">{earned} / {total} XP</strong>
+            <span className="text-xs text-dash-muted">{pct}%</span>
+          </div>
+        ) : null}
+        <Bar pct={pct} />
+        {levelLabel ? <p className="mt-2 text-xs text-dash-faint">{levelLabel}</p> : null}
+      </div>
+      {stepList}
+      <p className="mt-3 text-xs text-dash-faint">Next — {nextUp.label}{showXp && nextUp.xp ? ` · +${nextUp.xp} XP` : ''}</p>
+      {badgeRow || (showXp ? <p className="mt-3 border-t border-dash-line-soft pt-2.5 text-xs text-dash-faint">Badges unlock as you tick steps off.</p> : null)}
+    </div>
+  )
+
+  const workBlock = next ? <RailNextRows nxt={next} go={go} /> : complete ? null : <p className="mt-3 text-xs text-dash-faint">{emptyNext || 'Nothing live yet.'}</p>
+
+  return (
+    <div className="rounded-card border border-dash-line-soft bg-white p-5 shadow-dash">
+      {complete ? <>{workBlock}{workBlock ? <hr className="my-3.5 border-dash-line-soft" /> : null}{pathBlock}</> : <>{pathBlock}{workBlock}</>}
+    </div>
+  )
+}
+
+function Rail({ st, mode, show, go }) {
+  const certs = selfCerts(st).length
+  if (mode === 'mentor') {
+    return (
+      <JourneyRail
+        go={go}
+        opts={{
+          title: 'Your mentor path',
+          blurb: 'Registration is open to anyone — approval and mapping are ours to do.',
+          steps: mentorSteps(st),
+          next: mentorNext(st),
+          emptyNext: 'Nothing routed to you yet — that starts once a challenge is mapped.',
+          onGo: show,
+        }}
+      />
+    )
+  }
+  const xp = xpFor(st, certs)
+  const lvl = levelFor(xp)
+  return (
+    <JourneyRail
+      go={go}
+      opts={{
+        xp: true,
+        title: 'Getting started',
+        blurb: 'Five steps from account to certificate. Each one earns XP.',
+        levelLabel: `Level ${lvl.level} · ${xp} XP across your whole account`,
+        steps: innovatorSteps(st, certs),
+        badges: badgesFor(st, certs),
+        next: innovatorNext(st),
+        emptyNext: 'Register for an initiative and it shows up here with its next step.',
+        onGo: show,
+      }}
+    />
+  )
+}

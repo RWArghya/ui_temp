@@ -1,6 +1,48 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* daisyUI theme pinned to the exact prototype tokens (styles.css :root),
+   so every daisyUI component class (btn-primary, input-bordered focus ring,
+   checkbox-primary, range-primary, badge-success, tabs-bordered…) picks up
+   the real brand colors instead of daisyUI's own default palette. This is
+   the single place that keeps every dashboard file's daisyUI classes correct
+   without hand-patching each one. */
+@plugin "daisyui/theme" {
+  name: "h2s";
+  default: true;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #fafbfd;
+  --color-base-300: #f3f4f8;
+  --color-base-content: #101223;
+  --color-primary: #1548b7;
+  --color-primary-content: #ffffff;
+  --color-secondary: #3f1d80;
+  --color-secondary-content: #ffffff;
+  --color-accent: #3f1d80;
+  --color-accent-content: #ffffff;
+  --color-neutral: #191135;
+  --color-neutral-content: #ffffff;
+  --color-info: #1548b7;
+  --color-info-content: #ffffff;
+  --color-success: #0f9d58;
+  --color-success-content: #ffffff;
+  --color-warning: #b26a00;
+  --color-warning-content: #ffffff;
+  --color-error: #c0392b;
+  --color-error-content: #ffffff;
+  --radius-selector: 2px;
+  --radius-field: 2px;
+  --radius-box: 4px;
+  --border: 1px;
+  /* daisyUI 5 defaults --depth:1, which layers a fractal-noise texture and
+     tinted inset/drop shadows over every button — that overlay is what made
+     the brand blue read as purple. The prototype's .btn-primary is a flat
+     `background: var(--primary)`, so both effects are off. */
+  --depth: 0;
+  --noise: 0;
+}
+
 /* ============================================================
    H2S design tokens — sampled from the logo ramp:
    #366eb7 blue -> #393da1 indigo -> #3f1d80 violet -> #191135 deep
@@ -38,6 +80,27 @@
 
   --radius-btn: 2px;
   --radius-card: 4px;
+
+  /* ── Dashboard (app.html) control-surface tokens ──
+     A separate, exact palette from the marketing site's — the dashboard is
+     "a control surface, not a marketing page" (styles.css's own words).
+     Values copied verbatim from the prototype's :root, not approximated. */
+  --color-dash-ink: #101223;
+  --color-dash-muted: #777986;
+  --color-dash-faint: #b3b5bd;
+  --color-dash-line: #e4e6ec;
+  --color-dash-line-soft: #f3f4f8;
+  --color-dash-bg: #ffffff;
+  --color-dash-bg-soft: #fafbfd;
+  --color-dash-ok: #0f9d58;
+  --color-dash-ok-soft: #e7f6ee;
+  --color-dash-warn: #b26a00;
+  --color-dash-warn-soft: #fff4e0;
+  --color-dash-live-bg: #ffe9e9;
+  --color-dash-live: #c0392b;
+
+  --shadow-dash: 0 1px 2px rgba(16, 18, 35, .06), 0 8px 24px -12px rgba(16, 18, 35, .18);
+  --shadow-dash-lg: 0 2px 4px rgba(16, 18, 35, .05), 0 24px 48px -24px rgba(16, 18, 35, .28);
 }
 
 body {
@@ -47,9 +110,44 @@ body {
   color: var(--color-graphite);
 }
 
+/* Heading scale copied from the prototype's styles.css base rules. Tailwind's
+   preflight resets headings to inherit, which left every unstyled dashboard
+   <h2> rendering at body size/weight instead of 26px/800. Utility classes on
+   a heading still win, so the marketing pages are unaffected. */
 h1, h2, h3, h4 {
+  margin: 0;
   font-family: var(--font-display);
+  line-height: 1.14;
   letter-spacing: -0.025em;
+  font-weight: 800;
+}
+h1 { font-size: 40px; font-weight: 900; }
+h2 { font-size: 26px; }
+h3 { font-size: 18px; font-weight: 700; }
+h4 { font-size: 15px; font-weight: 700; }
+
+/* The dashboard is a control surface at 15px/1.55, per the prototype's body
+   rule — scoped so the marketing site keeps its own larger base. */
+.dash-root { font-size: 15px; line-height: 1.55; }
+
+/* daisyUI still composes its fractal-noise layer onto .btn even with
+   --noise:0, which grains the flat brand blue. The prototype's buttons are a
+   plain `background: var(--primary)`, so strip the image layer outright. */
+.btn { background-image: none; }
+
+/* Belt and suspenders: pin .btn-primary's colour directly to the exact
+   token rather than relying solely on daisyUI's theme-variable resolution
+   (which any future daisyUI/Tailwind upgrade, a second competing theme, or
+   a caching quirk could silently break). This is the one rule that must
+   never render as anything but the prototype's #1548b7. */
+.btn-primary {
+  background-color: var(--color-signal) !important;
+  border-color: var(--color-signal) !important;
+  color: #fff !important;
+}
+.btn-primary:hover {
+  background-color: var(--color-signal-dark) !important;
+  border-color: var(--color-signal-dark) !important;
 }
 
 /* the one gradient, spent sparingly — CTA seams + record numerals */
@@ -75,4 +173,39 @@ h1, h2, h3, h4 {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee { animation: none; }
+}
+
+/* ─── Auth page ─── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-graphite-dim);
+  font-size: 0.75rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-paper-line);
+}
+
+.auth-pw-meter {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-paper-line);
+  overflow: hidden;
+}
+.auth-pw-meter-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.auth-otp-input {
+  font-size: 1.35rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-family: var(--font-mono);
 }
