@@ -1,0 +1,78 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* ============================================================
+   H2S design tokens — sampled from the logo ramp:
+   #366eb7 blue -> #393da1 indigo -> #3f1d80 violet -> #191135 deep
+   ============================================================ */
+@theme {
+  --color-brand-blue: #366eb7;
+  --color-brand-indigo: #393da1;
+  --color-brand-violet: #3f1d80;
+  --color-brand-deep: #2d1149;
+
+  --color-ink-950: #100a22;
+  --color-ink-900: #191135;
+  --color-ink-800: #241a4a;
+  --color-ink-line: #332759;
+  --color-white-soft: #eef0f7;
+  --color-ink-text: #cfd1e6;
+  --color-ink-dim: #a29fc0;
+
+  --color-paper: #f6f7fb;
+  --color-paper-raised: #ffffff;
+  --color-paper-line: #e3e5f1;
+  --color-graphite: #4c5069;
+  --color-graphite-dim: #6b6f8a;
+
+  --color-signal: #1548b7;
+  --color-signal-dark: #0f3583;
+  --color-signal-soft: #e8edfa;
+  --color-violet: #3f1d80;
+  --color-violet-soft: #f0ebfa;
+  --color-status: #4c9c86;
+
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --radius-btn: 2px;
+  --radius-card: 4px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-paper);
+  color: var(--color-graphite);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+}
+
+/* the one gradient, spent sparingly — CTA seams + record numerals */
+@utility bg-ramp {
+  background: linear-gradient(90deg, #366eb7 0%, #393da1 34%, #3f1d80 66%, #2d1149 100%);
+}
+@utility bg-ramp-rev {
+  background: linear-gradient(270deg, #366eb7 0%, #393da1 34%, #3f1d80 66%, #2d1149 100%);
+}
+@utility text-ramp-bright {
+  background: linear-gradient(90deg, #74a2e6 0%, #8286dd 34%, #9b6ee0 66%, #bb90e2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility animate-marquee {
+  animation: marquee 42s linear infinite;
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee { animation: none; }
+}
