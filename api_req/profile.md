@@ -18,6 +18,11 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
 | Export Resume PDF | "Print / Save PDF" (backend rendering) | `/api/profile/resume/pdf` | `POST` | `{ profileId: string, template: "overleaf-classic" }` | Binary PDF stream or `{ pdfUrl: string }` | Client-side `window.print()` / LaTeX stub |
 | Navigate to Role View | "Go to view →" button on each active role | TBD — to be wired to dashboard shell by teammate | `—` | `—` | `—` | Stub button in Profile > Overview > Roles, no-op until dashboard is merged |
 | All Certificates Page | "Show all certificates" button in Certs tab | `/api/initiatives?userId=me` (same call, full data passed via router state) | `GET` | Same as above | Same as above, but `pending[]` must include closed initiatives where `cert_issued: false` | `src/api/mock/initiatives.js` |
+| Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Self-Certs | `/api/profile/me/:section` or `/api/profile/me` | `POST` / `PATCH` | `{ title, org?, link?, proofUrl? }` | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
+| Edit Section Item | "Edit" → "Save Changes" on any existing item | `/api/profile/me/:section/:itemId` or `/api/profile/me` | `PUT` / `PATCH` | `{ title, org?, link?, proofUrl? }` | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
+| Delete Section Item | "Remove" → Confirmation modal "Remove" | `/api/profile/me/:section/:itemId` or `/api/profile/me` | `DELETE` / `PATCH` | `itemId` | `{ success: true, removedId: string }` | `src/api/mock/profile.js` |
+| Toggle Share State | "Share" / "✓ Shared" toggle on self-added items | `/api/profile/me/:section/:itemId/share` | `PATCH` | `{ shared: boolean }` | `{ success: true, shared: boolean }` | `src/api/mock/profile.js` |
+| Upload Certificate Proof | "Add certificate image" file picker | `/api/profile/me/certificates/proof` | `POST` | `multipart/form-data` | `{ proofUrl: string }` | Data URL FileReader |
 
 ---
 
@@ -57,7 +62,7 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
     { "id": "pub-1", "title": "Grounded RAG for Medical Q&A (EMNLP 2025 Workshop)", "link": "arxiv.org/abs/2025.12345", "shared": true }
   ],
   "selfCerts": [
-    { "id": "sc-1", "title": "AWS Cloud Practitioner", "org": "Amazon Web Services", "shared": true }
+    { "id": "sc-1", "title": "AWS Cloud Practitioner", "org": "Amazon Web Services", "link": "https://aws.amazon.com/verify", "proofUrl": "data:image/...", "shared": true }
   ],
   "contributions": {
     "github": "aarav-sharma",
@@ -74,6 +79,34 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
   "promptStreak": 2
 }
 ```
+
+---
+
+## Section Items CRUD Specification
+
+Sections supporting manual entries: `education`, `projects`, `publications`, `achievements`, and `selfCerts` (external certificates).
+
+### 1. Add Entry
+- **Trigger**: Click `+ Add <Section>` button (expands form), enter fields, click Add / Submit.
+- **Payload**:
+  - `education`: `{ title: string (required), org: string (optional) }`
+  - `projects`: `{ title: string (required), link: string (optional) }`
+  - `publications`: `{ title: string (required), link: string (optional) }`
+  - `achievements`: `{ title: string (required) }`
+  - `selfCerts`: `{ title: string (required), org: string (optional), link: string (optional), proofUrl: string (optional) }`
+- **Behavior**: Generates client or server ID, appends to corresponding array, persists via `PATCH /api/profile/me` or collection endpoint.
+
+### 2. Edit Entry
+- **Trigger**: Click `Edit` button on any row item.
+- **UI Behavior**: Replaces the row in-place with an inline form pre-filled with the item's current values. Displays `Save Changes` and `Cancel` buttons.
+- **Save Payload**: Updated fields matching the section schema above.
+- **Cancel Behavior**: Discards in-progress edits and restores the read-only row with original data.
+
+### 3. Delete Entry
+- **Trigger**: Click `Remove` button on any row item.
+- **UI Behavior**: Prompts user with a confirmation modal: *"Remove this entry? '<Item Title>' will be permanently removed from your profile. This cannot be undone."*
+- **Confirm**: Calls delete mutation, removes from local list, persists change.
+- **Cancel**: Dismisses modal with no changes.
 
 ---
 

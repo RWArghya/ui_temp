@@ -29,6 +29,7 @@ import SectionCard   from '../components/profile/SectionCard.jsx'
 import KVRow         from '../components/profile/KVRow.jsx'
 import Meter         from '../components/profile/Meter.jsx'
 import TimelineItem  from '../components/profile/TimelineItem.jsx'
+import ConfirmDialog from '../components/profile/ConfirmDialog.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -89,6 +90,14 @@ export default function Profile() {
   const [shareOpen,  setShareOpen]  = useState(false)
   const [copyDone,   setCopyDone]   = useState(false)
   const [saving,     setSaving]     = useState(false)
+
+  // ---- inline edit / add / delete state ----
+  // editingItem: { field: string, id: string } | null  — which row is being edited
+  const [editingItem,    setEditingItem]    = useState(null)
+  // addingField: string | null — which section's add form is open
+  const [addingField,    setAddingField]    = useState(null)
+  // confirmDelete: { field, id, label } | null — pending remove awaiting confirmation
+  const [confirmDelete,  setConfirmDelete]  = useState(null)
 
   // ---- sync server → local once loaded ----
   if (serverProfile && !profile) {
@@ -156,6 +165,40 @@ export default function Profile() {
 
   function uid(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  }
+
+  // ================================================================
+  //  EDIT / ADD / DELETE HELPERS
+  // ================================================================
+  /** Open inline edit form for a specific item; close any open add form */
+  function startEdit(field, id) {
+    setAddingField(null)
+    setEditingItem({ field, id })
+  }
+
+  /** Cancel edit without saving */
+  function cancelEdit() {
+    setEditingItem(null)
+  }
+
+  /** Save edited values back to local state */
+  function saveEdit(field, id, values) {
+    setProfile(p => ({
+      ...p,
+      [field]: (p[field] || []).map(x => x.id === id ? { ...x, ...values } : x),
+    }))
+    setEditingItem(null)
+  }
+
+  /** Toggle add form for a section; close any open edit */
+  function openAdd(field) {
+    setEditingItem(null)
+    setAddingField(f => f === field ? null : field)
+  }
+
+  /** Request delete — shows ConfirmDialog; onConfirm calls removeItem */
+  function requestDelete(field, id, label) {
+    setConfirmDelete({ field, id, label })
   }
 
   // ================================================================
@@ -385,31 +428,53 @@ export default function Profile() {
       {(profile.education ?? []).length > 0 ? (
         <div className="mt-4">
           {(profile.education ?? []).map(e => (
-            <AchRow
-              key={e.id}
-              icon="🎓"
-              title={e.title}
-              subtitle={e.org}
-              onRemove={() => removeItem('education', e.id)}
-            />
+            editingItem?.field === 'education' && editingItem?.id === e.id ? (
+              <div key={e.id} className="py-3 border-b border-paper-line">
+                <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{e.title}</strong></p>
+                <InlineAddForm
+                  fields={[
+                    { id: 'title', placeholder: 'e.g. B.Tech, Computer Science', required: true },
+                    { id: 'org',   placeholder: 'Institution (optional)', required: false },
+                  ]}
+                  addLabel="Save Education"
+                  submitLabel="Save Changes"
+                  initialValues={e}
+                  onAdd={values => saveEdit('education', e.id, values)}
+                  onCancel={cancelEdit}
+                />
+              </div>
+            ) : (
+              <AchRow
+                key={e.id}
+                icon="🎓"
+                title={e.title}
+                subtitle={e.org}
+                onEdit={() => startEdit('education', e.id)}
+                onRemove={() => requestDelete('education', e.id, e.title)}
+              />
+            )
           ))}
         </div>
       ) : (
         <div className="py-10 text-center">
           <p className="text-[14px] text-graphite-dim">No education added.</p>
-          <p className="text-[12px] text-graphite-dim mt-1.5">Add your educational background to showcase your academic qualifications.</p>
+          <p className="text-[12px] text-graphite-dim mt-1.5">Add your educational background.</p>
         </div>
       )}
+      {/* Add form — collapsed by default, expands on button click */}
       <InlineAddForm
         fields={[
           { id: 'title', placeholder: 'e.g. B.Tech, Computer Science', required: true },
           { id: 'org',   placeholder: 'Institution (optional)', required: false },
         ]}
         addLabel="+ Add Education"
+        collapsible
         onAdd={({ title, org }) => {
           if (!title.trim()) return
           addItem('education', { id: uid('edu'), title: title.trim(), org: org.trim() })
+          setAddingField(null)
         }}
+        onCancel={() => setAddingField(null)}
       />
     </SectionCard>
   )
@@ -422,33 +487,53 @@ export default function Profile() {
         {(profile.projects ?? []).length > 0 ? (
           <div className="mt-4">
             {(profile.projects ?? []).map(p => (
-              <AchRow
-                key={p.id}
-                icon="📁"
-                title={p.title}
-                subtitle={p.link}
-                shared={p.shared}
-                onShare={() => toggleShare('projects', p.id)}
-                onRemove={() => removeItem('projects', p.id)}
-              />
+              editingItem?.field === 'projects' && editingItem?.id === p.id ? (
+                <div key={p.id} className="py-3 border-b border-paper-line">
+                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{p.title}</strong></p>
+                  <InlineAddForm
+                    fields={[
+                      { id: 'title', placeholder: 'Project title', required: true },
+                      { id: 'link',  placeholder: 'Link (optional)', required: false },
+                    ]}
+                    addLabel="Save Project"
+                    submitLabel="Save Changes"
+                    initialValues={p}
+                    onAdd={values => saveEdit('projects', p.id, values)}
+                    onCancel={cancelEdit}
+                  />
+                </div>
+              ) : (
+                <AchRow
+                  key={p.id}
+                  icon="📁"
+                  title={p.title}
+                  subtitle={p.link}
+                  shared={p.shared}
+                  onShare={() => toggleShare('projects', p.id)}
+                  onEdit={() => startEdit('projects', p.id)}
+                  onRemove={() => requestDelete('projects', p.id, p.title)}
+                />
+              )
             ))}
           </div>
         ) : (
           <div className="py-8 text-center">
-            <p className="text-[14px] text-graphite-dim">No projects information available.</p>
-            <p className="text-[12px] text-graphite-dim mt-1.5">Add your projects to showcase your technical skills.</p>
+            <p className="text-[14px] text-graphite-dim">No projects added yet.</p>
+            <p className="text-[12px] text-graphite-dim mt-1.5">Showcase your technical work.</p>
           </div>
         )}
         <InlineAddForm
           fields={[
-            { id: 'title', placeholder: 'Project title',    required: true  },
-            { id: 'link',  placeholder: 'Link (optional)',  required: false },
+            { id: 'title', placeholder: 'Project title',   required: true  },
+            { id: 'link',  placeholder: 'Link (optional)', required: false },
           ]}
           addLabel="+ Add Project"
+          collapsible
           onAdd={({ title, link }) => {
             if (!title.trim()) return
             addItem('projects', { id: uid('proj'), title: title.trim(), link: link.trim(), shared: false })
           }}
+          onCancel={() => {}}
         />
       </SectionCard>
 
@@ -457,21 +542,39 @@ export default function Profile() {
         {(profile.publications ?? []).length > 0 ? (
           <div className="mt-4">
             {(profile.publications ?? []).map(p => (
-              <AchRow
-                key={p.id}
-                icon="📄"
-                title={p.title}
-                subtitle={p.link}
-                shared={p.shared}
-                onShare={() => toggleShare('publications', p.id)}
-                onRemove={() => removeItem('publications', p.id)}
-              />
+              editingItem?.field === 'publications' && editingItem?.id === p.id ? (
+                <div key={p.id} className="py-3 border-b border-paper-line">
+                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{p.title}</strong></p>
+                  <InlineAddForm
+                    fields={[
+                      { id: 'title', placeholder: 'Publication title', required: true },
+                      { id: 'link',  placeholder: 'Link (optional)',    required: false },
+                    ]}
+                    addLabel="Save Publication"
+                    submitLabel="Save Changes"
+                    initialValues={p}
+                    onAdd={values => saveEdit('publications', p.id, values)}
+                    onCancel={cancelEdit}
+                  />
+                </div>
+              ) : (
+                <AchRow
+                  key={p.id}
+                  icon="📄"
+                  title={p.title}
+                  subtitle={p.link}
+                  shared={p.shared}
+                  onShare={() => toggleShare('publications', p.id)}
+                  onEdit={() => startEdit('publications', p.id)}
+                  onRemove={() => requestDelete('publications', p.id, p.title)}
+                />
+              )
             ))}
           </div>
         ) : (
           <div className="py-8 text-center">
-            <p className="text-[14px] text-graphite-dim">No publications information available.</p>
-            <p className="text-[12px] text-graphite-dim mt-1.5">Add your publications to showcase your research.</p>
+            <p className="text-[14px] text-graphite-dim">No publications added yet.</p>
+            <p className="text-[12px] text-graphite-dim mt-1.5">Share your research and papers.</p>
           </div>
         )}
         <InlineAddForm
@@ -480,10 +583,12 @@ export default function Profile() {
             { id: 'link',  placeholder: 'Link (optional)',    required: false },
           ]}
           addLabel="+ Add Publication"
+          collapsible
           onAdd={({ title, link }) => {
             if (!title.trim()) return
             addItem('publications', { id: uid('pub'), title: title.trim(), link: link.trim(), shared: false })
           }}
+          onCancel={() => {}}
         />
       </SectionCard>
 
@@ -495,14 +600,31 @@ export default function Profile() {
         {(profile.achievements ?? []).length > 0 ? (
           <div>
             {[...(profile.achievements ?? [])].reverse().map(a => (
-              <AchRow
-                key={a.id}
-                icon="🏅"
-                title={a.title}
-                shared={a.shared}
-                onShare={() => toggleShare('achievements', a.id)}
-                onRemove={() => removeItem('achievements', a.id)}
-              />
+              editingItem?.field === 'achievements' && editingItem?.id === a.id ? (
+                <div key={a.id} className="py-3 border-b border-paper-line">
+                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{a.title}</strong></p>
+                  <InlineAddForm
+                    fields={[
+                      { id: 'title', placeholder: 'e.g. Runner-up — CityHacks 2025', required: true },
+                    ]}
+                    addLabel="Save Achievement"
+                    submitLabel="Save Changes"
+                    initialValues={a}
+                    onAdd={values => saveEdit('achievements', a.id, values)}
+                    onCancel={cancelEdit}
+                  />
+                </div>
+              ) : (
+                <AchRow
+                  key={a.id}
+                  icon="🏅"
+                  title={a.title}
+                  shared={a.shared}
+                  onShare={() => toggleShare('achievements', a.id)}
+                  onEdit={() => startEdit('achievements', a.id)}
+                  onRemove={() => requestDelete('achievements', a.id, a.title)}
+                />
+              )
             ))}
           </div>
         ) : (
@@ -512,11 +634,13 @@ export default function Profile() {
           fields={[
             { id: 'title', placeholder: 'e.g. Runner-up — CityHacks 2025', required: true },
           ]}
-          addLabel="+ Add"
+          addLabel="+ Add Achievement"
+          collapsible
           onAdd={({ title }) => {
             if (!title.trim()) return
             addItem('achievements', { id: uid('ach'), title: title.trim(), shared: false })
           }}
+          onCancel={() => {}}
         />
       </SectionCard>
     </div>
@@ -557,6 +681,13 @@ export default function Profile() {
               subtitle={`${o.org} · Verifiable ID ${o.verifiableId}`}
               verified
               verifiedId={o.verifiableId}
+              onView={() => navigate(`/profile/certificate/${o.id}`, {
+                state: {
+                  cert: o,
+                  userName: profile.name,
+                  returnTo: { path: '/profile', state: { tab: 'certificates' } },
+                },
+              })}
             />
           ))
         ) : (
@@ -589,20 +720,40 @@ export default function Profile() {
       {/* Self-added */}
       <SectionCard title="Other certificates added by you">
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Unverified by definition — earned elsewhere and typed in yourself. Turn on "shared" to include on your public link.
+          Unverified — earned elsewhere. Add a link or upload an image as proof. Turn on "shared" to include on your public link.
         </p>
         {(profile.selfCerts ?? []).length > 0 ? (
           <div>
             {(profile.selfCerts ?? []).map(c => (
-              <AchRow
-                key={c.id}
-                icon="🎓"
-                title={c.title}
-                subtitle={c.org}
-                shared={c.shared}
-                onShare={() => toggleShare('selfCerts', c.id)}
-                onRemove={() => removeItem('selfCerts', c.id)}
-              />
+              editingItem?.field === 'selfCerts' && editingItem?.id === c.id ? (
+                <div key={c.id} className="py-3 border-b border-paper-line">
+                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{c.title}</strong></p>
+                  <InlineAddForm
+                    fields={[
+                      { id: 'title',    placeholder: 'Certificate name',              required: true  },
+                      { id: 'org',      placeholder: 'Issued by (optional)',           required: false },
+                      { id: 'link',     placeholder: 'Certificate link (optional)',    required: false, type: 'url',  newRow: true },
+                      { id: 'proofUrl', placeholder: 'Add certificate image',          required: false, type: 'file' },
+                    ]}
+                    addLabel="Save Certificate"
+                    submitLabel="Save Changes"
+                    initialValues={c}
+                    onAdd={values => saveEdit('selfCerts', c.id, values)}
+                    onCancel={cancelEdit}
+                  />
+                </div>
+              ) : (
+                <AchRow
+                  key={c.id}
+                  icon="🎓"
+                  title={c.title}
+                  subtitle={[c.org, c.link].filter(Boolean).join(' · ')}
+                  shared={c.shared}
+                  onShare={() => toggleShare('selfCerts', c.id)}
+                  onEdit={() => startEdit('selfCerts', c.id)}
+                  onRemove={() => requestDelete('selfCerts', c.id, c.title)}
+                />
+              )
             ))}
           </div>
         ) : (
@@ -610,14 +761,18 @@ export default function Profile() {
         )}
         <InlineAddForm
           fields={[
-            { id: 'title', placeholder: 'e.g. AWS Cloud Practitioner', required: true  },
-            { id: 'org',   placeholder: 'Issued by (optional)',         required: false },
+            { id: 'title',    placeholder: 'Certificate name',             required: true  },
+            { id: 'org',      placeholder: 'Issued by (optional)',          required: false },
+            { id: 'link',     placeholder: 'Certificate link (optional)',   required: false, type: 'url',  newRow: true },
+            { id: 'proofUrl', placeholder: 'Add certificate image',         required: false, type: 'file' },
           ]}
-          addLabel="+ Add"
-          onAdd={({ title, org }) => {
+          addLabel="+ Add Certificate"
+          collapsible
+          onAdd={({ title, org, link, proofUrl }) => {
             if (!title.trim()) return
-            addItem('selfCerts', { id: uid('sc'), title: title.trim(), org: org.trim(), shared: false })
+            addItem('selfCerts', { id: uid('sc'), title: title.trim(), org: org.trim(), link: link.trim(), proofUrl: proofUrl || null, shared: false })
           }}
+          onCancel={() => {}}
         />
       </SectionCard>
     </div>
@@ -867,6 +1022,20 @@ export default function Profile() {
           {TAB_BODY[tab] ?? null}
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Remove this entry?"
+          message={`"${confirmDelete.label}" will be permanently removed from your profile. This cannot be undone.`}
+          confirmLabel="Remove"
+          onConfirm={() => {
+            removeItem(confirmDelete.field, confirmDelete.id)
+            setConfirmDelete(null)
+          }}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   )
 }

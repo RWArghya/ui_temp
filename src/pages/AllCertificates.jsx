@@ -21,7 +21,7 @@ import Pill        from '../components/profile/Pill.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ── Single certificate row (earned, pending, or self-added)
-function CertRow({ name, org, date, verifiableId, pending = false, selfAdded = false }) {
+function CertRow({ name, org, date, verifiableId, pending = false, selfAdded = false, onView }) {
   return (
     <div className={[
       'flex items-center gap-4 py-4 border-b border-paper-line last:border-0',
@@ -76,6 +76,21 @@ function CertRow({ name, org, date, verifiableId, pending = false, selfAdded = f
           </p>
         )}
       </div>
+
+      {/* View button — earned certs only, not pending, not self-added */}
+      {!pending && !selfAdded && onView && (
+        <button
+          type="button"
+          onClick={onView}
+          className={[
+            'flex-none px-2.5 py-[5px] text-[12px] font-semibold',
+            'border border-paper-line rounded-[2px] bg-white text-graphite-dim',
+            'hover:border-signal hover:text-signal transition-colors cursor-pointer',
+          ].join(' ')}
+        >
+          View
+        </button>
+      )}
     </div>
   )
 }
@@ -163,6 +178,13 @@ export default function AllCertificates() {
                   org={c.org}
                   date={c.completedDate}
                   verifiableId={c.verifiableId}
+                  onView={() => navigate(`/profile/certificate/${c.id}`, {
+                    state: {
+                      cert: c,
+                      userName: profile?.name,
+                      returnTo: { path: '/profile/certificates', state: { profile, initiatives: inits } },
+                    },
+                  })}
                 />
               ))}
             </div>

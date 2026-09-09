@@ -11,6 +11,7 @@ import Profile from "../pages/Profile"
 import ProfilePreview from "../pages/ProfilePreview"
 import Resume from "../pages/Resume"
 import AllCertificates from "../pages/AllCertificates"
+import CertificateView from "../pages/CertificateView"
 
 const router = createBrowserRouter([
   {
@@ -42,7 +43,12 @@ const router = createBrowserRouter([
     path: "/profile/certificates",
     element: <AllCertificates />,
   },
+  {
+    path: "/profile/certificate/:certId",
+    element: <CertificateView />,
+  },
 ])
+
 
 export default router
 
