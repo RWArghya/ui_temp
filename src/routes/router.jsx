@@ -10,6 +10,7 @@ import Auth from "../pages/Auth"
 import Profile from "../pages/Profile"
 import ProfilePreview from "../pages/ProfilePreview"
 import Resume from "../pages/Resume"
+import AllCertificates from "../pages/AllCertificates"
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
   {
     path: "/profile/resume",
     element: <Resume />,
+  },
+  {
+    path: "/profile/certificates",
+    element: <AllCertificates />,
   },
 ])
 

@@ -13,9 +13,11 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
 | User Profile | Profile load | `/api/profile/me` | `GET` | Headers: Bearer Token | Profile Object (see schema below) | `src/api/mock/profile.js` |
 | Update Profile | Save inline edits, privacy toggle, landing view | `/api/profile/me` | `PATCH` | Partial `<Profile>` | Updated `<Profile>` | `src/api/mock/profile.js` |
 | Upload Avatar | Avatar file select | `/api/profile/me/avatar` | `POST` | `multipart/form-data` or `{ avatarDataUrl: string }` | `{ avatarUrl: string }` | Local canvas resize → dataURL |
-| Registered Initiatives | Profile load (Journey, Certs, Rewards tabs) | `/api/initiatives?userId=me` | `GET` | Query: `userId=me` | `{ completed: Initiative[], active: Initiative[], submittedIds: string[] }` | `src/api/mock/initiatives.js` |
+| Registered Initiatives | Profile load (Journey, Certs, Rewards tabs, All Certs page) | `/api/initiatives?userId=me` | `GET` | Query: `userId=me` | `{ completed: Initiative[], active: Initiative[], pending: Initiative[], submittedIds: string[] }` | `src/api/mock/initiatives.js` |
 | Public Profile Visitor View | Share URL visited (`/p/:slug` or `/profile/preview?u=:id`) | `/api/profile/public/:slug` | `GET` | Params: `slug` | Sanitized public `<Profile>` (omits email, private items) | Stubbed in `ProfilePreview.jsx` |
 | Export Resume PDF | "Print / Save PDF" (backend rendering) | `/api/profile/resume/pdf` | `POST` | `{ profileId: string, template: "overleaf-classic" }` | Binary PDF stream or `{ pdfUrl: string }` | Client-side `window.print()` / LaTeX stub |
+| Navigate to Role View | "Go to view →" button on each active role | TBD — to be wired to dashboard shell by teammate | `—` | `—` | `—` | Stub button in Profile > Overview > Roles, no-op until dashboard is merged |
+| All Certificates Page | "Show all certificates" button in Certs tab | `/api/initiatives?userId=me` (same call, full data passed via router state) | `GET` | Same as above | Same as above, but `pending[]` must include closed initiatives where `cert_issued: false` | `src/api/mock/initiatives.js` |
 
 ---
 

@@ -1,8 +1,12 @@
 /**
  * Mock: GET /api/initiatives?userId=me
  *
- * Returns initiatives the current user is registered for (active + completed).
+ * Returns initiatives the current user is registered for (active + completed + pending certs).
  * Swap for: api.get('/initiatives', { params: { userId: 'me' } }).then(r => r.data)
+ *
+ * `pending` = user is registered and the initiative is still running —
+ *   the certificate will be issued when it closes. Shown in the
+ *   "All Certificates" page as grayed-out pending items.
  */
 import { mockRequest } from './mockClient.js'
 
@@ -18,6 +22,7 @@ export const MOCK_USER_INITIATIVES = {
       deadline: '2026-05-18',
       submitted: true,
       verifiableId: 'H2S-INSPIR-11618',
+      completedDate: 'May 2026',
     },
     {
       id: 'code-future',
@@ -28,9 +33,10 @@ export const MOCK_USER_INITIATIVES = {
       deadline: '2026-04-22',
       submitted: false,
       verifiableId: 'H2S-CODEFU-11640',
+      completedDate: 'Apr 2026',
     },
   ],
-  /** Active (registered, not yet ended) */
+  /** Active (registered, not yet ended) — certificate pending once it closes */
   active: [
     {
       id: 'genai-academy',
@@ -49,6 +55,29 @@ export const MOCK_USER_INITIATIVES = {
       status: 'live',
       deadline: '2026-09-08',
       progress: { done: 1, total: 7 },
+    },
+  ],
+  /**
+   * Pending certificates — user is registered and the initiative ended but
+   * certificate hasn't been formally issued yet (review in progress).
+   * Swap for: items from /api/initiatives where status=closed and cert_issued=false
+   */
+  pending: [
+    {
+      id: 'ml-sprint-26',
+      name: 'ML Sprint Challenge 2026',
+      org: 'Hack2skill × Microsoft',
+      purpose: 'competing',
+      deadline: '2026-07-15',
+      status: 'closed',
+    },
+    {
+      id: 'cloud-builders',
+      name: 'Cloud Builders Summit',
+      org: 'Hack2skill × AWS',
+      purpose: 'learning',
+      deadline: '2026-06-30',
+      status: 'closed',
     },
   ],
   /** Submissions the user made */

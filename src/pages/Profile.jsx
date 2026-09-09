@@ -236,7 +236,22 @@ export default function Profile() {
                   <Pill variant={r.primary ? 'hat' : 'default'}>{r.label}</Pill>
                   {r.primary && <span className="text-[11px] text-graphite-dim">your landing view</span>}
                 </div>
-                <span className="text-[12px] text-graphite-dim">Active</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] text-graphite-dim">Active</span>
+                  {/* Go to view button — stub; wire to dashboard view when teammate's shell is merged */}
+                  <button
+                    type="button"
+                    id={`btn-go-to-view-${r.key}`}
+                    title={`Go to your ${r.label} view`}
+                    className={[
+                      'inline-flex items-center gap-1 px-2.5 py-[4px] text-[11.5px] font-semibold',
+                      'border border-paper-line rounded-[2px] bg-white text-graphite-dim',
+                      'hover:border-signal hover:text-signal transition-colors cursor-pointer',
+                    ].join(' ')}
+                  >
+                    Go to view →
+                  </button>
+                </div>
               </div>
             ))
           ) : (
@@ -508,15 +523,33 @@ export default function Profile() {
   )
 
   // ---- CERTIFICATES ----
+  const earnedCerts  = inits?.completed ?? []
+  const pendingCerts = inits?.pending   ?? []
+  const totalEarned  = earnedCerts.length
+  const totalPending = pendingCerts.length
+  // Cap displayed certs to 2 in the tab — user can see all via "Show all"
+  const CERT_PREVIEW_LIMIT = 2
+  const displayedCerts = earnedCerts.slice(0, CERT_PREVIEW_LIMIT)
+
   const CertificatesTab = (
     <div className="space-y-4">
       {/* H2S Verified */}
-      <SectionCard title="H2S Verified Certificates">
+      <SectionCard
+        title={
+          <span className="flex items-center gap-2 flex-wrap">
+            H2S Verified Certificates
+            <span className="font-normal text-[13px] text-ink-900">({totalEarned})</span>
+            {totalPending > 0 && (
+              <span className="font-normal text-[12px] text-graphite-dim/70">{totalPending} pending</span>
+            )}
+          </span>
+        }
+      >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
           Issued automatically the moment an initiative closes — read-only, never editable.
         </p>
-        {(inits?.completed ?? []).length > 0 ? (
-          (inits?.completed ?? []).map(o => (
+        {displayedCerts.length > 0 ? (
+          displayedCerts.map(o => (
             <AchRow
               key={o.id}
               icon=""
@@ -527,7 +560,29 @@ export default function Profile() {
             />
           ))
         ) : (
-          <p className="text-[13px] text-graphite-dim py-4">Nothing yet — certificates appear automatically when an initiative closes.</p>
+          <p className="text-[13px] text-graphite-dim py-4">
+            Nothing yet — certificates appear automatically when an initiative closes.
+          </p>
+        )}
+
+        {/* LinkedIn-style full-width "Show all certificates" button */}
+        {(totalEarned > 0 || totalPending > 0) && (
+          <button
+            id="btn-show-all-certs"
+            type="button"
+            onClick={() => navigate('/profile/certificates', { state: { profile, initiatives: inits, avatar } })}
+            className={[
+              'w-full mt-4 py-3 text-[13.5px] font-semibold text-graphite-dim',
+              'border-t border-paper-line hover:bg-paper transition-colors cursor-pointer',
+              'flex items-center justify-center gap-1.5 rounded-b-card -mx-[1px] -mb-[1px]',
+            ].join(' ')}
+          >
+            Show all certificates
+            {totalEarned + totalPending > CERT_PREVIEW_LIMIT && (
+              <span className="text-[12px] text-graphite-dim/60">({totalEarned + totalPending})</span>
+            )}
+            <span className="text-[14px]">→</span>
+          </button>
         )}
       </SectionCard>
 
