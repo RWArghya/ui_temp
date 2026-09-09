@@ -67,7 +67,7 @@ export default function ProfilePreview() {
             <button
               id="btn-back-to-profile"
               type="button"
-              onClick={() => navigate('/profile')}
+              onClick={() => navigate('/profile', { state: { profile, avatar, initiatives } })}
               className="inline-flex items-center gap-1.5 font-semibold text-signal hover:underline cursor-pointer"
             >
               ← Back to profile editor

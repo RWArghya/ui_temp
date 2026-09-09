@@ -13,7 +13,7 @@
  */
 
 import { useState, useCallback, useId } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile.js'
 
 // ---- Profile-specific components ----
@@ -78,15 +78,16 @@ const GHOST_BTN = [
 // ===================================================================
 export default function Profile() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   // ---- data ----
   const { profile: serverProfile, initiatives, loading, error, refetch } = useProfile()
 
   // ---- local state (mirrors server until real mutations exist) ----
-  const [profile,    setProfile]    = useState(null)
-  const [inits,      setInits]      = useState(null)
-  const [avatar,     setAvatar]     = useState(null)        // base64 dataURL
-  const [tab,        setTab]        = useState('overview')
+  const [profile,    setProfile]    = useState(location.state?.profile ?? null)
+  const [inits,      setInits]      = useState(location.state?.initiatives ?? null)
+  const [avatar,     setAvatar]     = useState(location.state?.avatar ?? null)        // base64 dataURL
+  const [tab,        setTab]        = useState(location.state?.tab ?? 'overview')
   const [shareOpen,  setShareOpen]  = useState(false)
   const [copyDone,   setCopyDone]   = useState(false)
   const [saving,     setSaving]     = useState(false)
@@ -987,7 +988,7 @@ export default function Profile() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => navigate('/profile/preview')}
+                  onClick={() => navigate('/profile/preview', { state: { profile, avatar, initiatives: inits } })}
                   className="text-[11px] text-signal mt-2 inline-block hover:underline cursor-pointer"
                 >
                   👁 Preview what a visitor sees →
