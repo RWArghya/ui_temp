@@ -39,6 +39,7 @@ import EditItemModal from '../components/profile/EditItemModal.jsx'
 import EditCertModal from '../components/profile/EditCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
+import ResumeCustomizer from '../components/profile/ResumeCustomizer.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -175,6 +176,9 @@ export default function Profile() {
   const [showAllCerts, setShowAllCerts] = useState(false)
   // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
   const [viewingPhoto, setViewingPhoto] = useState(null)
+  // customizingResume: boolean — nested resume builder preview mode taking space of top card
+  const [customizingResume, setCustomizingResume] = useState(location.state?.customizingResume ?? false)
+  const [resumeConfig, setResumeConfig] = useState(location.state?.resumeConfig ?? null)
 
   // ---- inline edit / add / delete state ----
   // editingItem: { field: string, id: string } | null  — which row is being edited
@@ -338,10 +342,41 @@ export default function Profile() {
   }
 
   // ================================================================
-  //  RESUME — navigate to dedicated resume page passing profile data
+  //  RESUME — open nested customizer taking space of top card
   // ================================================================
   function openResume() {
-    navigate('/profile/resume', { state: { profile, initiatives: inits, avatar } })
+    const allCerts = [
+      ...(profile.selfCerts || []).map(c => ({ ...c, _included: true })),
+      ...(inits?.completed || []).map(c => ({
+        id: `init-${c.id}`,
+        title: c.name,
+        org: c.org || 'Hack2skill',
+        date: c.issuedOn || '',
+        verifiableId: c.verifiableId,
+        link: c.link || '',
+        _included: true,
+      })),
+    ]
+
+    setResumeConfig(prev => prev || {
+      sectionOrder: ['skills', 'projects', 'education', 'certifications', 'achievements'],
+      includedSections: {
+        skills: true,
+        projects: true,
+        education: true,
+        certifications: true,
+        achievements: true,
+      },
+      customItems: {
+        skills: profile.skills || [],
+        projects: (profile.projects || []).map(p => ({ ...p, _included: true })),
+        education: (profile.education || []).map(e => ({ ...e, _included: true })),
+        certifications: allCerts,
+        achievements: (profile.achievements || []).map(a => ({ ...a, _included: true })),
+        links: profile.connectedProfiles || [],
+      },
+    })
+    setCustomizingResume(true)
   }
 
   // ================================================================
@@ -1498,8 +1533,28 @@ export default function Profile() {
     <div className="w-full">
       <div className="max-w-[800px] mx-auto pb-12">
 
-        {/* ── Profile header card ── */}
-        <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)] mb-6">
+        {customizingResume ? (
+          <ResumeCustomizer
+            profile={profile}
+            initiatives={inits}
+            config={resumeConfig}
+            onChangeConfig={setResumeConfig}
+            onBack={() => setCustomizingResume(false)}
+            onGenerate={() => {
+              navigate('/profile/resume', {
+                state: {
+                  profile,
+                  initiatives: inits,
+                  avatar,
+                  config: resumeConfig,
+                },
+              })
+            }}
+          />
+        ) : (
+          <>
+            {/* ── Profile header card ── */}
+            <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)] mb-6">
           <CoverBand
             src={cover}
             onUpload={handleCoverUpload}
@@ -1626,7 +1681,9 @@ export default function Profile() {
         >
           {TAB_BODY[tab] ?? null}
         </div>
-      </div>
+      </>
+    )}
+  </div>
 
       {/* Delete confirmation dialog */}
       {confirmDelete && (
