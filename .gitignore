@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+#reference files
+
+/references
+.tools/
+

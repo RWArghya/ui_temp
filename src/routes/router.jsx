@@ -9,6 +9,11 @@ import Sponsor from "../pages/Sponsor"
 import Auth from "../pages/Auth"
 import Onboarding from "../pages/Onboarding"
 import Dashboard from "../dashboard/Dashboard"
+import Profile from "../pages/Profile"
+import ProfilePreview from "../pages/ProfilePreview"
+import Resume from "../pages/Resume"
+import AllCertificates from "../pages/AllCertificates"
+import CertificateView from "../pages/CertificateView"
 
 const router = createBrowserRouter([
   {
@@ -34,7 +39,27 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <Dashboard />,
+    path: "/profile",
+    element: <Profile />,
+  },
+  {
+    path: "/profile/preview",
+    element: <ProfilePreview />,
+  },
+  {
+    path: "/profile/resume",
+    element: <Resume />,
+  },
+  {
+    path: "/profile/certificates",
+    element: <AllCertificates />,
+  },
+  {
+    path: "/profile/certificate/:certId",
+    element: <CertificateView />,
   },
 ])
 
+
 export default router
+
