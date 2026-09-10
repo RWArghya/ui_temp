@@ -114,7 +114,7 @@ export default function ProfilePreview() {
       <main className="max-w-[780px] mx-auto px-4 sm:px-6 space-y-4">
         {/* Profile Header Card */}
         <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-card">
-          <CoverBand />
+          <CoverBand src={profile.cover || null} />
 
           <div className="px-5 pb-6" style={{ marginTop: '-38px' }}>
             <div className="flex items-end justify-between gap-3">

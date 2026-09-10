@@ -30,6 +30,7 @@ import KVRow         from '../components/profile/KVRow.jsx'
 import Meter         from '../components/profile/Meter.jsx'
 import TimelineItem  from '../components/profile/TimelineItem.jsx'
 import ConfirmDialog from '../components/profile/ConfirmDialog.jsx'
+import EditHeadlineModal from '../components/profile/EditHeadlineModal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -87,10 +88,12 @@ export default function Profile() {
   const [profile,    setProfile]    = useState(location.state?.profile ?? null)
   const [inits,      setInits]      = useState(location.state?.initiatives ?? null)
   const [avatar,     setAvatar]     = useState(location.state?.avatar ?? null)        // base64 dataURL
+  const [cover,      setCover]      = useState(location.state?.cover ?? location.state?.profile?.cover ?? null) // base64 dataURL
   const [tab,        setTab]        = useState(location.state?.tab ?? 'overview')
   const [shareOpen,  setShareOpen]  = useState(false)
   const [copyDone,   setCopyDone]   = useState(false)
   const [saving,     setSaving]     = useState(false)
+  const [editHeadlineOpen, setEditHeadlineOpen] = useState(false)
 
   // ---- inline edit / add / delete state ----
   // editingItem: { field: string, id: string } | null  — which row is being edited
@@ -104,6 +107,7 @@ export default function Profile() {
   if (serverProfile && !profile) {
     setProfile(serverProfile)
     setAvatar(serverProfile.avatar)
+    setCover(serverProfile.cover || null)
   }
   if (initiatives && !inits) {
     setInits(initiatives)
@@ -141,6 +145,41 @@ export default function Profile() {
   }, [])
 
   const handleAvatarClear = () => setAvatar(null)
+
+  // ================================================================
+  //  COVER PHOTO UPLOAD (canvas resize to max 1200px width)
+  // ================================================================
+  const handleCoverUpload = useCallback(e => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (!/^image\//.test(f.type)) {
+      alert("That doesn't look like an image file.")
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const img = new Image()
+      img.onload = () => {
+        const maxW = 1200
+        const scale = img.width > maxW ? maxW / img.width : 1
+        const c = document.createElement('canvas')
+        c.width = Math.round(img.width * scale)
+        c.height = Math.round(img.height * scale)
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
+        const coverData = c.toDataURL('image/jpeg', 0.85)
+        setCover(coverData)
+        setProfile(p => (p ? { ...p, cover: coverData } : p))
+      }
+      img.onerror = () => alert("That image couldn't be read.")
+      img.src = ev.target.result
+    }
+    reader.readAsDataURL(f)
+  }, [])
+
+  const handleCoverClear = () => {
+    setCover(null)
+    setProfile(p => (p ? { ...p, cover: null } : p))
+  }
 
   // ================================================================
   //  LOCAL CRUD HELPERS
@@ -889,12 +928,16 @@ export default function Profile() {
 
         {/* ── Profile header card ── */}
         <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)] mb-6">
-          <CoverBand />
+          <CoverBand
+            src={cover}
+            onUpload={handleCoverUpload}
+            onClear={handleCoverClear}
+          />
 
           <div className="px-5 pb-5" style={{ marginTop: '-38px' }}>
             {/* avatar + actions row */}
             <div className="flex flex-wrap items-end justify-between gap-3">
-              {/* avatar (upload affordance) */}
+              {/* avatar (upload affordance with visible '+' badge) */}
               <Avatar
                 src={avatar}
                 name={profile.name}
@@ -943,30 +986,33 @@ export default function Profile() {
                 >
                   {profile.isPublic ? '🌐 Public' : '🔒 Private'}
                 </button>
-
-                {/* Clear avatar */}
-                {avatar && (
-                  <button
-                    id="btn-clear-avatar"
-                    type="button"
-                    onClick={handleAvatarClear}
-                    className="px-[10px] py-[5px] text-[12px] text-graphite-dim hover:text-ink-900 font-medium cursor-pointer transition-colors"
-                  >
-                    Remove photo
-                  </button>
-                )}
               </div>
             </div>
 
-            {/* name + headline */}
+            {/* name + headline with edit button */}
             <div className="mt-3">
               <h1 className="text-[20px] font-display font-bold text-ink-900 leading-tight">
                 {profile.name || 'Add your name'}
               </h1>
-              <p className="text-[13px] text-graphite-dim mt-0.5">
-                {profile.headline || 'Add a headline'}
-                {profile.org ? <> · {profile.org}</> : null}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5 group">
+                <p className="text-[13px] text-graphite-dim">
+                  {profile.headline || 'Add a headline'}
+                  {profile.org ? <> · {profile.org}</> : null}
+                </p>
+                <button
+                  id="btn-edit-headline"
+                  type="button"
+                  onClick={() => setEditHeadlineOpen(true)}
+                  className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+                  title="Edit headline and organization"
+                  aria-label="Edit headline and organization"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Share panel */}
@@ -990,7 +1036,7 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => navigate('/profile/preview', { state: { profile, avatar, initiatives: inits } })}
-                  className="text-[11px] text-signal mt-2 inline-block hover:underline cursor-pointer"
+                  className="mt-2 text-signal hover:underline text-[11.5px] font-medium inline-block cursor-pointer"
                 >
                   👁 Preview what a visitor sees →
                 </button>
@@ -1038,6 +1084,18 @@ export default function Profile() {
           onCancel={() => setConfirmDelete(null)}
         />
       )}
+
+      {/* Edit Headline / Intro Modal (LinkedIn-style popup) */}
+      <EditHeadlineModal
+        isOpen={editHeadlineOpen}
+        initialHeadline={profile.headline || ''}
+        initialOrg={profile.org || ''}
+        onSave={({ headline, org }) => {
+          setProfile(p => (p ? { ...p, headline, org } : p))
+          setEditHeadlineOpen(false)
+        }}
+        onClose={() => setEditHeadlineOpen(false)}
+      />
     </div>
   )
 }
