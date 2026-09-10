@@ -7,6 +7,8 @@ import Enterprise from "../pages/Enterprise"
 import CustomerRegister from "../pages/CustomerRegister"
 import Sponsor from "../pages/Sponsor"
 import Auth from "../pages/Auth"
+import Onboarding from "../pages/Onboarding"
+import Dashboard from "../dashboard/Dashboard"
 import Profile from "../pages/Profile"
 import ProfilePreview from "../pages/ProfilePreview"
 import Resume from "../pages/Resume"
@@ -24,10 +26,19 @@ const router = createBrowserRouter([
       { path: "enterprise", element: <Enterprise /> },
       { path: "customer-register", element: <CustomerRegister /> },
       { path: "sponsor", element: <Sponsor /> },
-      { path: "auth", element: <Auth /> },
     ],
   },
   {
+    path: "/auth",
+    element: <Auth />,
+  },
+  {
+    path: "/onboarding",
+    element: <Onboarding />,
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
     path: "/profile",
     element: <Profile />,
   },
