@@ -13,7 +13,7 @@
 export default function TabBar({ tabs, active, onSelect }) {
   return (
     <div
-      className="flex gap-1 border-b border-paper-line mb-6 overflow-x-auto"
+      className="flex gap-1 border-b border-paper-line mb-6 overflow-x-auto no-scrollbar"
       role="tablist"
       aria-label="Profile sections"
     >

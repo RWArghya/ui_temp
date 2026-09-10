@@ -18,6 +18,7 @@ import CoverBand from '../components/profile/CoverBand.jsx'
 import SectionCard from '../components/profile/SectionCard.jsx'
 import Pill from '../components/profile/Pill.jsx'
 import KVRow from '../components/profile/KVRow.jsx'
+import Modal from '../components/profile/Modal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 export default function ProfilePreview() {
@@ -30,6 +31,7 @@ export default function ProfilePreview() {
   const avatar = location.state?.avatar ?? profile?.avatar ?? null
 
   const [copied, setCopied] = useState(false)
+  const [viewingPhoto, setViewingPhoto] = useState(null)
 
   if (!profile) {
     return (
@@ -56,6 +58,7 @@ export default function ProfilePreview() {
   const publicAchievements = (profile.achievements || []).filter(a => a.shared)
   const publicSelfCerts = (profile.selfCerts || []).filter(c => c.shared)
   const publicPubs = (profile.publications || []).filter(p => p.shared)
+  const publicLinks = (profile.connectedProfiles || []).filter(l => l.shared !== false)
   const verifiedCerts = initiatives?.completed || []
 
   return (
@@ -114,7 +117,7 @@ export default function ProfilePreview() {
       <main className="max-w-[780px] mx-auto px-4 sm:px-6 space-y-4">
         {/* Profile Header Card */}
         <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-card">
-          <CoverBand />
+          <CoverBand src={profile.cover || null} />
 
           <div className="px-5 pb-6" style={{ marginTop: '-38px' }}>
             <div className="flex items-end justify-between gap-3">
@@ -169,6 +172,15 @@ export default function ProfilePreview() {
         ) : (
           /* When Public, Show visitor view sections */
           <>
+            {/* About */}
+            {profile.about && (
+              <SectionCard title="About">
+                <p className="mt-3 text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
+                  {profile.about}
+                </p>
+              </SectionCard>
+            )}
+
             {/* Skills & Domains */}
             {((profile.skills && profile.skills.length > 0) || (profile.domains && profile.domains.length > 0)) && (
               <SectionCard title="Skills & Domains">
@@ -230,25 +242,66 @@ export default function ProfilePreview() {
             {/* Public Projects */}
             {publicProjects.length > 0 && (
               <SectionCard title="Featured Projects">
-                <div className="mt-3 space-y-2.5">
+                <div className="mt-3 space-y-3">
                   {publicProjects.map(p => (
                     <div
                       key={p.id}
-                      className="p-3 rounded-[2px] border border-paper-line bg-paper"
+                      className="p-3.5 rounded-[2px] border border-paper-line bg-paper"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-[13.5px] font-semibold text-ink-900">{p.title}</h3>
-                        {p.link && (
-                          <a
-                            href={p.link.startsWith('http') ? p.link : `https://${p.link}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11.5px] font-medium text-signal hover:underline"
-                          >
-                            View Repository ↗
-                          </a>
-                        )}
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <h3 className="text-[13.5px] font-bold text-ink-900 leading-snug">{p.title}</h3>
+                        <div className="flex items-center gap-3 text-[12px]">
+                          {(p.sourceLink || p.link) && (
+                            <a
+                              href={(p.sourceLink || p.link).startsWith('http') ? (p.sourceLink || p.link) : `https://${p.sourceLink || p.link}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
+                            >
+                              <span>Source ↗</span>
+                            </a>
+                          )}
+                          {p.liveLink && (
+                            <a
+                              href={p.liveLink.startsWith('http') ? p.liveLink : `https://${p.liveLink}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
+                            >
+                              <span>Live demo ↗</span>
+                            </a>
+                          )}
+                          {p.docsLink && (
+                            <a
+                              href={p.docsLink.startsWith('http') ? p.docsLink : `https://${p.docsLink}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
+                            >
+                              <span>Docs ↗</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
+
+                      {p.description && (
+                        <p className="text-[12.5px] text-graphite-dim mt-1.5 leading-relaxed">
+                          {p.description}
+                        </p>
+                      )}
+
+                      {p.techStack && p.techStack.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                          {p.techStack.map((tech, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 text-[11px] bg-white border border-paper-line rounded-[2px] text-ink-900 font-medium"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -258,22 +311,27 @@ export default function ProfilePreview() {
             {/* Public Publications */}
             {publicPubs.length > 0 && (
               <SectionCard title="Publications & Research">
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 divide-y divide-paper-line">
                   {publicPubs.map(pub => (
-                    <div key={pub.id} className="py-2 border-b border-paper-line last:border-0">
+                    <div key={pub.id} className="py-2.5 first:pt-0 last:pb-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-medium text-ink-900">{pub.title}</span>
+                        <span className="text-[13px] font-bold text-ink-900">{pub.title}</span>
                         {pub.link && (
                           <a
                             href={pub.link.startsWith('http') ? pub.link : `https://${pub.link}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[11.5px] text-signal hover:underline whitespace-nowrap"
+                            className="text-[11.5px] text-signal hover:underline whitespace-nowrap font-medium"
                           >
                             Paper ↗
                           </a>
                         )}
                       </div>
+                      {pub.description && (
+                        <p className="text-[12px] text-graphite-dim mt-1 leading-relaxed">
+                          {pub.description}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -283,20 +341,68 @@ export default function ProfilePreview() {
             {/* Public Achievements & Self-added certs */}
             {(publicAchievements.length > 0 || publicSelfCerts.length > 0) && (
               <SectionCard title="Honors & External Certifications">
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 divide-y divide-paper-line">
                   {publicAchievements.map(a => (
-                    <div key={a.id} className="flex items-center gap-2 py-2 border-b border-paper-line last:border-0">
-                      <span className="text-[14px]">🏅</span>
-                      <span className="text-[13px] text-ink-900">{a.title}</span>
+                    <div key={a.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px]">🏅</span>
+                        <span className="text-[13px] font-bold text-ink-900">{a.title}</span>
+                      </div>
+                      {a.description && (
+                        <p className="text-[12px] text-graphite-dim mt-1 pl-6 leading-relaxed">
+                          {a.description}
+                        </p>
+                      )}
                     </div>
                   ))}
                   {publicSelfCerts.map(sc => (
-                    <div key={sc.id} className="flex items-center justify-between py-2 border-b border-paper-line last:border-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[14px]">📜</span>
-                        <span className="text-[13px] text-ink-900">{sc.title}</span>
+                    <div key={sc.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px]">📜</span>
+                          <span className="text-[13px] font-bold text-ink-900">{sc.title}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11.5px]">
+                          {sc.link && (
+                            <a
+                              href={sc.link.startsWith('http') ? sc.link : `https://${sc.link}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline whitespace-nowrap font-medium"
+                            >
+                              Verify ↗
+                            </a>
+                          )}
+                          {(sc.photo || sc.proofUrl) && (
+                            <button
+                              type="button"
+                              onClick={() => setViewingPhoto({ title: sc.title, url: sc.photo || sc.proofUrl })}
+                              className="text-signal hover:underline whitespace-nowrap font-medium cursor-pointer inline-flex items-center gap-0.5"
+                            >
+                              <span>View certificate ↗</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-[11.5px] text-graphite-dim">{sc.org}</span>
+                      {(sc.org || sc.issueDate) && (
+                        <p className="text-[12px] text-graphite-dim mt-0.5 pl-6 leading-relaxed">
+                          {[sc.org, sc.issueDate].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                      {(sc.photo || sc.proofUrl) && (
+                        <button
+                          type="button"
+                          onClick={() => setViewingPhoto({ title: sc.title, url: sc.photo || sc.proofUrl })}
+                          className="mt-2 ml-6 block rounded-[2px] border border-paper-line overflow-hidden w-20 h-14 bg-paper hover:opacity-90 cursor-pointer"
+                          title="Click to view certificate photo"
+                        >
+                          <img
+                            src={sc.photo || sc.proofUrl}
+                            alt={sc.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -306,41 +412,107 @@ export default function ProfilePreview() {
             {/* Education */}
             {profile.education && profile.education.length > 0 && (
               <SectionCard title="Education">
-                <div className="mt-3 space-y-2">
-                  {profile.education.map(edu => (
-                    <div key={edu.id} className="py-2 border-b border-paper-line last:border-0">
-                      <div className="font-semibold text-[13px] text-ink-900">{edu.title}</div>
-                      <div className="text-[12px] text-graphite-dim">{edu.org}</div>
-                    </div>
-                  ))}
+                <div className="mt-3 space-y-3">
+                  {[...profile.education]
+                    .sort((a, b) => {
+                      if (a.isOngoing && !b.isOngoing) return -1
+                      if (!a.isOngoing && b.isOngoing) return 1
+                      const yearA = parseInt(a.endYear || a.startYear || 0, 10)
+                      const yearB = parseInt(b.endYear || b.startYear || 0, 10)
+                      return yearB - yearA
+                    })
+                    .map(edu => {
+                      const degreeText = [edu.degree || edu.title, edu.specialization].filter(Boolean).join(' · ')
+                      const instText = [edu.institution || edu.org, edu.boardOrUniversity].filter(Boolean).join(' · ')
+                      const timeText = [
+                        edu.startYear && edu.endYear ? `${edu.startYear} – ${edu.endYear}` : (edu.endYear || edu.startYear || ''),
+                        edu.location,
+                      ].filter(Boolean).join(' · ')
+
+                      return (
+                        <div key={edu.id} className="py-2 border-b border-paper-line last:border-0">
+                          <div className="font-semibold text-[13.5px] text-ink-900">{degreeText}</div>
+                          {instText && <div className="text-[12.5px] text-ink-900 mt-0.5">{instText}</div>}
+                          {timeText && <div className="text-[11.5px] text-graphite-dim mt-0.5">{timeText}</div>}
+                        </div>
+                      )
+                    })}
                 </div>
               </SectionCard>
             )}
 
-            {/* Contributions Links */}
-            {profile.links && (
-              <SectionCard title="Links & Profiles">
-                <div className="mt-3">
-                  <KVRow
-                    label="Online Profile"
-                    value={
-                      <a
-                        href={profile.links.startsWith('http') ? profile.links : `https://${profile.links}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-signal hover:underline"
-                      >
-                        {profile.links}
-                      </a>
-                    }
-                    last
-                  />
+            {/* Connected Profiles / Links */}
+            {(publicLinks.length > 0 || profile.links) && (
+              <SectionCard title="Connected Profiles">
+                <div className="mt-3 divide-y divide-paper-line">
+                  {publicLinks.length > 0 ? (
+                    publicLinks.map(item => (
+                      <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                        <span className="font-semibold text-[13px] text-ink-900">{item.platform}</span>
+                        <a
+                          href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[12.5px] text-signal hover:underline inline-flex items-center gap-1 truncate max-w-[240px] sm:max-w-xs"
+                        >
+                          <span className="truncate">{item.url?.replace(/^https?:\/\//i, '')}</span>
+                          <span className="text-[12px]">↗</span>
+                        </a>
+                      </div>
+                    ))
+                  ) : (
+                    <KVRow
+                      label="Online Profile"
+                      value={
+                        <a
+                          href={profile.links.startsWith('http') ? profile.links : `https://${profile.links}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-signal hover:underline inline-flex items-center gap-1"
+                        >
+                          {profile.links}
+                          <span className="text-[12px]">↗</span>
+                        </a>
+                      }
+                      last
+                    />
+                  )}
                 </div>
               </SectionCard>
             )}
           </>
         )}
       </main>
+
+      {/* Certificate Photo Viewer Modal for public preview */}
+      {viewingPhoto && (
+        <Modal
+          isOpen={!!viewingPhoto}
+          title={viewingPhoto.title || 'Certificate document'}
+          subtitle="Certificate image or credential scan."
+          onClose={() => setViewingPhoto(null)}
+          maxWidth="max-w-2xl"
+        >
+          <div className="p-4 sm:p-6 flex flex-col items-center">
+            <div className="w-full bg-paper border border-paper-line rounded-[2px] p-2 flex items-center justify-center max-h-[70vh] overflow-hidden">
+              <img
+                src={viewingPhoto.url}
+                alt={viewingPhoto.title}
+                className="max-w-full max-h-[66vh] object-contain rounded-[2px]"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-end w-full pt-3 border-t border-paper-line">
+              <button
+                type="button"
+                onClick={() => setViewingPhoto(null)}
+                className="px-5 py-1.5 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

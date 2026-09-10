@@ -4,13 +4,14 @@
  * ---- TEAMMATE BOUNDARY END ---- */
 
 /**
- * SectionCard — white bordered card with optional heading.
+ * SectionCard — white bordered card with optional heading and header action.
  *
  * @param {string}      title      - Optional card heading
+ * @param {ReactNode}   action     - Optional action button placed in top right
  * @param {ReactNode}   children
  * @param {string}      className  - Extra Tailwind classes
  */
-export default function SectionCard({ title, children, className = '' }) {
+export default function SectionCard({ title, action, children, className = '' }) {
   return (
     <div
       className={[
@@ -19,8 +20,13 @@ export default function SectionCard({ title, children, className = '' }) {
         className,
       ].join(' ')}
     >
-      {title && (
-        <h3 className="text-[15px] font-bold text-ink-900 font-display mb-0">{title}</h3>
+      {(title || action) && (
+        <div className="flex items-center justify-between gap-2 mb-0">
+          {title ? (
+            <h3 className="text-[15px] font-bold text-ink-900 font-display">{title}</h3>
+          ) : <div />}
+          {action && <div>{action}</div>}
+        </div>
       )}
       {children}
     </div>

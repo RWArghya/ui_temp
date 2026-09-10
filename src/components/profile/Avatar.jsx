@@ -35,26 +35,37 @@ export default function Avatar({ src, name, size = 'md', onUpload, className = '
 
   if (onUpload) {
     return (
-      <label
-        className={`${base} relative cursor-pointer group overflow-hidden`}
-        title={src ? 'Change photo' : 'Add photo'}
-        id="avatar-upload-label"
-      >
-        {inner}
-        {/* upload overlay hint */}
-        <span className="absolute inset-0 rounded-full bg-ink-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <span className="text-white text-[10px] font-semibold leading-tight text-center px-1">
-            {src ? 'Change' : 'Add\nphoto'}
+      <div className="relative inline-block">
+        <label
+          className={`${base} relative cursor-pointer group overflow-hidden block`}
+          title={src ? 'Change photo' : 'Add photo'}
+          id="avatar-upload-label"
+        >
+          {inner}
+          {/* upload overlay hint */}
+          <span className="absolute inset-0 rounded-full bg-ink-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span className="text-white text-[10px] font-semibold leading-tight text-center px-1">
+              {src ? 'Change' : 'Add\nphoto'}
+            </span>
           </span>
-        </span>
-        <input
-          id="avatar-file-input"
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={onUpload}
-        />
-      </label>
+          <input
+            id="avatar-file-input"
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={onUpload}
+          />
+        </label>
+
+        {/* Small '+' badge at the bottom-right corner to intuitively invite clicking */}
+        <label
+          htmlFor="avatar-file-input"
+          className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-signal hover:bg-signal-dark text-white text-[13px] font-bold flex items-center justify-center shadow-md border-2 border-white cursor-pointer transition-transform hover:scale-110 active:scale-95"
+          title={src ? 'Change photo' : 'Add photo'}
+        >
+          +
+        </label>
+      </div>
     )
   }
 
