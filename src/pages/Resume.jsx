@@ -172,15 +172,29 @@ export default function Resume() {
                 Education
               </h2>
               <div className="space-y-2">
-                {profile.education.map(edu => (
-                  <div key={edu.id} className="flex justify-between items-baseline text-[13px]">
-                    <div>
-                      <span className="font-bold text-black">{edu.org || 'Institution'}</span>
-                      <div className="italic text-gray-800 text-[12.5px]">{edu.title}</div>
-                    </div>
-                    <span className="text-[12px] text-gray-600 italic">Expected / Completed</span>
-                  </div>
-                ))}
+                {[...profile.education]
+                  .sort((a, b) => {
+                    if (a.isOngoing && !b.isOngoing) return -1
+                    if (!a.isOngoing && b.isOngoing) return 1
+                    const yearA = parseInt(a.endYear || a.startYear || 0, 10)
+                    const yearB = parseInt(b.endYear || b.startYear || 0, 10)
+                    return yearB - yearA
+                  })
+                  .map(edu => {
+                    const degreeText = [edu.degree || edu.title, edu.specialization].filter(Boolean).join(', ')
+                    const instText = [edu.institution || edu.org, edu.boardOrUniversity, edu.location].filter(Boolean).join(' · ')
+                    const timeText = edu.startYear && edu.endYear ? `${edu.startYear} – ${edu.endYear}` : (edu.endYear || edu.startYear || '')
+
+                    return (
+                      <div key={edu.id} className="flex justify-between items-baseline text-[13px]">
+                        <div>
+                          <span className="font-bold text-black">{degreeText}</span>
+                          <div className="italic text-gray-800 text-[12px]">{instText}</div>
+                        </div>
+                        {timeText && <span className="text-[12px] text-gray-700 font-sans">{timeText}</span>}
+                      </div>
+                    )
+                  })}
               </div>
             </section>
           )}

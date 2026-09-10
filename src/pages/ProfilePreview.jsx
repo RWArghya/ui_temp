@@ -315,13 +315,31 @@ export default function ProfilePreview() {
             {/* Education */}
             {profile.education && profile.education.length > 0 && (
               <SectionCard title="Education">
-                <div className="mt-3 space-y-2">
-                  {profile.education.map(edu => (
-                    <div key={edu.id} className="py-2 border-b border-paper-line last:border-0">
-                      <div className="font-semibold text-[13px] text-ink-900">{edu.title}</div>
-                      <div className="text-[12px] text-graphite-dim">{edu.org}</div>
-                    </div>
-                  ))}
+                <div className="mt-3 space-y-3">
+                  {[...profile.education]
+                    .sort((a, b) => {
+                      if (a.isOngoing && !b.isOngoing) return -1
+                      if (!a.isOngoing && b.isOngoing) return 1
+                      const yearA = parseInt(a.endYear || a.startYear || 0, 10)
+                      const yearB = parseInt(b.endYear || b.startYear || 0, 10)
+                      return yearB - yearA
+                    })
+                    .map(edu => {
+                      const degreeText = [edu.degree || edu.title, edu.specialization].filter(Boolean).join(' · ')
+                      const instText = [edu.institution || edu.org, edu.boardOrUniversity].filter(Boolean).join(' · ')
+                      const timeText = [
+                        edu.startYear && edu.endYear ? `${edu.startYear} – ${edu.endYear}` : (edu.endYear || edu.startYear || ''),
+                        edu.location,
+                      ].filter(Boolean).join(' · ')
+
+                      return (
+                        <div key={edu.id} className="py-2 border-b border-paper-line last:border-0">
+                          <div className="font-semibold text-[13.5px] text-ink-900">{degreeText}</div>
+                          {instText && <div className="text-[12.5px] text-ink-900 mt-0.5">{instText}</div>}
+                          {timeText && <div className="text-[11.5px] text-graphite-dim mt-0.5">{timeText}</div>}
+                        </div>
+                      )
+                    })}
                 </div>
               </SectionCard>
             )}

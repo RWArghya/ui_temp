@@ -33,6 +33,7 @@ import ConfirmDialog from '../components/profile/ConfirmDialog.jsx'
 import EditPersonalDetailsModal from '../components/profile/EditPersonalDetailsModal.jsx'
 import EditAboutModal from '../components/profile/EditAboutModal.jsx'
 import EditPillsModal from '../components/profile/EditPillsModal.jsx'
+import EditEducationModal from '../components/profile/EditEducationModal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -96,11 +97,13 @@ export default function Profile() {
   const [copyDone,   setCopyDone]   = useState(false)
   const [saving,     setSaving]     = useState(false)
 
-  // ---- Modal states for Overview tab ----
+  // ---- Modal states for Overview tab & Education tab ----
   const [editDetailsOpen, setEditDetailsOpen] = useState(false)
   const [editAboutOpen,   setEditAboutOpen]   = useState(false)
   // editPillsConfig: { field: 'skills' | 'interests' | 'domains', title: string, subtitle: string } | null
   const [editPillsConfig, setEditPillsConfig] = useState(null)
+  // editEducationModal: { mode: 'add' } | { mode: 'edit', item } | null
+  const [editEducationModal, setEditEducationModal] = useState(null)
 
   // ---- inline edit / add / delete state ----
   // editingItem: { field: string, id: string } | null  — which row is being edited
@@ -585,59 +588,96 @@ export default function Profile() {
   )
 
   // ---- EDUCATION ----
+  // ---- EDUCATION ----
+  // Sort education entries by timeline (most recent first; ongoing at the very top)
+  const sortedEducation = [...(profile.education ?? [])].sort((a, b) => {
+    if (a.isOngoing && !b.isOngoing) return -1
+    if (!a.isOngoing && b.isOngoing) return 1
+    const yearA = parseInt(a.endYear || a.startYear || 0, 10)
+    const yearB = parseInt(b.endYear || b.startYear || 0, 10)
+    return yearB - yearA
+  })
+
   const EducationTab = (
-    <SectionCard title="Education">
-      {(profile.education ?? []).length > 0 ? (
-        <div className="mt-4">
-          {(profile.education ?? []).map(e => (
-            editingItem?.field === 'education' && editingItem?.id === e.id ? (
-              <div key={e.id} className="py-3 border-b border-paper-line">
-                <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{e.title}</strong></p>
-                <InlineAddForm
-                  fields={[
-                    { id: 'title', placeholder: 'e.g. B.Tech, Computer Science', required: true },
-                    { id: 'org',   placeholder: 'Institution (optional)', required: false },
-                  ]}
-                  addLabel="Save Education"
-                  submitLabel="Save Changes"
-                  initialValues={e}
-                  onAdd={values => saveEdit('education', e.id, values)}
-                  onCancel={cancelEdit}
-                />
+    <SectionCard
+      title="Education"
+      action={
+        <button
+          type="button"
+          id="btn-add-education"
+          onClick={() => setEditEducationModal({ mode: 'add', item: null })}
+          className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+          title="Add education"
+          aria-label="Add education"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      }
+    >
+      {sortedEducation.length > 0 ? (
+        <div className="mt-4 divide-y divide-paper-line">
+          {sortedEducation.map(e => {
+            const degreeText = [e.degree || e.title, e.specialization].filter(Boolean).join(' · ')
+            const instText = [e.institution || e.org, e.boardOrUniversity].filter(Boolean).join(' · ')
+            const timeText = [
+              e.startYear && e.endYear ? `${e.startYear} – ${e.endYear}` : (e.endYear || e.startYear || ''),
+              e.location,
+            ].filter(Boolean).join(' · ')
+
+            return (
+              <div key={e.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-[20px] flex-none mt-0.5">🎓</span>
+                  <div className="min-w-0">
+                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                      {degreeText || 'Education'}
+                    </h4>
+                    {instText && (
+                      <p className="text-[13px] text-ink-900 mt-0.5">
+                        {instText}
+                      </p>
+                    )}
+                    {timeText && (
+                      <p className="text-[11.5px] text-graphite-dim mt-0.5">
+                        {timeText}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-none">
+                  <button
+                    type="button"
+                    onClick={() => setEditEducationModal({ mode: 'edit', item: e })}
+                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+                    title={`Edit ${degreeText || 'education'}`}
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            ) : (
-              <AchRow
-                key={e.id}
-                icon="🎓"
-                title={e.title}
-                subtitle={e.org}
-                onEdit={() => startEdit('education', e.id)}
-                onRemove={() => requestDelete('education', e.id, e.title)}
-              />
             )
-          ))}
+          })}
         </div>
       ) : (
         <div className="py-10 text-center">
           <p className="text-[14px] text-graphite-dim">No education added.</p>
           <p className="text-[12px] text-graphite-dim mt-1.5">Add your educational background.</p>
+          <button
+            type="button"
+            onClick={() => setEditEducationModal({ mode: 'add', item: null })}
+            className="mt-4 px-4 py-2 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
+          >
+            + Add Education
+          </button>
         </div>
       )}
-      {/* Add form — collapsed by default, expands on button click */}
-      <InlineAddForm
-        fields={[
-          { id: 'title', placeholder: 'e.g. B.Tech, Computer Science', required: true },
-          { id: 'org',   placeholder: 'Institution (optional)', required: false },
-        ]}
-        addLabel="+ Add Education"
-        collapsible
-        onAdd={({ title, org }) => {
-          if (!title.trim()) return
-          addItem('education', { id: uid('edu'), title: title.trim(), org: org.trim() })
-          setAddingField(null)
-        }}
-        onCancel={() => setAddingField(null)}
-      />
     </SectionCard>
   )
 
@@ -1231,6 +1271,30 @@ export default function Profile() {
             setEditPillsConfig(null)
           }}
           onClose={() => setEditPillsConfig(null)}
+        />
+      )}
+
+      {/* Edit / Add Education Modal */}
+      {editEducationModal && (
+        <EditEducationModal
+          isOpen={!!editEducationModal}
+          initialData={editEducationModal.mode === 'edit' ? editEducationModal.item : null}
+          onSave={(savedItem) => {
+            if (editEducationModal.mode === 'add') {
+              addItem('education', { ...savedItem, id: uid('edu') })
+            } else {
+              setProfile(p => ({
+                ...p,
+                education: (p.education || []).map(x => x.id === savedItem.id ? savedItem : x),
+              }))
+            }
+            setEditEducationModal(null)
+          }}
+          onDelete={(idToDelete) => {
+            removeItem('education', idToDelete)
+            setEditEducationModal(null)
+          }}
+          onClose={() => setEditEducationModal(null)}
         />
       )}
     </div>
