@@ -104,8 +104,34 @@ export const MOCK_PROFILE = {
     },
   ],
   selfCerts: [
-    { id: 'sc-1', title: 'AWS Cloud Practitioner', org: 'Amazon Web Services', shared: true },
-    { id: 'sc-2', title: 'TensorFlow Developer Certificate', org: 'Google', shared: false },
+    { id: 'sc-1', title: 'AWS Cloud Practitioner', org: 'Amazon Web Services', issueDate: '2024', link: 'https://aws.amazon.com/verification', photo: '', shared: true },
+    { id: 'sc-2', title: 'TensorFlow Developer Certificate', org: 'Google', issueDate: '2023', link: '', photo: '', shared: false },
+    {
+      id: 'sc-3',
+      title: 'Infosys Springboard — Cloud & Java Development',
+      org: 'Infosys Springboard',
+      issueDate: 'October 2024',
+      link: '',
+      photo: `data:image/svg+xml;utf8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 550" width="800" height="550">
+  <rect width="800" height="550" fill="#fdfbf7" stroke="#007cc3" stroke-width="12" rx="8"/>
+  <rect x="20" y="20" width="760" height="510" fill="none" stroke="#d4af37" stroke-width="2" stroke-dasharray="8 4"/>
+  <text x="400" y="90" font-family="sans-serif" font-size="28" font-weight="bold" fill="#007cc3" text-anchor="middle" letter-spacing="2">INFOSYS SPRINGBOARD</text>
+  <text x="400" y="125" font-family="serif" font-size="16" fill="#666" text-anchor="middle" font-style="italic">Certificate of Completion</text>
+  <line x1="280" y1="145" x2="520" y2="145" stroke="#d4af37" stroke-width="2"/>
+  <text x="400" y="200" font-family="sans-serif" font-size="15" fill="#555" text-anchor="middle">This is proudly presented to</text>
+  <text x="400" y="250" font-family="sans-serif" font-size="30" font-weight="bold" fill="#111" text-anchor="middle">Aarav Sharma</text>
+  <text x="400" y="300" font-family="sans-serif" font-size="15" fill="#555" text-anchor="middle">for successfully completing the specialized industry course on</text>
+  <text x="400" y="340" font-family="sans-serif" font-size="22" font-weight="bold" fill="#007cc3" text-anchor="middle">Full Stack Cloud &amp; Java Development</text>
+  <text x="400" y="380" font-family="sans-serif" font-size="14" fill="#777" text-anchor="middle">Issued on: October 2024 · Verification Code: INFY-SB-2024-8839</text>
+  <circle cx="160" cy="460" r="32" fill="#007cc3" opacity="0.1"/>
+  <text x="160" y="466" font-family="sans-serif" font-size="12" font-weight="bold" fill="#007cc3" text-anchor="middle">VERIFIED</text>
+  <line x1="560" y1="465" x2="680" y2="465" stroke="#333" stroke-width="1.5"/>
+  <text x="620" y="485" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">Authorized Signatory</text>
+</svg>
+`)}`,
+      shared: true,
+    },
   ],
   contributions: {
     github: null,         // null = not connected; string = username when connected

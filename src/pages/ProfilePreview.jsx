@@ -18,6 +18,7 @@ import CoverBand from '../components/profile/CoverBand.jsx'
 import SectionCard from '../components/profile/SectionCard.jsx'
 import Pill from '../components/profile/Pill.jsx'
 import KVRow from '../components/profile/KVRow.jsx'
+import Modal from '../components/profile/Modal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 export default function ProfilePreview() {
@@ -30,6 +31,7 @@ export default function ProfilePreview() {
   const avatar = location.state?.avatar ?? profile?.avatar ?? null
 
   const [copied, setCopied] = useState(false)
+  const [viewingPhoto, setViewingPhoto] = useState(null)
 
   if (!profile) {
     return (
@@ -353,12 +355,53 @@ export default function ProfilePreview() {
                     </div>
                   ))}
                   {publicSelfCerts.map(sc => (
-                    <div key={sc.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[14px]">📜</span>
-                        <span className="text-[13px] text-ink-900">{sc.title}</span>
+                    <div key={sc.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px]">📜</span>
+                          <span className="text-[13px] font-bold text-ink-900">{sc.title}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11.5px]">
+                          {sc.link && (
+                            <a
+                              href={sc.link.startsWith('http') ? sc.link : `https://${sc.link}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline whitespace-nowrap font-medium"
+                            >
+                              Verify ↗
+                            </a>
+                          )}
+                          {(sc.photo || sc.proofUrl) && (
+                            <button
+                              type="button"
+                              onClick={() => setViewingPhoto({ title: sc.title, url: sc.photo || sc.proofUrl })}
+                              className="text-signal hover:underline whitespace-nowrap font-medium cursor-pointer inline-flex items-center gap-0.5"
+                            >
+                              <span>View certificate ↗</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-[11.5px] text-graphite-dim">{sc.org}</span>
+                      {(sc.org || sc.issueDate) && (
+                        <p className="text-[12px] text-graphite-dim mt-0.5 pl-6 leading-relaxed">
+                          {[sc.org, sc.issueDate].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                      {(sc.photo || sc.proofUrl) && (
+                        <button
+                          type="button"
+                          onClick={() => setViewingPhoto({ title: sc.title, url: sc.photo || sc.proofUrl })}
+                          className="mt-2 ml-6 block rounded-[2px] border border-paper-line overflow-hidden w-20 h-14 bg-paper hover:opacity-90 cursor-pointer"
+                          title="Click to view certificate photo"
+                        >
+                          <img
+                            src={sc.photo || sc.proofUrl}
+                            alt={sc.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -421,6 +464,36 @@ export default function ProfilePreview() {
           </>
         )}
       </main>
+
+      {/* Certificate Photo Viewer Modal for public preview */}
+      {viewingPhoto && (
+        <Modal
+          isOpen={!!viewingPhoto}
+          title={viewingPhoto.title || 'Certificate document'}
+          subtitle="Certificate image or credential scan."
+          onClose={() => setViewingPhoto(null)}
+          maxWidth="max-w-2xl"
+        >
+          <div className="p-4 sm:p-6 flex flex-col items-center">
+            <div className="w-full bg-paper border border-paper-line rounded-[2px] p-2 flex items-center justify-center max-h-[70vh] overflow-hidden">
+              <img
+                src={viewingPhoto.url}
+                alt={viewingPhoto.title}
+                className="max-w-full max-h-[66vh] object-contain rounded-[2px]"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-end w-full pt-3 border-t border-paper-line">
+              <button
+                type="button"
+                onClick={() => setViewingPhoto(null)}
+                className="px-5 py-1.5 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

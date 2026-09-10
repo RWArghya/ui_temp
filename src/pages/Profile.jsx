@@ -36,6 +36,8 @@ import EditPillsModal from '../components/profile/EditPillsModal.jsx'
 import EditEducationModal from '../components/profile/EditEducationModal.jsx'
 import EditProjectModal from '../components/profile/EditProjectModal.jsx'
 import EditItemModal from '../components/profile/EditItemModal.jsx'
+import EditCertModal from '../components/profile/EditCertModal.jsx'
+import Modal from '../components/profile/Modal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -110,6 +112,12 @@ export default function Profile() {
   const [editProjectModal, setEditProjectModal] = useState(null)
   // editItemModal: { type: 'publication' | 'achievement', mode: 'add' | 'edit', item } | null
   const [editItemModal, setEditItemModal] = useState(null)
+  // editCertModal: { mode: 'add' } | { mode: 'edit', item } | null
+  const [editCertModal, setEditCertModal] = useState(null)
+  // showAllCerts: boolean — toggle all certificates view inside nested profile block
+  const [showAllCerts, setShowAllCerts] = useState(false)
+  // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
+  const [viewingPhoto, setViewingPhoto] = useState(null)
 
   // ---- inline edit / add / delete state ----
   // editingItem: { field: string, id: string } | null  — which row is being edited
@@ -996,9 +1004,217 @@ export default function Profile() {
   const CERT_PREVIEW_LIMIT = 2
   const displayedCerts = earnedCerts.slice(0, CERT_PREVIEW_LIMIT)
 
-  const CertificatesTab = (
+  // Reusable Self-added certificates SectionCard for both preview and expanded views
+  const SelfAddedCertsSection = (
+    <SectionCard
+      title="Other certificates added by you"
+      action={
+        <button
+          type="button"
+          id="btn-add-cert"
+          onClick={() => setEditCertModal({ mode: 'add', item: null })}
+          className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+          title="Add certificate"
+          aria-label="Add certificate"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      }
+    >
+      <p className="text-[13px] text-graphite-dim mt-1 mb-4">
+        Unverified — credentials earned elsewhere. Turn on "Share on public profile" to include on your public link.
+      </p>
+      {(profile.selfCerts ?? []).length > 0 ? (
+        <div className="mt-4 divide-y divide-paper-line">
+          {(profile.selfCerts ?? []).map(c => (
+            <div key={c.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+              <div className="flex items-start gap-3 min-w-0">
+                <span className="text-[20px] flex-none mt-0.5">📜</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                      {c.title}
+                    </h4>
+                    {c.shared ? (
+                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
+                        ✓ Shared on public profile
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
+                        Private
+                      </span>
+                    )}
+                  </div>
+
+                  {(c.org || c.issueDate || c.date) && (
+                    <p className="text-[12.5px] text-graphite-dim mt-0.5">
+                      {[c.org, c.issueDate || c.date].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-3 mt-1.5 text-[12px] flex-wrap">
+                    {c.link && (
+                      <a
+                        href={c.link.startsWith('http') ? c.link : `https://${c.link}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                      >
+                        <span>Credential link ↗</span>
+                      </a>
+                    )}
+                    {(c.photo || c.proofUrl) && (
+                      <button
+                        type="button"
+                        onClick={() => setViewingPhoto({ title: c.title, url: c.photo || c.proofUrl })}
+                        className="text-signal hover:underline inline-flex items-center gap-1 font-medium cursor-pointer"
+                      >
+                        <span>🖼️ View certificate image</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {(c.photo || c.proofUrl) && (
+                    <button
+                      type="button"
+                      onClick={() => setViewingPhoto({ title: c.title, url: c.photo || c.proofUrl })}
+                      className="mt-2 block rounded-[2px] border border-paper-line overflow-hidden w-20 h-14 bg-paper hover:opacity-90 cursor-pointer"
+                      title="Click to view certificate photo"
+                    >
+                      <img
+                        src={c.photo || c.proofUrl}
+                        alt={c.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-none">
+                <button
+                  type="button"
+                  onClick={() => setEditCertModal({ mode: 'edit', item: c })}
+                  className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+                  title={`Edit ${c.title}`}
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-8 text-center">
+          <p className="text-[14px] text-graphite-dim">No certificates added yet.</p>
+          <p className="text-[12px] text-graphite-dim mt-1.5">Add external licenses or certificates you have earned.</p>
+          <button
+            type="button"
+            onClick={() => setEditCertModal({ mode: 'add', item: null })}
+            className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
+          >
+            + Add Certificate
+          </button>
+        </div>
+      )}
+    </SectionCard>
+  )
+
+  const CertificatesTab = showAllCerts ? (
     <div className="space-y-4">
-      {/* H2S Verified */}
+      {/* Back button header inside nested block */}
+      <div className="flex items-center justify-between pb-1">
+        <button
+          type="button"
+          id="btn-back-to-certs-summary"
+          onClick={() => setShowAllCerts(false)}
+          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-signal hover:underline cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back to certificates summary</span>
+        </button>
+        <span className="text-[12px] font-semibold text-graphite-dim">
+          All Certificates ({totalEarned + totalPending})
+        </span>
+      </div>
+
+      {/* Full H2S Verified Credentials list */}
+      <SectionCard
+        title={
+          <span className="flex items-center gap-2 flex-wrap">
+            H2S Verified Credentials
+            <span className="font-normal text-[13px] text-ink-900">({totalEarned})</span>
+          </span>
+        }
+      >
+        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
+          Issued automatically the moment an initiative closes — read-only, verifiable credentials.
+        </p>
+        {earnedCerts.length > 0 ? (
+          earnedCerts.map(o => (
+            <AchRow
+              key={o.id}
+              icon=""
+              title={o.name}
+              subtitle={`${o.org} · Verifiable ID ${o.verifiableId}`}
+              verified
+              verifiedId={o.verifiableId}
+              onView={() => navigate(`/profile/certificate/${o.id}`, {
+                state: {
+                  cert: o,
+                  userName: profile.name,
+                  returnTo: { path: '/profile', state: { tab: 'certificates' } },
+                },
+              })}
+            />
+          ))
+        ) : (
+          <p className="text-[13px] text-graphite-dim py-4">
+            Nothing yet — certificates appear automatically when an initiative closes.
+          </p>
+        )}
+
+        {/* Pending certs — shown under the same section, dimmed */}
+        {pendingCerts.length > 0 && (
+          <div className="pt-4 mt-2 border-t border-paper-line">
+            <p className="text-[11px] font-mono font-semibold tracking-widest uppercase text-graphite-dim mb-1">
+              Pending ({pendingCerts.length})
+            </p>
+            <p className="text-[12px] text-graphite-dim mb-2">
+              These initiatives closed or are in review — your certificate will appear here once issued.
+            </p>
+            {pendingCerts.map(c => (
+              <div key={c.id} className="flex items-center gap-3 py-3 border-b border-paper-line last:border-0 opacity-60">
+                <span className="text-[20px]">⏳</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13.5px] font-semibold text-ink-900">{c.name}</span>
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#fff8e7] text-[#b08000] rounded-[2px] uppercase">
+                      ⏳ Pending
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-graphite-dim mt-0.5">{c.org}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Self-added certificates */}
+      {SelfAddedCertsSection}
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {/* H2S Verified (preview of 2) */}
       <SectionCard
         title={
           <span className="flex items-center gap-2 flex-wrap">
@@ -1037,12 +1253,12 @@ export default function Profile() {
           </p>
         )}
 
-        {/* LinkedIn-style full-width "Show all certificates" button */}
+        {/* LinkedIn-style full-width "Show all certificates" button opening in same nested block */}
         {(totalEarned > 0 || totalPending > 0) && (
           <button
             id="btn-show-all-certs"
             type="button"
-            onClick={() => navigate('/profile/certificates', { state: { profile, initiatives: inits, avatar } })}
+            onClick={() => setShowAllCerts(true)}
             className={[
               'w-full mt-4 py-3 text-[13.5px] font-semibold text-graphite-dim',
               'border-t border-paper-line hover:bg-paper transition-colors cursor-pointer',
@@ -1059,63 +1275,7 @@ export default function Profile() {
       </SectionCard>
 
       {/* Self-added */}
-      <SectionCard title="Other certificates added by you">
-        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Unverified — earned elsewhere. Add a link or upload an image as proof. Turn on "shared" to include on your public link.
-        </p>
-        {(profile.selfCerts ?? []).length > 0 ? (
-          <div>
-            {(profile.selfCerts ?? []).map(c => (
-              editingItem?.field === 'selfCerts' && editingItem?.id === c.id ? (
-                <div key={c.id} className="py-3 border-b border-paper-line">
-                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{c.title}</strong></p>
-                  <InlineAddForm
-                    fields={[
-                      { id: 'title',    placeholder: 'Certificate name',              required: true  },
-                      { id: 'org',      placeholder: 'Issued by (optional)',           required: false },
-                      { id: 'link',     placeholder: 'Certificate link (optional)',    required: false, type: 'url',  newRow: true },
-                      { id: 'proofUrl', placeholder: 'Add certificate image',          required: false, type: 'file' },
-                    ]}
-                    addLabel="Save Certificate"
-                    submitLabel="Save Changes"
-                    initialValues={c}
-                    onAdd={values => saveEdit('selfCerts', c.id, values)}
-                    onCancel={cancelEdit}
-                  />
-                </div>
-              ) : (
-                <AchRow
-                  key={c.id}
-                  icon="🎓"
-                  title={c.title}
-                  subtitle={[c.org, c.link].filter(Boolean).join(' · ')}
-                  shared={c.shared}
-                  onShare={() => toggleShare('selfCerts', c.id)}
-                  onEdit={() => startEdit('selfCerts', c.id)}
-                  onRemove={() => requestDelete('selfCerts', c.id, c.title)}
-                />
-              )
-            ))}
-          </div>
-        ) : (
-          <p className="text-[13px] text-graphite-dim py-4">Nothing added yet.</p>
-        )}
-        <InlineAddForm
-          fields={[
-            { id: 'title',    placeholder: 'Certificate name',             required: true  },
-            { id: 'org',      placeholder: 'Issued by (optional)',          required: false },
-            { id: 'link',     placeholder: 'Certificate link (optional)',   required: false, type: 'url',  newRow: true },
-            { id: 'proofUrl', placeholder: 'Add certificate image',         required: false, type: 'file' },
-          ]}
-          addLabel="+ Add Certificate"
-          collapsible
-          onAdd={({ title, org, link, proofUrl }) => {
-            if (!title.trim()) return
-            addItem('selfCerts', { id: uid('sc'), title: title.trim(), org: org.trim(), link: link.trim(), proofUrl: proofUrl || null, shared: false })
-          }}
-          onCancel={() => {}}
-        />
-      </SectionCard>
+      {SelfAddedCertsSection}
     </div>
   )
 
@@ -1344,7 +1504,7 @@ export default function Profile() {
         </div>
 
         {/* ── Tab bar ── */}
-        <TabBar tabs={TABS} active={tab} onSelect={setTab} />
+        <TabBar tabs={TABS} active={tab} onSelect={(newTab) => { setTab(newTab); setShowAllCerts(false); }} />
 
         {/* ── Tab panel ── */}
         <div
@@ -1487,6 +1647,67 @@ export default function Profile() {
           }}
           onClose={() => setEditItemModal(null)}
         />
+      )}
+
+      {/* Edit / Add Self-Added Certificate Modal */}
+      {editCertModal && (
+        <EditCertModal
+          isOpen={!!editCertModal}
+          initialData={editCertModal.mode === 'edit' ? editCertModal.item : null}
+          onSave={(savedItem) => {
+            if (editCertModal.mode === 'add') {
+              addItem('selfCerts', { ...savedItem, id: uid('sc') })
+            } else {
+              setProfile(p => ({
+                ...p,
+                selfCerts: (p.selfCerts || []).map(x => x.id === savedItem.id ? savedItem : x),
+              }))
+            }
+            setEditCertModal(null)
+          }}
+          onDelete={(idToDelete, label) => {
+            setEditCertModal(null)
+            requestDelete('selfCerts', idToDelete, label || 'Certificate')
+          }}
+          onClose={() => setEditCertModal(null)}
+        />
+      )}
+
+      {/* Certificate Photo Viewer Modal */}
+      {viewingPhoto && (
+        <Modal
+          isOpen={!!viewingPhoto}
+          title={viewingPhoto.title || 'Certificate document'}
+          subtitle="Uploaded certificate image or credential scan."
+          onClose={() => setViewingPhoto(null)}
+          maxWidth="max-w-2xl"
+        >
+          <div className="p-4 sm:p-6 flex flex-col items-center">
+            <div className="w-full bg-paper border border-paper-line rounded-[2px] p-2 flex items-center justify-center max-h-[70vh] overflow-hidden">
+              <img
+                src={viewingPhoto.url}
+                alt={viewingPhoto.title}
+                className="max-w-full max-h-[66vh] object-contain rounded-[2px]"
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between w-full pt-3 border-t border-paper-line">
+              <a
+                href={viewingPhoto.url}
+                download={`${(viewingPhoto.title || 'certificate').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.jpg`}
+                className="px-3.5 py-1.5 text-[12px] font-semibold text-ink-900 border border-paper-line bg-white hover:bg-paper rounded-[2px] cursor-pointer transition-colors"
+              >
+                Download certificate
+              </a>
+              <button
+                type="button"
+                onClick={() => setViewingPhoto(null)}
+                className="px-5 py-1.5 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )
