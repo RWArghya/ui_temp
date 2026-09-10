@@ -37,6 +37,7 @@ import EditEducationModal from '../components/profile/EditEducationModal.jsx'
 import EditProjectModal from '../components/profile/EditProjectModal.jsx'
 import EditItemModal from '../components/profile/EditItemModal.jsx'
 import EditCertModal from '../components/profile/EditCertModal.jsx'
+import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
@@ -62,6 +63,60 @@ function shareSlug(name, email) {
   return `${slug}-${Math.abs(hash).toString(36).slice(0, 5)}`
 }
 
+function getPlatformIcon(platform = '') {
+  const p = platform.toLowerCase()
+  if (p.includes('github')) {
+    return (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+      </svg>
+    )
+  }
+  if (p.includes('linkedin')) {
+    return (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.67 1.67 0 1 0 0-3.34 1.67 1.67 0 0 0 0 3.34m1.39 9.74V9.93H5.07v8.57h2.78z" />
+      </svg>
+    )
+  }
+  if (p.includes('leetcode')) {
+    return (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 4.818 3.821 5.834 5.834 0 0 0 3.232-.371l6.096-3.525a1.395 1.395 0 0 0 .445-1.916 1.4 1.4 0 0 0-1.928-.439l-6.09 3.522a3.046 3.046 0 0 1-2.533-.186 3.078 3.078 0 0 1-1.636-2.094 3.013 3.013 0 0 1-.03-1.283 3.09 3.09 0 0 1 .686-1.517l3.853-4.126 5.405-5.788A1.373 1.373 0 0 0 14.857.438 1.374 1.374 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H20.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z" />
+      </svg>
+    )
+  }
+  if (p.includes('stackoverflow') || p.includes('stack overflow')) {
+    return (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.986 21.865v-6.404h2.134V24H1.844v-8.539h2.13v6.404h15.012zM6.111 19.731H16.85v-2.137H6.111v2.137zm.259-4.852l10.48 2.189.451-2.07-10.478-2.187-.453 2.068zm1.359-5.056l9.705 4.53.903-1.95-9.706-4.53-.902 1.95zm2.715-4.785l8.217 6.855 1.359-1.62-8.216-6.853-1.36 1.618zM14.863 0l-1.698 1.29 6.046 8.801 1.698-1.29L14.863 0z" />
+      </svg>
+    )
+  }
+  if (p.includes('portfolio') || p.includes('website') || p.includes('web') || p.includes('vercel') || p.includes('pages')) {
+    return (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
+    )
+  }
+  if (p.includes('twitter') || p.includes(' x')) {
+    return (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    )
+  }
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  )
+}
+
 // ---- tab config ----
 const TABS = [
   { key: 'overview',      label: 'Overview'      },
@@ -69,7 +124,7 @@ const TABS = [
   { key: 'education',     label: 'Education'     },
   { key: 'projects',      label: 'Projects'      },
   { key: 'certificates',  label: 'Certificates'  },
-  { key: 'contributions', label: 'Contributions' },
+  { key: 'links',         label: 'Links'         },
   { key: 'rewards',       label: 'Rewards'       },
 ]
 
@@ -114,6 +169,8 @@ export default function Profile() {
   const [editItemModal, setEditItemModal] = useState(null)
   // editCertModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editCertModal, setEditCertModal] = useState(null)
+  // editLinkModal: { mode: 'add' } | { mode: 'edit', item } | null
+  const [editLinkModal, setEditLinkModal] = useState(null)
   // showAllCerts: boolean — toggle all certificates view inside nested profile block
   const [showAllCerts, setShowAllCerts] = useState(false)
   // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
@@ -1279,45 +1336,99 @@ export default function Profile() {
     </div>
   )
 
-  // ---- CONTRIBUTIONS ----
-  const ContributionsTab = (
-    <SectionCard title="Contributions">
-      <div className="mt-4 space-y-3">
-        {[
-          ['GitHub',       '🐙', 'Connect to showcase your repositories and contribution activity.',       'github'],
-          ['StackOverflow', '💬', 'Connect to showcase your reputation and Q&A activity.',                'stackoverflow'],
-        ].map(([name, ico, desc, key]) => {
-          const connected = !!(profile.contributions?.[key])
-          return (
-            <div
-              key={name}
-              className="flex items-center justify-between gap-4 px-3.5 py-3.5 border border-paper-line rounded-[2px]"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-[20px]">{ico}</span>
-                <div>
-                  <strong className="text-[13px] text-ink-900">{name}</strong>
-                  {connected
-                    ? <p className="text-[11px] text-[#0f9d58] mt-0.5">Connected as @{profile.contributions[key]}</p>
-                    : <p className="text-[11px] text-graphite-dim mt-0.5">{desc}</p>
-                  }
+  // ---- LINKS & CONNECTED PROFILES ----
+  const LinksTab = (
+    <SectionCard
+      title="Connected Profiles"
+      action={
+        <button
+          type="button"
+          id="btn-add-link"
+          onClick={() => setEditLinkModal({ mode: 'add', item: null })}
+          className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+          title="Add connected profile"
+          aria-label="Add connected profile"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      }
+    >
+      <p className="text-[13px] text-graphite-dim mt-1 mb-4">
+        Connect your developer accounts, coding profiles, and online presence. Toggle "Share on public profile" to control public visibility.
+      </p>
+
+      {(profile.connectedProfiles ?? []).length > 0 ? (
+        <div className="mt-4 divide-y divide-paper-line">
+          {(profile.connectedProfiles ?? []).map(item => (
+            <div key={item.id} className="py-3.5 first:pt-1 last:pb-1 flex items-center justify-between gap-3 group">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-9 h-9 rounded-[2px] bg-paper border border-paper-line flex items-center justify-center text-ink-900 flex-none group-hover:border-signal/40 transition-colors">
+                  {getPlatformIcon(item.platform)}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                      {item.platform}
+                    </h4>
+                    {item.shared ? (
+                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
+                        ✓ Shared
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
+                        Private
+                      </span>
+                    )}
+                  </div>
+                  <a
+                    href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[12px] text-signal hover:underline inline-flex items-center gap-1 mt-0.5 max-w-[260px] sm:max-w-md truncate"
+                  >
+                    <span className="truncate">{item.url?.replace(/^https?:\/\//i, '')}</span>
+                    <svg className="w-3 h-3 flex-none opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </a>
                 </div>
               </div>
-              {connected ? (
-                <Pill variant="ok">✓ Connected</Pill>
-              ) : (
+
+              <div className="flex items-center gap-1.5 flex-none">
                 <button
                   type="button"
-                  onClick={() => alert(`Connecting ${name} will be available once OAuth is wired.`)}
-                  className={GHOST_BTN}
+                  onClick={() => setEditLinkModal({ mode: 'edit', item })}
+                  className="p-1.5 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+                  title={`Edit ${item.platform}`}
                 >
-                  Connect
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    <path d="m15 5 4 4" />
+                  </svg>
                 </button>
-              )}
+              </div>
             </div>
-          )
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-8 text-center border border-dashed border-paper-line rounded-[2px] mt-3">
+          <div className="text-[28px] mb-2">🔗</div>
+          <p className="text-[14px] text-graphite-dim">No connected profiles added yet.</p>
+          <p className="text-[12px] text-graphite-dim mt-1.5">Add your GitHub, LeetCode, LinkedIn, or portfolio.</p>
+          <button
+            type="button"
+            onClick={() => setEditLinkModal({ mode: 'add', item: null })}
+            className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
+          >
+            + Add Connected Profile
+          </button>
+        </div>
+      )}
     </SectionCard>
   )
 
@@ -1375,7 +1486,8 @@ export default function Profile() {
     education:     EducationTab,
     projects:      ProjectsTab,
     certificates:  CertificatesTab,
-    contributions: ContributionsTab,
+    links:         LinksTab,
+    contributions: LinksTab,
     rewards:       RewardsTab,
   }
 
@@ -1670,6 +1782,30 @@ export default function Profile() {
             requestDelete('selfCerts', idToDelete, label || 'Certificate')
           }}
           onClose={() => setEditCertModal(null)}
+        />
+      )}
+
+      {/* Edit / Add Connected Profile Modal */}
+      {editLinkModal && (
+        <EditLinkModal
+          isOpen={!!editLinkModal}
+          initialData={editLinkModal.mode === 'edit' ? editLinkModal.item : null}
+          onSave={(savedItem) => {
+            if (editLinkModal.mode === 'add') {
+              addItem('connectedProfiles', { ...savedItem, id: uid('link') })
+            } else {
+              setProfile(p => ({
+                ...p,
+                connectedProfiles: (p.connectedProfiles || []).map(x => x.id === savedItem.id ? savedItem : x),
+              }))
+            }
+            setEditLinkModal(null)
+          }}
+          onDelete={(idToDelete, label) => {
+            setEditLinkModal(null)
+            requestDelete('connectedProfiles', idToDelete, label || 'Connected Profile')
+          }}
+          onClose={() => setEditLinkModal(null)}
         />
       )}
 

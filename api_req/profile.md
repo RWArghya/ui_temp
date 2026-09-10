@@ -19,8 +19,8 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
 | Navigate to Role View | "Go to view →" button on each active role | Client-side route (`/dashboard?view=<roleKey>`) | `—` | `—` | `—` | Resolved — client-side routing within Dashboard shell |
 | All Certificates Page | "Show all certificates" button in Certs tab | `/api/initiatives?userId=me` (same call, full data passed via router state) | `GET` | Same as above | Same as above, but `pending[]` must include closed initiatives where `cert_issued: false` | `src/api/mock/initiatives.js` |
 | Single Certificate View | Direct link or page reload on `/profile/certificate/:certId` | `/api/certificates/:certId` | `GET` | Path param: `certId` | `{ certId: string, title: string, org: string, date: string, type: string, recipientName: string, issuerLogo?: string, signatureUrl?: string }` | Client router state (`location.state.cert`) with API fallback |
-| Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Self-Certs | `/api/profile/me/:section` or `/api/profile/me` | `POST` / `PATCH` | `{ title, org?, link?, proofUrl? }` | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
-| Edit Section Item | "Edit" → "Save Changes" on any existing item | `/api/profile/me/:section/:itemId` or `/api/profile/me` | `PUT` / `PATCH` | `{ title, org?, link?, proofUrl? }` | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
+| Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Self-Certs, Connected Profiles | `/api/profile/me/:section` or `/api/profile/me` | `POST` / `PATCH` | Detailed Section Payload (see CRUD specs below) | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
+| Edit Section Item | "Edit" → "Save Changes" on any existing item | `/api/profile/me/:section/:itemId` or `/api/profile/me` | `PUT` / `PATCH` | Detailed Section Payload | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
 | Delete Section Item | "Remove" → Confirmation modal "Remove" | `/api/profile/me/:section/:itemId` or `/api/profile/me` | `DELETE` / `PATCH` | `itemId` | `{ success: true, removedId: string }` | `src/api/mock/profile.js` |
 | Toggle Share State | "Share" / "✓ Shared" toggle on self-added items | `/api/profile/me/:section/:itemId/share` | `PATCH` | `{ shared: boolean }` | `{ success: true, shared: boolean }` | `src/api/mock/profile.js` |
 | Upload Certificate Proof | "Add certificate image" file picker | `/api/profile/me/certificates/proof` | `POST` | `multipart/form-data` | `{ proofUrl: string }` | Data URL FileReader |
@@ -38,8 +38,9 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
   "org": "IIT Delhi",
   "region": "India — North",
   "avatar": "data:image/jpeg;base64,...",
+  "cover": "data:image/jpeg;base64,...",
   "isPublic": false,
-  "links": "github.com/aarav-sharma",
+  "links": "https://aarav-sharma.vercel.app",
   "resume": null,
   "skills": ["Python", "React", "ML / DL", "Node.js"],
   "interests": ["AI / GenAI", "Agentic AI", "Cloud"],
@@ -49,21 +50,102 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
     { "key": "learning", "label": "📚 Learner", "primary": true }
   ],
   "landingView": "learning",
-  "achievements": [
-    { "id": "ach-1", "title": "Runner-up — CityHacks 2025", "shared": true },
-    { "id": "ach-2", "title": "Best ML Paper — IIT Delhi Tech Fest 2025", "shared": false }
-  ],
+  "about": "Passionate developer and student researcher building AI systems and real-time distributed platforms.",
   "education": [
-    { "id": "edu-1", "title": "B.Tech, Computer Science & Engineering", "org": "IIT Delhi" }
+    {
+      "id": "edu-1",
+      "degree": "B.Tech",
+      "specialization": "Computer Science & Engineering",
+      "institution": "IIT Delhi",
+      "boardOrUniversity": "IIT Delhi",
+      "location": "New Delhi, India",
+      "startYear": "2022",
+      "endYear": "2026",
+      "isOngoing": true,
+      "title": "B.Tech, Computer Science & Engineering",
+      "org": "IIT Delhi"
+    }
   ],
   "projects": [
-    { "id": "proj-1", "title": "AgentChat — LLM-powered support agent", "link": "github.com/aarav-sharma/agentchat", "shared": true }
+    {
+      "id": "proj-1",
+      "title": "AgentChat — LLM-Powered Multi-Agent Support Orchestrator",
+      "techStack": ["Python", "FastAPI", "React", "PostgreSQL", "Docker"],
+      "description": "Multi-agent customer routing engine using localized LLMs with automated fallback and vector search for knowledge retrieval.",
+      "sourceCodeUrl": "https://github.com/aarav-sharma/agentchat",
+      "demoUrl": "https://agentchat-demo.h2s.io",
+      "docsUrl": "https://docs.agentchat.dev",
+      "shared": true
+    }
   ],
   "publications": [
-    { "id": "pub-1", "title": "Grounded RAG for Medical Q&A (EMNLP 2025 Workshop)", "link": "arxiv.org/abs/2025.12345", "shared": true }
+    {
+      "id": "pub-1",
+      "title": "Grounded RAG for Medical Q&A (EMNLP 2025 Workshop)",
+      "description": "Explores verified citation synthesis across multi-hop biomedical research queries with 94.2% factual consistency.",
+      "link": "https://arxiv.org/abs/2025.12345",
+      "shared": true
+    }
+  ],
+  "achievements": [
+    {
+      "id": "ach-1",
+      "title": "Runner-up — CityHacks 2025",
+      "description": "Awarded 2nd place among 120+ teams for building an AI-powered urban traffic rerouting simulator.",
+      "shared": true
+    },
+    {
+      "id": "ach-2",
+      "title": "Best ML Paper — IIT Delhi Tech Fest 2025",
+      "description": "Selected as the outstanding machine learning submission for work on sparse attention mechanisms.",
+      "shared": false
+    }
   ],
   "selfCerts": [
-    { "id": "sc-1", "title": "AWS Cloud Practitioner", "org": "Amazon Web Services", "link": "https://aws.amazon.com/verify", "proofUrl": "data:image/...", "shared": true }
+    {
+      "id": "sc-1",
+      "title": "AWS Certified Cloud Practitioner",
+      "org": "Amazon Web Services",
+      "date": "2024-08",
+      "link": "https://aws.amazon.com/verify",
+      "proofUrl": null,
+      "shared": true
+    },
+    {
+      "id": "sc-2",
+      "title": "Full Stack Cloud & Java Development",
+      "org": "Infosys Springboard",
+      "date": "2024-10",
+      "link": "",
+      "proofUrl": "data:image/svg+xml;utf8,...",
+      "shared": true
+    }
+  ],
+  "connectedProfiles": [
+    {
+      "id": "link-1",
+      "platform": "GitHub",
+      "url": "https://github.com/aarav-sharma",
+      "shared": true
+    },
+    {
+      "id": "link-2",
+      "platform": "LeetCode",
+      "url": "https://leetcode.com/u/aarav_sharma",
+      "shared": true
+    },
+    {
+      "id": "link-3",
+      "platform": "LinkedIn",
+      "url": "https://linkedin.com/in/aarav-sharma-cse",
+      "shared": true
+    },
+    {
+      "id": "link-4",
+      "platform": "Developer Portfolio",
+      "url": "https://aarav-sharma.vercel.app",
+      "shared": true
+    }
   ],
   "contributions": {
     "github": "aarav-sharma",
@@ -85,27 +167,28 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
 
 ## Section Items CRUD Specification
 
-Sections supporting manual entries: `education`, `projects`, `publications`, `achievements`, and `selfCerts` (external certificates).
+Sections supporting manual entries: `education`, `projects`, `publications`, `achievements`, `selfCerts` (external certificates), and `connectedProfiles` (Links).
 
 ### 1. Add Entry
-- **Trigger**: Click `+ Add <Section>` button (expands form), enter fields, click Add / Submit.
+- **Trigger**: Click `+ Add` button (opens section modal), enter fields, click "Save changes".
 - **Payload**:
-  - `education`: `{ title: string (required), org: string (optional) }`
-  - `projects`: `{ title: string (required), link: string (optional) }`
-  - `publications`: `{ title: string (required), link: string (optional) }`
-  - `achievements`: `{ title: string (required) }`
-  - `selfCerts`: `{ title: string (required), org: string (optional), link: string (optional), proofUrl: string (optional) }`
-- **Behavior**: Generates client or server ID, appends to corresponding array, persists via `PATCH /api/profile/me` or collection endpoint.
+  - `education`: `{ degree: string (required), specialization?: string, institution?: string, boardOrUniversity?: string, location?: string, startYear?: string, endYear?: string, isOngoing?: boolean }`
+  - `projects`: `{ title: string (required), techStack?: string[], description?: string, sourceCodeUrl?: string, demoUrl?: string, docsUrl?: string, shared: boolean }`
+  - `publications`: `{ title: string (required), description?: string, link?: string, shared: boolean }`
+  - `achievements`: `{ title: string (required), description?: string, shared: boolean }`
+  - `selfCerts`: `{ title: string (required), org?: string, date?: string, link?: string, proofUrl?: string (dataUrl/photo), shared: boolean }`
+  - `connectedProfiles`: `{ platform: string (required), url: string (required), shared: boolean }`
+- **Behavior**: Generates unique client or server ID, appends to corresponding array, persists via `PATCH /api/profile/me` or collection endpoint.
 
 ### 2. Edit Entry
 - **Trigger**: Click `Edit` button on any row item.
-- **UI Behavior**: Replaces the row in-place with an inline form pre-filled with the item's current values. Displays `Save Changes` and `Cancel` buttons.
+- **UI Behavior**: Opens modal pre-filled with the item's current values. Displays `Save changes`, `Cancel`, and `Delete` buttons.
 - **Save Payload**: Updated fields matching the section schema above.
-- **Cancel Behavior**: Discards in-progress edits and restores the read-only row with original data.
+- **Cancel Behavior**: Discards in-progress edits and restores read-only row with original data.
 
 ### 3. Delete Entry
-- **Trigger**: Click `Remove` button on any row item.
-- **UI Behavior**: Prompts user with a confirmation modal: *"Remove this entry? '<Item Title>' will be permanently removed from your profile. This cannot be undone."*
+- **Trigger**: Click `Remove` / `Delete` button (either in modal footer or direct row action).
+- **UI Behavior**: Prompts user with a confirmation modal (`ConfirmDialog`): *"Remove this entry? '<Item Title>' will be permanently removed from your profile. This cannot be undone."*
 - **Confirm**: Calls delete mutation, removes from local list, persists change.
 - **Cancel**: Dismisses modal with no changes.
 
@@ -126,5 +209,6 @@ Sections supporting manual entries: `education`, `projects`, `publications`, `ac
 | Publications | Hidden | Only items where `shared: true` |
 | External Certifications | Hidden | Only items where `shared: true` |
 | Achievements | Hidden | Only items where `shared: true` |
+| Connected Profiles / Links | Hidden | Only items where `shared: true` |
 | Education | Hidden | Visible |
 | XP, Badges, Credits | Hidden | Visible |

@@ -19,8 +19,8 @@ Status legend: **Mocked** (built against fake data, ready for a real endpoint) �
 | Single Certificate View | Direct link or reload `/profile/certificate/:certId` | `/api/certificates/:certId` | GET | `certId` | Certificate Object | Client state with API fallback / `api_req/profile.md` |
 | Public Visitor Profile | Visitor view (`/profile/preview`) | `/api/profile/public/:slug` | GET | `slug` | Filtered public Profile Object | Stubbed in `ProfilePreview.jsx` |
 | Export Resume PDF | "Print / Save PDF" | `/api/profile/resume/pdf` | POST | `{ profileId }` | Binary PDF / URL | Client-side `window.print()` / API Req in `api_req/profile.md` |
-| Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Certs | `/api/profile/me/:section` | POST / PATCH | `{ title, org?, link?, proofUrl? }` | `{ success: true, item }` | Mocked — `src/api/mock/profile.js` |
-| Edit Section Item | "Edit" → "Save Changes" on item | `/api/profile/me/:section/:id` | PUT / PATCH | `{ title, org?, link?, proofUrl? }` | `{ success: true, item }` | Mocked — `src/api/mock/profile.js` |
+| Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Certs, Connected Profiles | `/api/profile/me/:section` | POST / PATCH | Detailed payload per section (see `api_req/profile.md`) | `{ success: true, item }` | Mocked — `src/api/mock/profile.js` |
+| Edit Section Item | "Edit" → "Save Changes" on item | `/api/profile/me/:section/:id` | PUT / PATCH | Detailed payload per section | `{ success: true, item }` | Mocked — `src/api/mock/profile.js` |
 | Delete Section Item | "Remove" with modal confirmation | `/api/profile/me/:section/:id` | DELETE / PATCH | `id` | `{ success: true, removedId }` | Mocked — `src/api/mock/profile.js` |
 | Upload Certificate Proof | "Add certificate image" file picker | `/api/profile/me/certificates/proof` | POST | `multipart/form-data` | `{ proofUrl: string }` | Client FileReader / API Req in `api_req/profile.md` |
 

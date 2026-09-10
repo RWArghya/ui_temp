@@ -132,34 +132,52 @@ export default function Resume() {
                   <span>{profile.region}</span>
                 </>
               )}
-              {profile.links && (
-                <>
-                  <span className="text-gray-400">•</span>
-                  <span>
+              {profile.connectedProfiles && profile.connectedProfiles.length > 0 ? (
+                profile.connectedProfiles.slice(0, 3).map(p => (
+                  <span key={p.id || p.platform} className="inline-flex items-center gap-1">
+                    <span className="text-gray-400">•</span>
                     <a
-                      href={profile.links.startsWith('http') ? profile.links : `https://${profile.links}`}
+                      href={p.url?.startsWith('http') ? p.url : `https://${p.url}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-800 hover:underline"
                     >
-                      {profile.links}
+                      {p.platform}: {p.url?.replace(/^https?:\/\//i, '').replace(/\/$/, '')}
                     </a>
                   </span>
-                </>
-              )}
-              {profile.contributions?.github && (
+                ))
+              ) : (
                 <>
-                  <span className="text-gray-400">•</span>
-                  <span>
-                    <a
-                      href={`https://github.com/${profile.contributions.github}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-800 hover:underline"
-                    >
-                      github.com/{profile.contributions.github}
-                    </a>
-                  </span>
+                  {profile.links && (
+                    <>
+                      <span className="text-gray-400">•</span>
+                      <span>
+                        <a
+                          href={profile.links.startsWith('http') ? profile.links : `https://${profile.links}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-800 hover:underline"
+                        >
+                          {profile.links}
+                        </a>
+                      </span>
+                    </>
+                  )}
+                  {profile.contributions?.github && (
+                    <>
+                      <span className="text-gray-400">•</span>
+                      <span>
+                        <a
+                          href={`https://github.com/${profile.contributions.github}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-800 hover:underline"
+                        >
+                          github.com/{profile.contributions.github}
+                        </a>
+                      </span>
+                    </>
+                  )}
                 </>
               )}
             </div>

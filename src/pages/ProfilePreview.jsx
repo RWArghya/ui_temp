@@ -58,6 +58,7 @@ export default function ProfilePreview() {
   const publicAchievements = (profile.achievements || []).filter(a => a.shared)
   const publicSelfCerts = (profile.selfCerts || []).filter(c => c.shared)
   const publicPubs = (profile.publications || []).filter(p => p.shared)
+  const publicLinks = (profile.connectedProfiles || []).filter(l => l.shared !== false)
   const verifiedCerts = initiatives?.completed || []
 
   return (
@@ -440,24 +441,42 @@ export default function ProfilePreview() {
               </SectionCard>
             )}
 
-            {/* Contributions Links */}
-            {profile.links && (
-              <SectionCard title="Links & Profiles">
-                <div className="mt-3">
-                  <KVRow
-                    label="Online Profile"
-                    value={
-                      <a
-                        href={profile.links.startsWith('http') ? profile.links : `https://${profile.links}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-signal hover:underline"
-                      >
-                        {profile.links}
-                      </a>
-                    }
-                    last
-                  />
+            {/* Connected Profiles / Links */}
+            {(publicLinks.length > 0 || profile.links) && (
+              <SectionCard title="Connected Profiles">
+                <div className="mt-3 divide-y divide-paper-line">
+                  {publicLinks.length > 0 ? (
+                    publicLinks.map(item => (
+                      <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                        <span className="font-semibold text-[13px] text-ink-900">{item.platform}</span>
+                        <a
+                          href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[12.5px] text-signal hover:underline inline-flex items-center gap-1 truncate max-w-[240px] sm:max-w-xs"
+                        >
+                          <span className="truncate">{item.url?.replace(/^https?:\/\//i, '')}</span>
+                          <span className="text-[12px]">↗</span>
+                        </a>
+                      </div>
+                    ))
+                  ) : (
+                    <KVRow
+                      label="Online Profile"
+                      value={
+                        <a
+                          href={profile.links.startsWith('http') ? profile.links : `https://${profile.links}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-signal hover:underline inline-flex items-center gap-1"
+                        >
+                          {profile.links}
+                          <span className="text-[12px]">↗</span>
+                        </a>
+                      }
+                      last
+                    />
+                  )}
                 </div>
               </SectionCard>
             )}

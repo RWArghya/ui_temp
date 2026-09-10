@@ -133,8 +133,34 @@ export const MOCK_PROFILE = {
       shared: true,
     },
   ],
+  connectedProfiles: [
+    {
+      id: 'link-1',
+      platform: 'GitHub',
+      url: 'https://github.com/aarav-sharma',
+      shared: true,
+    },
+    {
+      id: 'link-2',
+      platform: 'LeetCode',
+      url: 'https://leetcode.com/u/aarav_sharma',
+      shared: true,
+    },
+    {
+      id: 'link-3',
+      platform: 'LinkedIn',
+      url: 'https://linkedin.com/in/aarav-sharma-cse',
+      shared: true,
+    },
+    {
+      id: 'link-4',
+      platform: 'Developer Portfolio',
+      url: 'https://aarav-sharma.vercel.app',
+      shared: true,
+    },
+  ],
   contributions: {
-    github: null,         // null = not connected; string = username when connected
+    github: 'aarav-sharma',
     stackoverflow: null,
   },
   // XP / level / badges — derived on frontend from verifiedCerts count
