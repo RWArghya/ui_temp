@@ -190,7 +190,7 @@ export default function EditEducationModal({
           {initialData && onDelete ? (
             <button
               type="button"
-              onClick={() => onDelete(initialData.id)}
+              onClick={() => onDelete(initialData.id, initialData.degree || initialData.title || initialData.institution || 'Education')}
               className="px-3 py-1.5 text-[12px] font-semibold text-[#c0392b] hover:bg-[#fff0f0] rounded-[2px] cursor-pointer transition-colors"
             >
               Delete

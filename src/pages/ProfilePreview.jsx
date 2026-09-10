@@ -239,25 +239,66 @@ export default function ProfilePreview() {
             {/* Public Projects */}
             {publicProjects.length > 0 && (
               <SectionCard title="Featured Projects">
-                <div className="mt-3 space-y-2.5">
+                <div className="mt-3 space-y-3">
                   {publicProjects.map(p => (
                     <div
                       key={p.id}
-                      className="p-3 rounded-[2px] border border-paper-line bg-paper"
+                      className="p-3.5 rounded-[2px] border border-paper-line bg-paper"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-[13.5px] font-semibold text-ink-900">{p.title}</h3>
-                        {p.link && (
-                          <a
-                            href={p.link.startsWith('http') ? p.link : `https://${p.link}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11.5px] font-medium text-signal hover:underline"
-                          >
-                            View Repository ↗
-                          </a>
-                        )}
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <h3 className="text-[13.5px] font-bold text-ink-900 leading-snug">{p.title}</h3>
+                        <div className="flex items-center gap-3 text-[12px]">
+                          {(p.sourceLink || p.link) && (
+                            <a
+                              href={(p.sourceLink || p.link).startsWith('http') ? (p.sourceLink || p.link) : `https://${p.sourceLink || p.link}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
+                            >
+                              <span>Source ↗</span>
+                            </a>
+                          )}
+                          {p.liveLink && (
+                            <a
+                              href={p.liveLink.startsWith('http') ? p.liveLink : `https://${p.liveLink}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
+                            >
+                              <span>Live demo ↗</span>
+                            </a>
+                          )}
+                          {p.docsLink && (
+                            <a
+                              href={p.docsLink.startsWith('http') ? p.docsLink : `https://${p.docsLink}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
+                            >
+                              <span>Docs ↗</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
+
+                      {p.description && (
+                        <p className="text-[12.5px] text-graphite-dim mt-1.5 leading-relaxed">
+                          {p.description}
+                        </p>
+                      )}
+
+                      {p.techStack && p.techStack.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                          {p.techStack.map((tech, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 text-[11px] bg-white border border-paper-line rounded-[2px] text-ink-900 font-medium"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -267,22 +308,27 @@ export default function ProfilePreview() {
             {/* Public Publications */}
             {publicPubs.length > 0 && (
               <SectionCard title="Publications & Research">
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 divide-y divide-paper-line">
                   {publicPubs.map(pub => (
-                    <div key={pub.id} className="py-2 border-b border-paper-line last:border-0">
+                    <div key={pub.id} className="py-2.5 first:pt-0 last:pb-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-medium text-ink-900">{pub.title}</span>
+                        <span className="text-[13px] font-bold text-ink-900">{pub.title}</span>
                         {pub.link && (
                           <a
                             href={pub.link.startsWith('http') ? pub.link : `https://${pub.link}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[11.5px] text-signal hover:underline whitespace-nowrap"
+                            className="text-[11.5px] text-signal hover:underline whitespace-nowrap font-medium"
                           >
                             Paper ↗
                           </a>
                         )}
                       </div>
+                      {pub.description && (
+                        <p className="text-[12px] text-graphite-dim mt-1 leading-relaxed">
+                          {pub.description}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -292,15 +338,22 @@ export default function ProfilePreview() {
             {/* Public Achievements & Self-added certs */}
             {(publicAchievements.length > 0 || publicSelfCerts.length > 0) && (
               <SectionCard title="Honors & External Certifications">
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 divide-y divide-paper-line">
                   {publicAchievements.map(a => (
-                    <div key={a.id} className="flex items-center gap-2 py-2 border-b border-paper-line last:border-0">
-                      <span className="text-[14px]">🏅</span>
-                      <span className="text-[13px] text-ink-900">{a.title}</span>
+                    <div key={a.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px]">🏅</span>
+                        <span className="text-[13px] font-bold text-ink-900">{a.title}</span>
+                      </div>
+                      {a.description && (
+                        <p className="text-[12px] text-graphite-dim mt-1 pl-6 leading-relaxed">
+                          {a.description}
+                        </p>
+                      )}
                     </div>
                   ))}
                   {publicSelfCerts.map(sc => (
-                    <div key={sc.id} className="flex items-center justify-between py-2 border-b border-paper-line last:border-0">
+                    <div key={sc.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                       <div className="flex items-center gap-2">
                         <span className="text-[14px]">📜</span>
                         <span className="text-[13px] text-ink-900">{sc.title}</span>

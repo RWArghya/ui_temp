@@ -34,6 +34,8 @@ import EditPersonalDetailsModal from '../components/profile/EditPersonalDetailsM
 import EditAboutModal from '../components/profile/EditAboutModal.jsx'
 import EditPillsModal from '../components/profile/EditPillsModal.jsx'
 import EditEducationModal from '../components/profile/EditEducationModal.jsx'
+import EditProjectModal from '../components/profile/EditProjectModal.jsx'
+import EditItemModal from '../components/profile/EditItemModal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -97,13 +99,17 @@ export default function Profile() {
   const [copyDone,   setCopyDone]   = useState(false)
   const [saving,     setSaving]     = useState(false)
 
-  // ---- Modal states for Overview tab & Education tab ----
+  // ---- Modal states for Overview, Education, Projects, Pubs, Achievements ----
   const [editDetailsOpen, setEditDetailsOpen] = useState(false)
   const [editAboutOpen,   setEditAboutOpen]   = useState(false)
   // editPillsConfig: { field: 'skills' | 'interests' | 'domains', title: string, subtitle: string } | null
   const [editPillsConfig, setEditPillsConfig] = useState(null)
   // editEducationModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editEducationModal, setEditEducationModal] = useState(null)
+  // editProjectModal: { mode: 'add' } | { mode: 'edit', item } | null
+  const [editProjectModal, setEditProjectModal] = useState(null)
+  // editItemModal: { type: 'publication' | 'achievement', mode: 'add' | 'edit', item } | null
+  const [editItemModal, setEditItemModal] = useState(null)
 
   // ---- inline edit / add / delete state ----
   // editingItem: { field: string, id: string } | null  — which row is being edited
@@ -682,168 +688,301 @@ export default function Profile() {
   )
 
   // ---- PROJECTS ----
+  // ---- PROJECTS ----
   const ProjectsTab = (
     <div className="space-y-4">
       {/* Projects */}
-      <SectionCard title="Projects">
+      <SectionCard
+        title="Projects"
+        action={
+          <button
+            type="button"
+            id="btn-add-project"
+            onClick={() => setEditProjectModal({ mode: 'add', item: null })}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Add project"
+            aria-label="Add project"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        }
+      >
         {(profile.projects ?? []).length > 0 ? (
-          <div className="mt-4">
+          <div className="mt-4 divide-y divide-paper-line">
             {(profile.projects ?? []).map(p => (
-              editingItem?.field === 'projects' && editingItem?.id === p.id ? (
-                <div key={p.id} className="py-3 border-b border-paper-line">
-                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{p.title}</strong></p>
-                  <InlineAddForm
-                    fields={[
-                      { id: 'title', placeholder: 'Project title', required: true },
-                      { id: 'link',  placeholder: 'Link (optional)', required: false },
-                    ]}
-                    addLabel="Save Project"
-                    submitLabel="Save Changes"
-                    initialValues={p}
-                    onAdd={values => saveEdit('projects', p.id, values)}
-                    onCancel={cancelEdit}
-                  />
+              <div key={p.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-[20px] flex-none mt-0.5">📁</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                        {p.title}
+                      </h4>
+                      {p.shared ? (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
+                          ✓ Shared on public profile
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
+                          Private
+                        </span>
+                      )}
+                    </div>
+
+                    {p.description && (
+                      <p className="text-[12.5px] text-graphite-dim mt-1 leading-relaxed">
+                        {p.description}
+                      </p>
+                    )}
+
+                    {/* Tech stack pills */}
+                    {p.techStack && p.techStack.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {p.techStack.map((tech, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 text-[11px] bg-paper border border-paper-line rounded-[2px] text-ink-900 font-medium"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Links row */}
+                    {(p.sourceLink || p.liveLink || p.docsLink || p.link) && (
+                      <div className="flex items-center gap-3 mt-2 text-[12px]">
+                        {(p.sourceLink || p.link) && (
+                          <a
+                            href={(p.sourceLink || p.link).startsWith('http') ? (p.sourceLink || p.link) : `https://${p.sourceLink || p.link}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                          >
+                            <span>Source code ↗</span>
+                          </a>
+                        )}
+                        {p.liveLink && (
+                          <a
+                            href={p.liveLink.startsWith('http') ? p.liveLink : `https://${p.liveLink}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                          >
+                            <span>Live demo ↗</span>
+                          </a>
+                        )}
+                        {p.docsLink && (
+                          <a
+                            href={p.docsLink.startsWith('http') ? p.docsLink : `https://${p.docsLink}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                          >
+                            <span>Docs ↗</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <AchRow
-                  key={p.id}
-                  icon="📁"
-                  title={p.title}
-                  subtitle={p.link}
-                  shared={p.shared}
-                  onShare={() => toggleShare('projects', p.id)}
-                  onEdit={() => startEdit('projects', p.id)}
-                  onRemove={() => requestDelete('projects', p.id, p.title)}
-                />
-              )
+
+                <div className="flex items-center gap-1.5 flex-none">
+                  <button
+                    type="button"
+                    onClick={() => setEditProjectModal({ mode: 'edit', item: p })}
+                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+                    title={`Edit ${p.title}`}
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
           <div className="py-8 text-center">
             <p className="text-[14px] text-graphite-dim">No projects added yet.</p>
             <p className="text-[12px] text-graphite-dim mt-1.5">Showcase your technical work.</p>
+            <button
+              type="button"
+              onClick={() => setEditProjectModal({ mode: 'add', item: null })}
+              className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
+            >
+              + Add Project
+            </button>
           </div>
         )}
-        <InlineAddForm
-          fields={[
-            { id: 'title', placeholder: 'Project title',   required: true  },
-            { id: 'link',  placeholder: 'Link (optional)', required: false },
-          ]}
-          addLabel="+ Add Project"
-          collapsible
-          onAdd={({ title, link }) => {
-            if (!title.trim()) return
-            addItem('projects', { id: uid('proj'), title: title.trim(), link: link.trim(), shared: false })
-          }}
-          onCancel={() => {}}
-        />
       </SectionCard>
 
       {/* Publications */}
-      <SectionCard title="Publications">
+      <SectionCard
+        title="Publications"
+        action={
+          <button
+            type="button"
+            id="btn-add-publication"
+            onClick={() => setEditItemModal({ type: 'publication', mode: 'add', item: null })}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Add publication"
+            aria-label="Add publication"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        }
+      >
         {(profile.publications ?? []).length > 0 ? (
-          <div className="mt-4">
+          <div className="mt-4 divide-y divide-paper-line">
             {(profile.publications ?? []).map(p => (
-              editingItem?.field === 'publications' && editingItem?.id === p.id ? (
-                <div key={p.id} className="py-3 border-b border-paper-line">
-                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{p.title}</strong></p>
-                  <InlineAddForm
-                    fields={[
-                      { id: 'title', placeholder: 'Publication title', required: true },
-                      { id: 'link',  placeholder: 'Link (optional)',    required: false },
-                    ]}
-                    addLabel="Save Publication"
-                    submitLabel="Save Changes"
-                    initialValues={p}
-                    onAdd={values => saveEdit('publications', p.id, values)}
-                    onCancel={cancelEdit}
-                  />
+              <div key={p.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-[20px] flex-none mt-0.5">📄</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                        {p.title}
+                      </h4>
+                      {p.shared ? (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
+                          ✓ Shared
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
+                          Private
+                        </span>
+                      )}
+                    </div>
+
+                    {p.description && (
+                      <p className="text-[12.5px] text-graphite-dim mt-1 leading-relaxed">
+                        {p.description}
+                      </p>
+                    )}
+
+                    {p.link && (
+                      <a
+                        href={p.link.startsWith('http') ? p.link : `https://${p.link}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-signal hover:underline text-[12px] mt-1.5 inline-block font-medium"
+                      >
+                        Paper / Link ↗
+                      </a>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <AchRow
-                  key={p.id}
-                  icon="📄"
-                  title={p.title}
-                  subtitle={p.link}
-                  shared={p.shared}
-                  onShare={() => toggleShare('publications', p.id)}
-                  onEdit={() => startEdit('publications', p.id)}
-                  onRemove={() => requestDelete('publications', p.id, p.title)}
-                />
-              )
+
+                <div className="flex items-center gap-1.5 flex-none">
+                  <button
+                    type="button"
+                    onClick={() => setEditItemModal({ type: 'publication', mode: 'edit', item: p })}
+                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+                    title={`Edit ${p.title}`}
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
           <div className="py-8 text-center">
             <p className="text-[14px] text-graphite-dim">No publications added yet.</p>
             <p className="text-[12px] text-graphite-dim mt-1.5">Share your research and papers.</p>
+            <button
+              type="button"
+              onClick={() => setEditItemModal({ type: 'publication', mode: 'add', item: null })}
+              className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
+            >
+              + Add Publication
+            </button>
           </div>
         )}
-        <InlineAddForm
-          fields={[
-            { id: 'title', placeholder: 'Publication title', required: true  },
-            { id: 'link',  placeholder: 'Link (optional)',    required: false },
-          ]}
-          addLabel="+ Add Publication"
-          collapsible
-          onAdd={({ title, link }) => {
-            if (!title.trim()) return
-            addItem('publications', { id: uid('pub'), title: title.trim(), link: link.trim(), shared: false })
-          }}
-          onCancel={() => {}}
-        />
       </SectionCard>
 
       {/* Achievements */}
-      <SectionCard title="Achievements">
+      <SectionCard
+        title="Achievements"
+        action={
+          <button
+            type="button"
+            id="btn-add-achievement"
+            onClick={() => setEditItemModal({ type: 'achievement', mode: 'add', item: null })}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Add achievement"
+            aria-label="Add achievement"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        }
+      >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Self-added, unverified by definition. Turn on "shared" to include it on your public profile link — off by default.
+          Highlight hackathon wins, honors, or milestones. Toggle "Share on public profile" to show on your link.
         </p>
         {(profile.achievements ?? []).length > 0 ? (
-          <div>
+          <div className="mt-4 divide-y divide-paper-line">
             {[...(profile.achievements ?? [])].reverse().map(a => (
-              editingItem?.field === 'achievements' && editingItem?.id === a.id ? (
-                <div key={a.id} className="py-3 border-b border-paper-line">
-                  <p className="text-[11.5px] text-graphite-dim mb-2">Editing: <strong>{a.title}</strong></p>
-                  <InlineAddForm
-                    fields={[
-                      { id: 'title', placeholder: 'e.g. Runner-up — CityHacks 2025', required: true },
-                    ]}
-                    addLabel="Save Achievement"
-                    submitLabel="Save Changes"
-                    initialValues={a}
-                    onAdd={values => saveEdit('achievements', a.id, values)}
-                    onCancel={cancelEdit}
-                  />
+              <div key={a.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="text-[20px] flex-none mt-0.5">🏅</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                        {a.title}
+                      </h4>
+                      {a.shared ? (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
+                          ✓ Shared
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
+                          Private
+                        </span>
+                      )}
+                    </div>
+
+                    {a.description && (
+                      <p className="text-[12.5px] text-graphite-dim mt-1 leading-relaxed">
+                        {a.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <AchRow
-                  key={a.id}
-                  icon="🏅"
-                  title={a.title}
-                  shared={a.shared}
-                  onShare={() => toggleShare('achievements', a.id)}
-                  onEdit={() => startEdit('achievements', a.id)}
-                  onRemove={() => requestDelete('achievements', a.id, a.title)}
-                />
-              )
+
+                <div className="flex items-center gap-1.5 flex-none">
+                  <button
+                    type="button"
+                    onClick={() => setEditItemModal({ type: 'achievement', mode: 'edit', item: a })}
+                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+                    title={`Edit ${a.title}`}
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
           <p className="text-[13px] text-graphite-dim py-4">Nothing added yet.</p>
         )}
-        <InlineAddForm
-          fields={[
-            { id: 'title', placeholder: 'e.g. Runner-up — CityHacks 2025', required: true },
-          ]}
-          addLabel="+ Add Achievement"
-          collapsible
-          onAdd={({ title }) => {
-            if (!title.trim()) return
-            addItem('achievements', { id: uid('ach'), title: title.trim(), shared: false })
-          }}
-          onCancel={() => {}}
-        />
       </SectionCard>
     </div>
   )
@@ -1290,11 +1429,63 @@ export default function Profile() {
             }
             setEditEducationModal(null)
           }}
-          onDelete={(idToDelete) => {
-            removeItem('education', idToDelete)
+          onDelete={(idToDelete, label) => {
             setEditEducationModal(null)
+            requestDelete('education', idToDelete, label || 'Education')
           }}
           onClose={() => setEditEducationModal(null)}
+        />
+      )}
+
+      {/* Edit / Add Project Modal */}
+      {editProjectModal && (
+        <EditProjectModal
+          isOpen={!!editProjectModal}
+          initialData={editProjectModal.mode === 'edit' ? editProjectModal.item : null}
+          onSave={(savedItem) => {
+            if (editProjectModal.mode === 'add') {
+              addItem('projects', { ...savedItem, id: uid('proj') })
+            } else {
+              setProfile(p => ({
+                ...p,
+                projects: (p.projects || []).map(x => x.id === savedItem.id ? savedItem : x),
+              }))
+            }
+            setEditProjectModal(null)
+          }}
+          onDelete={(idToDelete, label) => {
+            setEditProjectModal(null)
+            requestDelete('projects', idToDelete, label || 'Project')
+          }}
+          onClose={() => setEditProjectModal(null)}
+        />
+      )}
+
+      {/* Edit / Add Publication or Achievement Modal */}
+      {editItemModal && (
+        <EditItemModal
+          isOpen={!!editItemModal}
+          type={editItemModal.type}
+          initialData={editItemModal.mode === 'edit' ? editItemModal.item : null}
+          onSave={(savedItem) => {
+            const field = editItemModal.type === 'publication' ? 'publications' : 'achievements'
+            const prefix = editItemModal.type === 'publication' ? 'pub' : 'ach'
+            if (editItemModal.mode === 'add') {
+              addItem(field, { ...savedItem, id: uid(prefix) })
+            } else {
+              setProfile(p => ({
+                ...p,
+                [field]: (p[field] || []).map(x => x.id === savedItem.id ? savedItem : x),
+              }))
+            }
+            setEditItemModal(null)
+          }}
+          onDelete={(idToDelete, label) => {
+            const field = editItemModal.type === 'publication' ? 'publications' : 'achievements'
+            setEditItemModal(null)
+            requestDelete(field, idToDelete, label || (editItemModal.type === 'publication' ? 'Publication' : 'Achievement'))
+          }}
+          onClose={() => setEditItemModal(null)}
         />
       )}
     </div>

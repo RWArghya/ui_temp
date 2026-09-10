@@ -29,8 +29,18 @@ export const MOCK_PROFILE = {
   landingView: 'learning',
   // Self-added content
   achievements: [
-    { id: 'ach-1', title: 'Runner-up — CityHacks 2025', shared: true },
-    { id: 'ach-2', title: 'Best ML Paper — IIT Delhi Tech Fest 2025', shared: false },
+    {
+      id: 'ach-1',
+      title: 'Runner-up — CityHacks 2025',
+      description: 'Awarded 2nd place among 120+ teams for building an AI-powered urban traffic rerouting simulator.',
+      shared: true,
+    },
+    {
+      id: 'ach-2',
+      title: 'Best ML Paper — IIT Delhi Tech Fest 2025',
+      description: 'Selected as the outstanding machine learning submission for work on sparse attention mechanisms.',
+      shared: false,
+    },
   ],
   education: [
     {
@@ -61,11 +71,37 @@ export const MOCK_PROFILE = {
     },
   ],
   projects: [
-    { id: 'proj-1', title: 'AgentChat — LLM-powered support agent', link: 'github.com/aarav-sharma/agentchat', shared: true },
-    { id: 'proj-2', title: 'DietML — dietary recommendation engine', link: 'github.com/aarav-sharma/dietml', shared: false },
+    {
+      id: 'proj-1',
+      title: 'AgentChat — LLM-powered support agent',
+      description: 'An autonomous agent that triages customer queries, searches vector embeddings for documentation, and responds with cited sources.',
+      techStack: ['Python', 'React', 'FastAPI', 'LangChain', 'OpenAI'],
+      sourceLink: 'github.com/aarav-sharma/agentchat',
+      liveLink: 'https://agentchat.demo.app',
+      docsLink: 'https://agentchat.demo.app/docs',
+      link: 'github.com/aarav-sharma/agentchat',
+      shared: true,
+    },
+    {
+      id: 'proj-2',
+      title: 'DietML — dietary recommendation engine',
+      description: 'Personalized meal and macronutrient optimization based on biometric inputs and lifestyle preferences.',
+      techStack: ['Python', 'PyTorch', 'FastAPI'],
+      sourceLink: 'github.com/aarav-sharma/dietml',
+      liveLink: '',
+      docsLink: '',
+      link: 'github.com/aarav-sharma/dietml',
+      shared: false,
+    },
   ],
   publications: [
-    { id: 'pub-1', title: 'Grounded RAG for Medical Q&A (EMNLP 2025 Workshop)', link: 'arxiv.org/abs/2025.12345', shared: true },
+    {
+      id: 'pub-1',
+      title: 'Grounded RAG for Medical Q&A (EMNLP 2025 Workshop)',
+      description: 'Investigating hallucination reduction techniques in medical language models using retrieved clinical guidelines and verification steps.',
+      link: 'arxiv.org/abs/2025.12345',
+      shared: true,
+    },
   ],
   selfCerts: [
     { id: 'sc-1', title: 'AWS Cloud Practitioner', org: 'Amazon Web Services', shared: true },
