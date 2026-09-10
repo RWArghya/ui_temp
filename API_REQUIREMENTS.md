@@ -15,7 +15,8 @@ Status legend: **Mocked** (built against fake data, ready for a real endpoint) �
 | Testimonials / proof section | Home page load | `/api/testimonials` | GET | — | `[{ id, status: "pending" \| "published", quote?, placeholder?, role }]` | Mocked — `src/api/mock/testimonials.js` |
 | User Profile details | `/profile` load | `/api/profile/me` | GET | Bearer token | Complete Profile Object | Mocked — `src/api/mock/profile.js` |
 | Update Profile | Save edits / privacy toggle | `/api/profile/me` | PATCH | Partial `<Profile>` | Updated `<Profile>` | Mocked — `src/api/mock/profile.js` |
-| User Registered Initiatives | Profile journey / certs | `/api/initiatives?userId=me` | GET | `userId=me` | `{ completed: [], active: [], submittedIds: [] }` | Mocked — `src/api/mock/initiatives.js` |
+| Registered Initiatives | Profile journey / certs / all certs | `/api/initiatives?userId=me` | GET | `userId=me` | `{ completed: [], active: [], pending: [], submittedIds: [] }` | Mocked — `src/api/mock/initiatives.js` |
+| Single Certificate View | Direct link or reload `/profile/certificate/:certId` | `/api/certificates/:certId` | GET | `certId` | Certificate Object | Client state with API fallback / `api_req/profile.md` |
 | Public Visitor Profile | Visitor view (`/profile/preview`) | `/api/profile/public/:slug` | GET | `slug` | Filtered public Profile Object | Stubbed in `ProfilePreview.jsx` |
 | Export Resume PDF | "Print / Save PDF" | `/api/profile/resume/pdf` | POST | `{ profileId }` | Binary PDF / URL | Client-side `window.print()` / API Req in `api_req/profile.md` |
 | Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Certs | `/api/profile/me/:section` | POST / PATCH | `{ title, org?, link?, proofUrl? }` | `{ success: true, item }` | Mocked — `src/api/mock/profile.js` |
