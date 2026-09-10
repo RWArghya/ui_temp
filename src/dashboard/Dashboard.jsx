@@ -9,7 +9,8 @@ import {
 } from './data'
 import { Home, Competing, Learning, LearnCompete } from './Views'
 import Arena from './Arena'
-import Profile, { Certs, PublicPreview } from './Profile'
+import ProfilePage from '../pages/Profile'
+import { Certs, PublicPreview } from './Profile'
 import { MentorGate, mentorQueueCount, mentorTeamsCount } from './Mentor'
 import Workspace from './Workspace'
 import Evaluate from './Evaluate'
@@ -17,7 +18,7 @@ import SupportBot from './SupportBot'
 
 const VIEW_COMPONENTS = {
   home: Home, competing: Competing, learning: Learning, learncompete: LearnCompete,
-  arena: Arena, profile: Profile, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
+  arena: Arena, profile: ProfilePage, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
 }
 
 /* Prototype-only "view as" switcher — mirrors app.js's PERSONAS. Innovator and
@@ -112,7 +113,7 @@ function NotificationBell({ st, sv, who }) {
   )
 }
 
-export default function Dashboard() {
+export default function Dashboard({ defaultView }) {
   const { st, sv, reset } = useH2S()
   const navigate = useNavigate()
   const location = useLocation()
@@ -125,6 +126,8 @@ export default function Dashboard() {
 
   function go(view, id) {
     if (id) { navigate('/dashboard/workspace?id=' + id); return }
+    if (view === 'profile') { navigate('/profile'); return }
+    if (view === 'home') { navigate('/dashboard'); return }
     navigate('/dashboard?view=' + view)
   }
 
@@ -132,24 +135,40 @@ export default function Dashboard() {
   if (sub === 'workspace' || sub === 'initiative') return <SubShell st={st} sv={sv} go={go}><Workspace st={st} sv={sv} go={go} /></SubShell>
   if (sub === 'evaluate') return <SubShell st={st} sv={sv} go={go}><Evaluate st={st} sv={sv} go={go} /></SubShell>
 
-  return <DashMain sp={sp} st={st} sv={sv} go={go} reset={reset} />
+  return <DashMain sp={sp} st={st} sv={sv} go={go} reset={reset} defaultView={defaultView} />
 }
 
 /* owns view/mode state so the sub-path early return above never
    changes the hook count of this component across renders */
-function DashMain({ sp, st, sv, go, reset }) {
+function DashMain({ sp, st, sv, go, reset, defaultView }) {
   const navigate = useNavigate()
-  const requested = sp.get('view')
+  const location = useLocation()
+  const isProfileRoute = location.pathname === '/profile'
+  const requested = isProfileRoute ? 'profile' : sp.get('view') || defaultView
   const valid = requested && VIEW_COMPONENTS[requested] ? requested : null
   const [view, setView] = useState(valid || (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home'))
   const [mode, setMode] = useState(view === 'mentor' ? 'mentor' : 'innovator')
   const [mentorTab, setMentorTabState] = useState(sp.get('tab') || 'queue')
 
-  useEffect(() => { if (valid) setView(valid) }, [valid])
+  useEffect(() => {
+    if (location.pathname === '/profile') {
+      setView('profile')
+    } else if (valid) {
+      setView(valid)
+    } else if (location.pathname === '/dashboard' && !sp.get('view')) {
+      setView(st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home')
+    }
+  }, [location.pathname, valid, sp, st.primary])
 
   const show = (v) => {
-    const m = v === 'mentor' ? 'mentor' : v === 'profile' || v === 'certs' || v === 'publicpreview' ? mode : 'innovator'
-    setMode(m); setView(v)
+    if (v === 'profile') {
+      setView('profile')
+      navigate('/profile')
+      return
+    }
+    const m = v === 'mentor' ? 'mentor' : 'innovator'
+    setMode(m)
+    setView(v)
     if (v === 'home' && m === 'innovator') navigate('/dashboard')
     else navigate('/dashboard?view=' + v)
   }
@@ -167,7 +186,7 @@ function DashMain({ sp, st, sv, go, reset }) {
 }
 
 /* ================= top bar ================= */
-function AppBar({ st, sv, mode, onLogo, onExplore, onProfile, burger, onBurger }) {
+function AppBar({ st, sv, mode, view, onLogo, onExplore, onProfile, burger, onBurger }) {
   return (
     <header className="sticky top-0 z-40 border-b border-dash-line-soft bg-white/[.88] backdrop-blur-md">
       <div className="flex h-[66px] items-center gap-5 px-3 sm:px-6">
@@ -182,7 +201,9 @@ function AppBar({ st, sv, mode, onLogo, onExplore, onProfile, burger, onBurger }
         <div className="flex-1" />
         <NotificationBell st={st} sv={sv} who={mode} />
         <button onClick={onProfile} className="ml-1.5" title="Your profile">
-          <span className="grid h-[34px] w-[34px] place-items-center rounded-full bg-ink-900 text-[13px] font-bold text-white">
+          <span className={`grid h-[34px] w-[34px] place-items-center rounded-full text-[13px] font-bold transition-all ${
+            view === 'profile' ? 'ring-2 ring-signal ring-offset-2 bg-signal text-white' : 'bg-ink-900 text-white hover:opacity-90'
+          }`}>
             {initials(st.profile?.name || st.name)}
           </span>
         </button>
@@ -226,7 +247,7 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
   return (
     <div className="dash-root min-h-screen bg-dash-bg text-dash-ink">
-      <AppBar st={st} sv={sv} mode={mode}
+      <AppBar st={st} sv={sv} mode={mode} view={view}
         onLogo={() => goNav(msup ? 'mentor' : 'home')}
         onExplore={() => navigate('/initiatives')}
         onProfile={() => goNav('profile')}
@@ -298,17 +319,21 @@ function GroupTag({ children }) {
 /* Account block, pinned to the bottom of the sidebar column. Just a name and
    one door to the profile — matches app.html's acctHTML() note that a role
    switcher here would duplicate the persona bar and Profile → Roles. */
-function SideFoot({ st, role, onProfile, dark, onLoadSample, onReset, onSignOut }) {
+function SideFoot({ st, role, onProfile, dark, active, onLoadSample, onReset, onSignOut }) {
   const name = st.profile?.name || st.name || 'Your account'
   return (
     <div className={`mt-auto pt-3 ${dark ? '' : 'pb-[52px]'}`}>
       <hr className={`mb-3.5 border-t ${dark ? 'border-white/10' : 'border-dash-line-soft'}`} />
       <button
-        className={`flex w-full items-center gap-2.5 rounded-btn border px-3 py-[11px] transition-colors ${dark ? 'border-white/10 bg-white/[0.06] hover:bg-white' : 'border-dash-line bg-[#edeff5] hover:border-dash-line hover:bg-white hover:shadow-dash'}`}
+        className={`flex w-full items-center gap-2.5 rounded-btn border px-3 py-[11px] transition-colors ${
+          active
+            ? (dark ? 'border-white bg-white/[0.15] text-white' : 'border-signal bg-signal text-white font-bold shadow-dash')
+            : (dark ? 'border-white/10 bg-white/[0.06] hover:bg-white text-white' : 'border-dash-line bg-[#edeff5] hover:border-dash-line hover:bg-white hover:shadow-dash text-dash-ink')
+        }`}
         onClick={onProfile}
       >
-        <strong className={`min-w-0 flex-1 truncate text-left text-[13.5px] font-semibold ${dark ? 'text-white' : 'text-dash-ink'}`}>{name}</strong>
-        <span className={dark ? 'text-white/50' : 'text-dash-faint'}>›</span>
+        <strong className={`min-w-0 flex-1 truncate text-left text-[13.5px] font-semibold ${active ? 'text-white' : (dark ? 'text-white' : 'text-dash-ink')}`}>{name}</strong>
+        <span className={active ? 'text-white' : (dark ? 'text-white/50' : 'text-dash-faint')}>›</span>
       </button>
       {role ? (
         <p className="mt-2 px-2 text-xs font-medium text-brand-violet">{role}</p>
@@ -341,7 +366,7 @@ function InnovatorSidebar({ st, view, show, onLoadSample, onReset, onSignOut }) 
         <GroupTag>Tools</GroupTag>
         <SideItem ico="✨" label="AI Evaluation" onClick={() => navigate('/dashboard/evaluate')} />
       </ul>
-      <SideFoot st={st} onProfile={() => show('profile')} onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
+      <SideFoot st={st} active={view === 'profile'} onProfile={() => show('profile')} onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
     </>
   )
 }
@@ -389,7 +414,7 @@ function MentorSidebar({ st, view, mentorTab, setMentorTab, show }) {
           </>
         )}
       </ul>
-      <SideFoot st={st} role={ms !== 'none' ? mentorRoleLabel(st) : null} onProfile={() => show('profile')} dark />
+      <SideFoot st={st} role={ms !== 'none' ? mentorRoleLabel(st) : null} active={view === 'profile'} onProfile={() => show('profile')} dark />
     </>
   )
 }
