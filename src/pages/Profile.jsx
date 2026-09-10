@@ -286,6 +286,7 @@ export default function Profile() {
                   <button
                     type="button"
                     id={`btn-go-to-view-${r.key}`}
+                    onClick={() => navigate(`/dashboard?view=${r.key}`)}
                     title={`Go to your ${r.label} view`}
                     className={[
                       'inline-flex items-center gap-1 px-2.5 py-[4px] text-[11.5px] font-semibold',
@@ -883,8 +884,8 @@ export default function Profile() {
   //  RENDER
   // ================================================================
   return (
-    <div className="min-h-screen bg-paper">
-      <div className="max-w-[780px] mx-auto px-4 sm:px-6 py-8">
+    <div className="w-full">
+      <div className="max-w-[800px] mx-auto pb-12">
 
         {/* ── Profile header card ── */}
         <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)] mb-6">

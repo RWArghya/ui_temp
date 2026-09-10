@@ -9,7 +9,6 @@ import Sponsor from "../pages/Sponsor"
 import Auth from "../pages/Auth"
 import Onboarding from "../pages/Onboarding"
 import Dashboard from "../dashboard/Dashboard"
-import Profile from "../pages/Profile"
 import ProfilePreview from "../pages/ProfilePreview"
 import Resume from "../pages/Resume"
 import AllCertificates from "../pages/AllCertificates"
@@ -41,10 +40,12 @@ const router = createBrowserRouter([
     element: <Dashboard />,
   },
   {
+    // Profile rendered inside the Dashboard shell (sidebar + appbar stay visible)
     path: "/profile",
-    element: <Profile />,
+    element: <Dashboard defaultView="profile" />,
   },
   {
+    // Sub-pages are standalone (no dashboard shell needed)
     path: "/profile/preview",
     element: <ProfilePreview />,
   },
