@@ -11,6 +11,7 @@ export const MOCK_PROFILE = {
   name: 'Aarav Sharma',
   email: 'aarav.sharma@iitd.ac.in',
   headline: 'Final-year CSE · ML enthusiast',
+  about: 'Final-year Computer Science student at IIT Delhi with a strong interest in Machine Learning, Generative AI, and distributed systems. Passionate about participating in hackathons and building practical open-source projects.',
   org: 'IIT Delhi',
   region: 'India — North',
   avatar: null,           // null = initials; base64 dataURL when set

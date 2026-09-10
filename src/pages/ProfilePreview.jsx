@@ -169,6 +169,15 @@ export default function ProfilePreview() {
         ) : (
           /* When Public, Show visitor view sections */
           <>
+            {/* About */}
+            {profile.about && (
+              <SectionCard title="About">
+                <p className="mt-3 text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
+                  {profile.about}
+                </p>
+              </SectionCard>
+            )}
+
             {/* Skills & Domains */}
             {((profile.skills && profile.skills.length > 0) || (profile.domains && profile.domains.length > 0)) && (
               <SectionCard title="Skills & Domains">

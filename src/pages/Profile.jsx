@@ -30,7 +30,9 @@ import KVRow         from '../components/profile/KVRow.jsx'
 import Meter         from '../components/profile/Meter.jsx'
 import TimelineItem  from '../components/profile/TimelineItem.jsx'
 import ConfirmDialog from '../components/profile/ConfirmDialog.jsx'
-import EditHeadlineModal from '../components/profile/EditHeadlineModal.jsx'
+import EditPersonalDetailsModal from '../components/profile/EditPersonalDetailsModal.jsx'
+import EditAboutModal from '../components/profile/EditAboutModal.jsx'
+import EditPillsModal from '../components/profile/EditPillsModal.jsx'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -93,7 +95,12 @@ export default function Profile() {
   const [shareOpen,  setShareOpen]  = useState(false)
   const [copyDone,   setCopyDone]   = useState(false)
   const [saving,     setSaving]     = useState(false)
-  const [editHeadlineOpen, setEditHeadlineOpen] = useState(false)
+
+  // ---- Modal states for Overview tab ----
+  const [editDetailsOpen, setEditDetailsOpen] = useState(false)
+  const [editAboutOpen,   setEditAboutOpen]   = useState(false)
+  // editPillsConfig: { field: 'skills' | 'interests' | 'domains', title: string, subtitle: string } | null
+  const [editPillsConfig, setEditPillsConfig] = useState(null)
 
   // ---- inline edit / add / delete state ----
   // editingItem: { field: string, id: string } | null  — which row is being edited
@@ -300,12 +307,63 @@ export default function Profile() {
   // ---- OVERVIEW ----
   const OverviewTab = (
     <div className="space-y-4">
-      {/* Details */}
-      <SectionCard title="Details">
+      {/* Personal details */}
+      <SectionCard
+        title="Personal details"
+        action={
+          <button
+            type="button"
+            id="btn-edit-personal-details"
+            onClick={() => setEditDetailsOpen(true)}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Edit personal details"
+            aria-label="Edit personal details"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+        }
+      >
         <div className="mt-4 space-y-0">
-          <KVRow label="Email"        value={profile.email}  />
+          <KVRow label="Full name"    value={profile.name}   />
+          <KVRow label="Headline"     value={profile.headline} />
+          <KVRow label="Organisation" value={profile.org}    />
           <KVRow label="Region"       value={profile.region} />
-          <KVRow label="Organisation" value={profile.org}    last />
+          <KVRow label="Email"        value={profile.email}  last />
+        </div>
+      </SectionCard>
+
+      {/* About */}
+      <SectionCard
+        title="About"
+        action={
+          <button
+            type="button"
+            id="btn-edit-about"
+            onClick={() => setEditAboutOpen(true)}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Edit about"
+            aria-label="Edit about"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+        }
+      >
+        <div className="mt-4">
+          {profile.about ? (
+            <p className="text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
+              {profile.about}
+            </p>
+          ) : (
+            <p className="text-[13px] text-graphite-dim italic">
+              Write a short summary about your background, expertise, and what drives you.
+            </p>
+          )}
         </div>
       </SectionCard>
 
@@ -398,7 +456,28 @@ export default function Profile() {
       </SectionCard>
 
       {/* Interests */}
-      <SectionCard title="Interests">
+      <SectionCard
+        title="Interests"
+        action={
+          <button
+            type="button"
+            id="btn-edit-interests"
+            onClick={() => setEditPillsConfig({
+              field: 'interests',
+              title: 'Edit interests',
+              subtitle: 'Add or remove topics you are curious about.',
+            })}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Edit interests"
+            aria-label="Edit interests"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+        }
+      >
         <div className="flex flex-wrap gap-2 mt-4">
           {(profile.interests ?? []).length > 0
             ? (profile.interests ?? []).map(x => <Pill key={x}>{x}</Pill>)
@@ -408,7 +487,28 @@ export default function Profile() {
       </SectionCard>
 
       {/* Skills */}
-      <SectionCard title="Skills">
+      <SectionCard
+        title="Skills"
+        action={
+          <button
+            type="button"
+            id="btn-edit-skills"
+            onClick={() => setEditPillsConfig({
+              field: 'skills',
+              title: 'Edit skills',
+              subtitle: 'Add or remove your technical and practical skills.',
+            })}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Edit skills"
+            aria-label="Edit skills"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+        }
+      >
         <div className="flex flex-wrap gap-2 mt-4">
           {(profile.skills ?? []).length > 0
             ? (profile.skills ?? []).map(x => <Pill key={x}>{x}</Pill>)
@@ -418,7 +518,28 @@ export default function Profile() {
       </SectionCard>
 
       {/* Domains */}
-      <SectionCard title="Domains">
+      <SectionCard
+        title="Domains"
+        action={
+          <button
+            type="button"
+            id="btn-edit-domains"
+            onClick={() => setEditPillsConfig({
+              field: 'domains',
+              title: 'Edit domains',
+              subtitle: 'Add or remove industry domains you focus on.',
+            })}
+            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+            title="Edit domains"
+            aria-label="Edit domains"
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+        }
+      >
         <div className="flex flex-wrap gap-2 mt-4">
           {(profile.domains ?? []).length > 0
             ? (profile.domains ?? []).map(x => <Pill key={x} variant="accent">{x}</Pill>)
@@ -989,30 +1110,15 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* name + headline with edit button */}
+            {/* name + headline */}
             <div className="mt-3">
               <h1 className="text-[20px] font-display font-bold text-ink-900 leading-tight">
                 {profile.name || 'Add your name'}
               </h1>
-              <div className="flex items-center gap-2 mt-0.5 group">
-                <p className="text-[13px] text-graphite-dim">
-                  {profile.headline || 'Add a headline'}
-                  {profile.org ? <> · {profile.org}</> : null}
-                </p>
-                <button
-                  id="btn-edit-headline"
-                  type="button"
-                  onClick={() => setEditHeadlineOpen(true)}
-                  className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-                  title="Edit headline and organization"
-                  aria-label="Edit headline and organization"
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                    <path d="m15 5 4 4" />
-                  </svg>
-                </button>
-              </div>
+              <p className="text-[13px] text-graphite-dim mt-0.5">
+                {profile.headline || 'Add a headline'}
+                {profile.org ? <> · {profile.org}</> : null}
+              </p>
             </div>
 
             {/* Share panel */}
@@ -1085,17 +1191,48 @@ export default function Profile() {
         />
       )}
 
-      {/* Edit Headline / Intro Modal (LinkedIn-style popup) */}
-      <EditHeadlineModal
-        isOpen={editHeadlineOpen}
-        initialHeadline={profile.headline || ''}
-        initialOrg={profile.org || ''}
-        onSave={({ headline, org }) => {
-          setProfile(p => (p ? { ...p, headline, org } : p))
-          setEditHeadlineOpen(false)
+      {/* Edit Personal Details Modal */}
+      <EditPersonalDetailsModal
+        isOpen={editDetailsOpen}
+        initialData={{
+          name: profile.name || '',
+          headline: profile.headline || '',
+          org: profile.org || '',
+          region: profile.region || '',
+          email: profile.email || '',
         }}
-        onClose={() => setEditHeadlineOpen(false)}
+        onSave={({ name, headline, org, region }) => {
+          setProfile(p => (p ? { ...p, name, headline, org, region } : p))
+          setEditDetailsOpen(false)
+        }}
+        onClose={() => setEditDetailsOpen(false)}
       />
+
+      {/* Edit About Modal */}
+      <EditAboutModal
+        isOpen={editAboutOpen}
+        initialAbout={profile.about || ''}
+        onSave={(about) => {
+          setProfile(p => (p ? { ...p, about } : p))
+          setEditAboutOpen(false)
+        }}
+        onClose={() => setEditAboutOpen(false)}
+      />
+
+      {/* Edit Pills Modal (Reusable for Interests, Skills, Domains) */}
+      {editPillsConfig && (
+        <EditPillsModal
+          isOpen={!!editPillsConfig}
+          title={editPillsConfig.title}
+          subtitle={editPillsConfig.subtitle}
+          initialItems={profile[editPillsConfig.field] || []}
+          onSave={(newItems) => {
+            updateField(editPillsConfig.field, newItems)
+            setEditPillsConfig(null)
+          }}
+          onClose={() => setEditPillsConfig(null)}
+        />
+      )}
     </div>
   )
 }
