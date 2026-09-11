@@ -158,7 +158,7 @@ export default function AllCertificates() {
         <SectionCard
           title={
             <span className="flex items-center gap-2">
-              H2S Verified Credentials
+              H2S Verified Certificates
               <span className="text-[12px] font-normal text-graphite-dim">
                 ({totalEarned} earned
                 {totalPending > 0 && (
