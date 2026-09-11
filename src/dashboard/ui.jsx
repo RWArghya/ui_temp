@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
-import { daysLeft, deadlineText } from './data'
+import { Link, useNavigate } from 'react-router-dom'
+import { Bookmark, Trophy, BookOpen, Wrench, ArrowRight } from 'lucide-react'
+import { daysLeft, deadlineText, journeyFor, reachedFor, toScreenStep, isSaved, toggleSaved, logRecentView } from './data'
 
 /* ================= Dashboard UI primitives =================
    Tailwind + DaisyUI, styled to app.html's exact tokens (styles.css
@@ -46,6 +47,125 @@ export const Pill = ({ ok, warn, live, hat, children }) => {
       {children}
     </span>
   )
+}
+
+export function Bar({ pct, className = '' }) {
+  return (
+    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-dash-bg-soft ${className}`}>
+      <div className="h-full bg-signal transition-[width] duration-300" style={{ width: pct + '%' }} />
+    </div>
+  )
+}
+
+/* Purpose → icon-chip look, fed from our own design tokens rather than the
+   prototype's hardcoded hex (see COMPONENTS.md's purposeMeta note). */
+const PURPOSE_META = {
+  competing: { ico: Trophy, label: 'Compete', chip: 'bg-signal-soft text-signal-dark' },
+  learning: { ico: BookOpen, label: 'Learn', chip: 'bg-dash-ok-soft text-dash-ok' },
+  learncompete: { ico: Wrench, label: 'Build', chip: 'bg-dash-warn-soft text-dash-warn' },
+}
+export const purposeMeta = (p) => PURPOSE_META[p] || PURPOSE_META.competing
+
+export function StatusPill({ status }) {
+  if (status === 'live') return <Pill live>Live</Pill>
+  if (status === 'upcoming') return <Pill>Upcoming</Pill>
+  if (status === 'past') return <Pill>Completed</Pill>
+  if (status === 'inprogress') return <Pill hat>In Progress</Pill>
+  return null
+}
+
+function daysLeftLabel(o) {
+  if (!o.deadline) return ''
+  const d = daysLeft(o.deadline)
+  if (d < 0) return 'Closed'
+  if (d === 0) return 'Closes today'
+  return `Closes in ${d}d`
+}
+
+/* reads the same reachedFor()/journeyFor() the workspace stepper uses, so
+   this % can never disagree with it */
+export function progressPctFor(o, st) {
+  const steps = journeyFor(o)
+  const reached = toScreenStep(o, reachedFor(o, st))
+  return steps.length ? Math.round((Math.min(reached, steps.length - 1) / (steps.length - 1)) * 100) : 0
+}
+
+/* One card component behind both "Recommended for you" and "Continue where
+   you left off" — opts drive the only differences (destination, progress
+   bar, CTA label). Clicking anywhere opens the destination; the bookmark is
+   the one other control and never navigates. See COMPONENTS.md's
+   initiativeCard entry — this must stay one component, not a pair. */
+export function InitiativeCard({ o, st, sv, opts = {} }) {
+  const meta = purposeMeta(o.purpose)
+  const Ico = meta.ico
+  const saved = isSaved(o.id, st)
+  const dest = `/dashboard/${opts.dest === 'workspace' ? 'workspace' : 'initiative'}?id=${o.id}`
+  const showProgress = !!opts.progress
+  const pct = showProgress ? progressPctFor(o, st) : 0
+  const ctaLabel = opts.cta || (opts.dest === 'workspace' ? 'Continue' : (o.purpose === 'learning' ? 'Enrol' : 'View'))
+  const navigate = useNavigate()
+  const open = () => { logRecentView(sv, st, o.id); navigate(dest) }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => { if (e.key === 'Enter') open() }}
+      className="flex cursor-pointer flex-col overflow-hidden rounded-card border border-dash-line bg-dash-bg shadow-dash transition-shadow hover:shadow-dash-lg"
+    >
+      <div className={`flex h-[84px] items-center px-4 ${meta.chip.split(' ')[0]}`}>
+        <span className={`grid h-9 w-9 place-items-center rounded-full bg-dash-bg ${meta.chip.split(' ')[1]}`}>
+          <Ico className="h-[17px] w-[17px]" />
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-2.5 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <StatusPill status={showProgress && o.status !== 'past' ? 'inprogress' : o.status} />
+          <span className="text-xs text-dash-faint">{o.mode || ''}</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1 font-display text-[15px] font-bold leading-snug text-dash-ink">{o.name}</div>
+          <button
+            type="button"
+            title={saved ? 'Saved' : 'Save for later'}
+            onClick={(e) => { e.stopPropagation(); toggleSaved(sv, st, o.id) }}
+            className={`shrink-0 rounded-btn p-1.5 ${saved ? 'text-signal' : 'text-dash-faint hover:text-dash-muted'}`}
+          >
+            <Bookmark className="h-[15px] w-[15px]" fill={saved ? 'currentColor' : 'none'} />
+          </button>
+        </div>
+        <div className="text-xs text-dash-muted">{o.org} · {o.region || ''}</div>
+        <div className="flex flex-wrap gap-1.5">
+          {(o.areas || []).slice(0, 3).map((a) => (
+            <span key={a} className="rounded-full border border-dash-line px-2 py-0.5 text-[11px] text-dash-muted">{a}</span>
+          ))}
+        </div>
+        {showProgress ? (
+          <div className="mt-1">
+            <Bar pct={pct} />
+            <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-dash-faint">
+              <span>{opts.stepLabel || ''}</span><span>{pct}%</span>
+            </div>
+          </div>
+        ) : null}
+        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+          <span className="text-xs text-dash-muted">{o.prize ? o.prize + ' · ' : ''}{daysLeftLabel(o)}</span>
+          <Link
+            to={dest}
+            onClick={(e) => { e.stopPropagation(); logRecentView(sv, st, o.id) }}
+            className="btn btn-primary btn-sm rounded-btn"
+          >
+            {ctaLabel} <ArrowRight className="ml-1 h-3 w-3" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+/* "Continue where you left off" — same card, workspace-bound, with progress */
+export function ContinueCard({ o, st, sv, next }) {
+  return <InitiativeCard o={o} st={st} sv={sv} opts={{ dest: 'workspace', progress: true, cta: 'Continue', stepLabel: next ? next.step : '' }} />
 }
 
 export const PageHead = ({ title, sub, children }) => (

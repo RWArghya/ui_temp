@@ -1,58 +1,148 @@
 import { useState } from 'react'
-import { Card, Stat, PageHead, Pill, Empty, InitRow } from './ui'
+import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react'
+import { Card, PageHead, Pill, Empty, InitRow, InitiativeCard, ContinueCard } from './ui'
 import {
-  INITIATIVES, byId, hats, VIEWS, RUBRIC, daysLeft, deadlineText,
+  INITIATIVES, byId, RUBRIC, daysLeft, deadlineText,
   bagFor, modules, problemStatements, progressFor, openNow,
+  nextStepFor, savedList, recentViews,
 } from './data'
 
 /* ================= HOME =================
-   Matches app.html's home() exactly — see app.html lines 723-746. No hero
-   promo banner exists in the reference; the four stats are Active
-   initiatives / Submissions / Certificates / Roles held, and PromptWars is
-   embedded here as a full card, not a teaser pill. */
-function recommended(st, n) {
-  const mine = st.interests || []
-  const reg = st.registered || []
-  return INITIATIVES
-    .filter((o) => o.status !== 'past' && !reg.includes(o.id))
-    .map((o) => ({ o, score: o.areas.filter((a) => mine.includes(a)).length * 100 + (o.region === st.region ? 20 : 0) + o.pop }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, n)
-    .map((x) => x.o)
+   Matches app.html's homeMain() — a welcome banner, "Continue where you
+   left off" (registered + not past) and "Recommended for you" as card
+   grids, each with a "View all" that swaps only the main column
+   (continuingMain/recommendedMain below), never a separate top-level page. */
+function activeList(st) {
+  return (st.registered || []).map(byId).filter((o) => o && o.status !== 'past')
 }
-function purposeLabel(k) { return VIEWS[k] ? VIEWS[k].label : k }
+/* Matched against the areas/region the person gave us; falls back to
+   popularity when they've set neither, rather than showing nothing. */
+function recommendedList(st) {
+  const registeredIds = st.registered || []
+  const areas = st.interests || []
+  const region = st.region || ''
+  let list = INITIATIVES.filter((o) => o.status !== 'past' && !registeredIds.includes(o.id))
+  if (areas.length || region) {
+    const matched = list.filter((o) => (o.areas || []).some((a) => areas.includes(a)) || o.region === region)
+    if (matched.length) list = matched
+  }
+  return list.slice().sort((a, b) => {
+    const liveA = a.status === 'live', liveB = b.status === 'live'
+    if (liveA !== liveB) return liveA ? -1 : 1
+    return daysLeft(a.deadline) - daysLeft(b.deadline)
+  })
+}
 
-export function Home({ st }) {
-  const active = (st.registered || []).map(byId).filter((o) => o && o.status !== 'past')
-  const done = (st.registered || []).map(byId).filter((o) => o && o.status === 'past')
-  const rec = recommended(st, 3)
+export function Home({ st, sv, go }) {
+  const active = activeList(st)
+  const recs = recommendedList(st)
 
   return (
     <>
-      <PageHead>
-        <h2 className="mb-1.5">Welcome back{st.name ? ', ' + st.name.split(' ')[0] : ''} 👋</h2>
-        <p className="text-sm text-dash-muted">Everything you're doing on H2S, in one place.</p>
-      </PageHead>
-
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat n={active.length} label="Active initiatives" />
-        <Stat n={(st.submissions || []).length} label="Submissions" />
-        <Stat n={done.length} label="Certificates" />
-        <Stat n={hats(st).length} label="Roles held" />
+      <div className="mb-6 flex items-center justify-between gap-4 rounded-card border border-dash-line bg-gradient-to-br from-signal-soft to-white p-6 shadow-dash">
+        <div>
+          <div className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] text-signal">Welcome back</div>
+          <h1 className="mt-1.5 font-display text-2xl font-extrabold text-dash-ink">{st.name || 'there'} 👋</h1>
+          <p className="mt-2 text-sm text-dash-muted">Build your skills, complete initiatives, and grow your career.</p>
+        </div>
+        <span className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full bg-violet-soft text-brand-violet">
+          <Sparkles className="h-8 w-8" />
+        </span>
       </div>
 
-      <Card title="Pick up where you left off">
-        {active.length
-          ? active.slice(0, 3).map((o) => <InitRow key={o.id} o={o} primary cta="Continue" workspace />)
-          : <Empty msg="You haven't registered for anything yet." cta={{ to: '/initiatives', label: 'Browse initiatives' }} />}
-      </Card>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-bold text-dash-ink">Continue where you left off</h2>
+        {active.length ? (
+          <button onClick={() => go('continuing')} className="flex items-center gap-1 text-sm font-medium text-signal hover:underline">
+            View all <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
+      {active.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {active.slice(0, 3).map((o) => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
+        </div>
+      ) : (
+        <Empty msg="It looks like there's nothing here right now. Start exploring, join an initiative or enrol in a course to get started." cta={{ to: '/initiatives', label: 'Explore initiatives' }} />
+      )}
 
-      <Card title="Recommended for you" className="mt-4">
-        <p className="mb-4 text-sm text-dash-muted">
-          Based on {(st.interests || []).length ? st.interests.slice(0, 3).join(' · ') : 'popularity'}{st.region ? ' · ' + st.region : ''}
-        </p>
-        {rec.map((o) => <InitRow key={o.id} o={o} tag={purposeLabel(o.purpose)} cta="View" />)}
-      </Card>
+      <div className="mb-3 mt-8 flex items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-bold text-dash-ink">Recommended for you</h2>
+        {recs.length ? (
+          <button onClick={() => go('recommended')} className="flex items-center gap-1 text-sm font-medium text-signal hover:underline">
+            View all <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
+      {recs.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {recs.slice(0, 3).map((o) => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}
+        </div>
+      ) : (
+        <Empty msg="Check back soon for personalised recommendations based on your interests." />
+      )}
+    </>
+  )
+}
+
+/* "View all" destinations — same cards, same data, full list, main column
+   only (sidebar/rail stay mounted). */
+export function Continuing({ st, sv, go }) {
+  const active = activeList(st)
+  return (
+    <>
+      <button onClick={() => go('home')} className="btn btn-ghost btn-sm mb-3 inline-flex items-center gap-1.5 rounded-btn"><ArrowLeft className="h-3.5 w-3.5" /> Dashboard</button>
+      <PageHead title="Continue where you left off" sub={`${active.length} initiative${active.length === 1 ? '' : 's'} you're actively working on.`} />
+      {active.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {active.map((o) => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
+        </div>
+      ) : <Empty msg="Nothing in progress yet." />}
+    </>
+  )
+}
+export function Recommended({ st, sv, go }) {
+  const recs = recommendedList(st)
+  const basis = (st.interests || []).length || st.region
+    ? 'Matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ')
+    : 'Popular right now'
+  return (
+    <>
+      <button onClick={() => go('home')} className="btn btn-ghost btn-sm mb-3 inline-flex items-center gap-1.5 rounded-btn"><ArrowLeft className="h-3.5 w-3.5" /> Dashboard</button>
+      <PageHead title="Recommended for you" sub={basis + '.'} />
+      {recs.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {recs.map((o) => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}
+        </div>
+      ) : <Empty msg="Nothing to recommend yet." />}
+    </>
+  )
+}
+export function Saved({ st, sv, go }) {
+  const list = savedList(st).map(byId).filter(Boolean)
+  return (
+    <>
+      <PageHead title="Saved initiatives" sub={`${list.length} saved`} />
+      {list.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {list.map((o) => <InitiativeCard key={o.id} o={o} st={st} sv={sv} opts={{ cta: 'View' }} />)}
+        </div>
+      ) : (
+        <Empty msg="Tap the bookmark on any initiative to keep it here." cta={{ to: '/initiatives', label: 'Browse initiatives' }} />
+      )}
+    </>
+  )
+}
+export function Recent({ st, sv, go }) {
+  const list = recentViews(st).map(byId).filter(Boolean)
+  return (
+    <>
+      <PageHead title="Recently viewed" sub={`${list.length} viewed recently`} />
+      {list.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {list.map((o) => <InitiativeCard key={o.id} o={o} st={st} sv={sv} opts={{ cta: 'View' }} />)}
+        </div>
+      ) : <Empty msg="Initiatives you open will show up here." />}
     </>
   )
 }

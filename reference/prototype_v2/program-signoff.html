@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign off — Hack2skill for Enterprises</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body" style="max-width:760px"><div id="main"></div></div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="programs.js"></script>
+<script src="shell.js"></script>
+<script>
+let st = S.read();
+if (!st.customer || !st.customer.created){ location.href = 'customer-register.html'; throw 'redirect'; }
+const key = new URLSearchParams(location.search).get('id');
+const c = () => S.read().customer;
+if (!key || !(c().programs || []).includes(key)){ location.href = 'customer.html?v=programs'; throw 'no program'; }
+
+document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'sponsor', active:'', persona:'sponsor', st });
+document.getElementById('topbarMount').innerHTML = Topbar({ st });
+mountBell('sponsor');
+
+function render(){
+  const cust = c();
+  const p = programById(key);
+  const spec = (cust.specs || {})[key] || {};
+  const design = progDesign(cust, key);
+  const signed = signoffOf(cust, key);
+  const drift = signed ? signoffDrift(cust, key) : null;
+  const terms = signoffTerms(spec, design);
+
+  document.getElementById('main').innerHTML = `
+  <a class="btn btn-ghost btn-sm" href="program.html?id=${key}">${Icon('ArrowLeft',{size:14})} ${progName(cust,key)}</a>
+  <h1 class="mt12">Review & sign off</h1>
+  <p class="small muted mt6">This snapshot is what you're agreeing to. Changing the brief after signing will ask you to re-confirm anything material.</p>
+
+  ${signed && drift && drift.material && drift.material.length ? `<div class="nudge mt16">
+    <strong class="small">Changed since you last signed</strong>
+    <div class="col gap4 mt8">${drift.material.map(m => `<p class="xs muted">· ${m}</p>`).join('')}</div>
+  </div>` : ''}
+
+  <div class="card card-pad mt20"><h4>Commercial</h4><div class="col gap8 mt10">
+    <div class="kv"><span>Program</span><strong>${p.label}</strong></div>
+    <div class="kv"><span>Objective</span><strong style="text-align:right;max-width:60%">${terms.objective || '—'}</strong></div>
+    <div class="kv"><span>Success metric</span><strong style="text-align:right;max-width:60%">${terms.metric || '—'}</strong></div>
+    <div class="kv"><span>Target participants</span><strong>${terms.participants || '—'}</strong></div>
+    <div class="kv"><span>Prize / reward budget</span><strong>${terms.budget || '—'}</strong></div>
+    <div class="kv"><span>Duration</span><strong>${terms.weeks} weeks</strong></div>
+  </div></div>
+
+  <div class="card card-pad mt16"><h4>Timeline</h4><div class="col gap8 mt10">
+    <div class="kv"><span>Registration</span><strong>${terms.regOpen} → ${terms.regClose}</strong></div>
+    <div class="kv"><span>Kickoff</span><strong>${terms.kickoff}</strong></div>
+    <div class="kv"><span>Submissions close</span><strong>${terms.submitClose}</strong></div>
+    <div class="kv"><span>Results</span><strong>${terms.resultsOn}</strong></div>
+  </div></div>
+
+  <div class="card card-pad mt16"><h4>The competition</h4><div class="col gap8 mt10">
+    <div class="kv"><span>Problem statements</span><strong>${terms.statementCount}</strong></div>
+    <div class="kv"><span>Team size</span><strong>${terms.teamMin}–${terms.teamMax}${terms.soloAllowed ? ' (solo allowed)' : ''}</strong></div>
+    <div class="kv"><span>What teams hand in</span><strong style="text-align:right">${terms.handIn}</strong></div>
+    <div class="kv"><span>Judging</span><strong style="text-align:right">${(design.rounds[0]||{}).criteria.map(c=>c.label+' '+c.weight+'%').join(', ')}</strong></div>
+    <div class="kv"><span>Prize tiers</span><strong>${(design.prizes||[]).length}</strong></div>
+  </div></div>
+
+  ${signed ? `<div class="card card-soft card-pad mt16">
+      <p class="small">Signed by <strong>${signed.by}</strong> on ${signed.at}.</p>
+    </div>` : ''}
+
+  <button class="btn btn-primary btn-lg mt20" onclick="sign()">${signed ? 'Re-sign with these terms' : 'Sign off'} ${Icon('ArrowRight',{size:14})}</button>`;
+}
+function sign(){
+  const cust = c();
+  const signoff = Object.assign({}, cust.signoff, { [key]: { terms: signoffTerms((cust.specs||{})[key], progDesign(cust,key)), by: cust.name || cust.org, at: new Date().toISOString().slice(0,10) } });
+  const specs = Object.assign({}, cust.specs, { [key]: Object.assign({}, cust.specs[key], { approved:true, stage:'signed-off' }) });
+  S.save({ customer: Object.assign({}, cust, { signoff, specs }) });
+  location.href = 'program.html?id=' + key;
+}
+render();
+</script>
+</body>
+</html>

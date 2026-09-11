@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill — Profile</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body" style="max-width:900px">
+      <div id="main"></div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="shell.js"></script>
+<script>
+/* STUB — a real profile page design is coming to plug into this shell.
+   Kept functional enough that links into it (right-rail "Next", workspace's
+   certificate link, the mentor "change" link) don't dead-end. */
+const st = S.read();
+if (!st.onboarded){ location.href = 'auth.html?mode=login&next=' + encodeURIComponent(location.pathname); throw 'redirect'; }
+
+document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'innovator', active:'', persona:'innovator', st });
+document.getElementById('topbarMount').innerHTML = Topbar({ st });
+mountBell('innovator');
+
+document.getElementById('main').innerHTML = `
+  <h1>Profile</h1>
+  <p class="small muted mt6">${st.name || 'You'} · ${st.email || ''}</p>
+  <div class="card empty-state mt20">
+    <span class="icon-chip lg blue">${Icon('User',{size:24})}</span>
+    <h3 class="mt8">Profile page — coming soon</h3>
+    <p class="small muted" style="max-width:420px">This is a placeholder inside the app shell. The real profile design (basic details, interests & skills, education, certificates, achievements) plugs in here.</p>
+    <a class="btn btn-outline mt12" href="app.html">${Icon('ArrowLeft',{size:14})} Back to Dashboard</a>
+  </div>`;
+</script>
+</body>
+</html>

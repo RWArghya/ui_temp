@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
+import {
+  Home as HomeIcon, BookOpen, Trophy, Wrench, Gamepad2, Bookmark, Clock, Sparkles,
+  Settings, Bell, ArrowRight, Check, Compass, Users,
+} from 'lucide-react'
 import { useH2S, seedDemoPatch } from './store'
 import { authStore } from '../store/auth'
 import {
-  VIEWS, initials, mentorStatus, mentorRoleLabel, selfCerts,
-  levelFor, xpFor, innovatorSteps, mentorSteps, innovatorNext, mentorNext,
-  approvedChallenges, notesFor, unreadFor, badgesFor,
+  VIEWS, initials, mentorStatus, mentorRoleLabel,
+  mentorSteps, mentorNext,
+  approvedChallenges, notesFor, unreadFor,
+  PROFILE_STEPS, profileScore, savedList, recentViews,
 } from './data'
-import { Home, Competing, Learning, LearnCompete } from './Views'
+import { Home, Competing, Learning, LearnCompete, Continuing, Recommended, Saved, Recent } from './Views'
 import Arena from './Arena'
 import ProfilePage from '../pages/Profile'
 import { Certs, PublicPreview } from './Profile'
@@ -18,6 +23,7 @@ import SupportBot from './SupportBot'
 
 const VIEW_COMPONENTS = {
   home: Home, competing: Competing, learning: Learning, learncompete: LearnCompete,
+  continuing: Continuing, recommended: Recommended, saved: Saved, recent: Recent,
   arena: Arena, profile: ProfilePage, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
 }
 
@@ -27,10 +33,10 @@ const VIEW_COMPONENTS = {
    H2S's internal staff tool and has no page in this app at all, so it's shown
    inert rather than linked somewhere fake. */
 const PERSONAS = [
-  { k: 'innovator', ico: '🧑‍💻', label: 'Innovator', sub: 'learns and competes' },
-  { k: 'sponsor', ico: '🏢', label: 'Sponsor', sub: 'pays, runs challenges' },
-  { k: 'mentor', ico: '🧭', label: 'Mentor', sub: 'guides and evaluates' },
-  { k: 'enabler', ico: '🎛️', label: 'Enabler', sub: 'H2S success team — not in this prototype' },
+  { k: 'innovator', ico: HomeIcon, label: 'Innovator', sub: 'learns and competes' },
+  { k: 'sponsor', ico: Users, label: 'Sponsor', sub: 'pays, runs challenges' },
+  { k: 'mentor', ico: Compass, label: 'Mentor', sub: 'guides and evaluates' },
+  { k: 'enabler', ico: Settings, label: 'Enabler', sub: 'H2S success team — not in this prototype' },
 ]
 function PersonaBar({ active, onSwitch, onSponsor }) {
   return (
@@ -41,8 +47,8 @@ function PersonaBar({ active, onSwitch, onSponsor }) {
         const on = p.k === active
         if (disabled) {
           return (
-            <span key={p.k} title={p.sub} className="cursor-not-allowed whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium text-dash-faint">
-              {p.ico} {p.label}
+            <span key={p.k} title={p.sub} className="flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium text-dash-faint">
+              <p.ico className="h-3.5 w-3.5" /> {p.label}
             </span>
           )
         }
@@ -51,9 +57,9 @@ function PersonaBar({ active, onSwitch, onSponsor }) {
             key={p.k}
             title={p.sub}
             onClick={() => (p.k === 'sponsor' ? onSponsor() : onSwitch(p.k))}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium ${on ? 'bg-ink-900 font-bold text-white' : 'text-dash-muted hover:bg-dash-line-soft hover:text-dash-ink'}`}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium ${on ? 'bg-ink-900 font-bold text-white' : 'text-dash-muted hover:bg-dash-line-soft hover:text-dash-ink'}`}
           >
-            {p.ico} {p.label}
+            <p.ico className="h-3.5 w-3.5" /> {p.label}
           </button>
         )
       })}
@@ -76,7 +82,7 @@ function NotificationBell({ st, sv, who }) {
         className="relative rounded-btn px-2.5 py-1.5 text-[17px] leading-none text-dash-muted hover:bg-dash-line-soft"
         onClick={() => { setOpen(o => !o); if (!open) markRead() }}
       >
-        🔔
+        <Bell className="h-[17px] w-[17px]" />
         {unread ? (
           <span className="absolute right-0 top-0 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-dash-live px-0.5 text-[10px] font-bold text-white">
             {unread > 9 ? '9+' : unread}
@@ -186,7 +192,7 @@ function DashMain({ sp, st, sv, go, reset, defaultView }) {
 }
 
 /* ================= top bar ================= */
-function AppBar({ st, sv, mode, view, onLogo, onExplore, onProfile, burger, onBurger }) {
+function AppBar({ st, sv, mode, view, onLogo, onProfile, burger, onBurger }) {
   return (
     <header className="sticky top-0 z-40 border-b border-dash-line-soft bg-white/[.88] backdrop-blur-md">
       <div className="flex h-[66px] items-center gap-5 px-3 sm:px-6">
@@ -194,9 +200,6 @@ function AppBar({ st, sv, mode, view, onLogo, onExplore, onProfile, burger, onBu
         <button onClick={onLogo} className="flex shrink-0 items-center gap-[9px]">
           <span className="grid h-7 w-7 place-items-center rounded-[8px] bg-ramp font-display text-xs font-bold tracking-[-0.02em] text-white">H2S</span>
           <span className="font-display text-[17px] font-bold tracking-[-0.03em] text-dash-ink">Hack2skill</span>
-        </button>
-        <button onClick={onExplore} className="hidden rounded-btn px-2.5 py-2 text-sm font-medium text-dash-muted hover:bg-dash-line-soft hover:text-dash-ink sm:inline-block">
-          Explore ⌄
         </button>
         <div className="flex-1" />
         <NotificationBell st={st} sv={sv} who={mode} />
@@ -218,7 +221,7 @@ function SubShell({ st, sv, go, children }) {
   const out = () => { sv({}); authStore.clear(); navigate('/auth') }
   return (
     <div className="dash-root min-h-screen bg-dash-bg text-dash-ink">
-      <AppBar st={st} sv={sv} mode="innovator" onLogo={() => go('home')} onExplore={() => navigate('/initiatives')} onProfile={() => go('profile')} />
+      <AppBar st={st} sv={sv} mode="innovator" onLogo={() => go('home')} onProfile={() => go('profile')} />
       <div className="mx-auto w-full max-w-[1080px] px-4 py-6 sm:px-6 lg:py-8">{children}</div>
       <PersonaBar active="innovator" onSwitch={(p) => go(p === 'mentor' ? 'mentor' : 'home')} onSponsor={() => navigate('/sponsor')} />
       <ResetLink sv={sv} out={out} />
@@ -241,6 +244,13 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const navigate = useNavigate()
   const [navOpen, setNavOpen] = useState(false)
   const msup = mode === 'mentor'
+  /* The prototype never keeps an empty rail column — below 100% profile
+     completion (or in mentor mode) it's a 3-column grid, otherwise the main
+     column reflows to use the freed width (styles.css's
+     `.shell:not(.has-rail) .grid.g3` rule). profile.html's own shell markup
+     never has a rail at all (no `#rail` mount, unlike app.html) — the
+     profile page is always a plain 2-column shell. */
+  const hasRail = view !== 'profile' && (msup || profileScore(st).pct < 100)
   const goNav = (v) => { show(v); setNavOpen(false) }
   const out = () => { reset(); authStore.clear(); navigate('/auth') }
   const loadSample = () => sv(seedDemoPatch(st))
@@ -249,12 +259,11 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     <div className="dash-root min-h-screen bg-dash-bg text-dash-ink">
       <AppBar st={st} sv={sv} mode={mode} view={view}
         onLogo={() => goNav(msup ? 'mentor' : 'home')}
-        onExplore={() => navigate('/initiatives')}
         onProfile={() => goNav('profile')}
         burger onBurger={() => setNavOpen(true)}
       />
       {navOpen ? <div className="fixed inset-0 z-30 bg-ink-950/40 lg:hidden" onClick={() => setNavOpen(false)} /> : null}
-      <div className="relative grid min-h-[calc(100vh-66px)] grid-cols-1 lg:grid-cols-[264px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)_320px]">
+      <div className={`relative grid min-h-[calc(100vh-66px)] grid-cols-1 lg:grid-cols-[264px_minmax(0,1fr)] ${hasRail ? 'xl:grid-cols-[264px_minmax(0,1fr)_320px]' : ''}`}>
         <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-dash-line-soft transition-transform duration-200 lg:sticky lg:top-[66px] lg:z-auto lg:h-[calc(100vh-66px)] lg:w-auto lg:translate-x-0 ${msup ? 'bg-ink-900 lg:border-ink-line' : 'bg-dash-bg-soft'} ${navOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <nav className="flex h-full flex-col overflow-y-auto px-3.5 py-5">
             {msup
@@ -276,11 +285,13 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
             main content (grid-column 2) instead of disappearing, and only stops
             being sticky there. `hidden xl:block` removed it entirely on any
             window under 1280px, which is why it looked missing. */}
-        <aside className="lg:col-start-2 xl:col-start-3 xl:row-start-1">
-          <div className="max-w-[1080px] space-y-4 px-4 pb-[60px] sm:px-6 lg:px-9 xl:sticky xl:top-[66px] xl:max-h-[calc(100vh-66px)] xl:overflow-y-auto xl:px-7 xl:py-8">
-            <Rail st={st} mode={mode} show={show} go={go} />
-          </div>
-        </aside>
+        {hasRail ? (
+          <aside className="lg:col-start-2 xl:col-start-3 xl:row-start-1">
+            <div className="max-w-[1080px] space-y-4 px-4 pb-[60px] sm:px-6 lg:px-9 xl:sticky xl:top-[66px] xl:max-h-[calc(100vh-66px)] xl:overflow-y-auto xl:px-7 xl:py-8">
+              <Rail st={st} mode={mode} show={show} go={go} />
+            </div>
+          </aside>
+        ) : null}
       </div>
       <PersonaBar active={mode} onSwitch={switchPersona} onSponsor={() => navigate('/sponsor')} />
       <SupportBot st={st} sv={sv} mode={mode} />
@@ -296,10 +307,13 @@ function SideItem({ ico, label, count, hot, dim, onClick, active, tone = 'light'
     : dim
       ? (light ? 'text-dash-faint pointer-events-none' : 'text-white/30 pointer-events-none')
       : (light ? 'text-dash-muted hover:bg-white hover:text-dash-ink' : 'text-white/70 hover:bg-white/[0.07] hover:text-white')
+  const IcoTag = typeof ico === 'string' ? null : ico
   return (
     <li>
       <button className={`flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm font-medium ${cls}`} onClick={onClick} disabled={dim}>
-        <span className="w-[18px] shrink-0 text-center text-[15px]">{ico}</span>
+        <span className="grid w-[18px] shrink-0 place-items-center text-center text-[15px]">
+          {IcoTag ? <IcoTag className="h-[15px] w-[15px]" /> : ico}
+        </span>
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         {count != null ? (
           <span className={`rounded-full px-1.5 text-[11px] font-bold ${hot ? 'bg-red-500 text-white' : light ? 'bg-dash-line-soft text-dash-muted' : 'bg-white/10 text-white/70'}`}>
@@ -352,19 +366,22 @@ function SideFoot({ st, role, onProfile, dark, active, onLoadSample, onReset, on
   )
 }
 
+const VIEW_ICO = { learning: BookOpen, competing: Trophy, learncompete: Wrench }
 function InnovatorSidebar({ st, view, show, onLoadSample, onReset, onSignOut }) {
   const navigate = useNavigate()
   return (
     <>
       <ul className="w-full flex-1 space-y-0.5">
-        <SideItem ico="🏠" label="My Dashboard" active={view === 'home'} onClick={() => show('home')} />
-        <SideItem ico="🎮" label="Arena" active={view === 'arena'} onClick={() => show('arena')} />
-        <GroupTag>Switch view</GroupTag>
+        <SideItem ico={HomeIcon} label="Dashboard" active={view === 'home' || view === 'continuing' || view === 'recommended'} onClick={() => show('home')} />
         {Object.keys(VIEWS).map(k => (
-          <SideItem key={k} ico={VIEWS[k].ico} label={VIEWS[k].label} active={view === k} onClick={() => show(k)} />
+          <SideItem key={k} ico={VIEW_ICO[k]} label={VIEWS[k].label} active={view === k} onClick={() => show(k)} />
         ))}
+        <SideItem ico={Gamepad2} label="Arena" active={view === 'arena'} onClick={() => show('arena')} />
+        <div className="my-2.5 border-t border-dash-line-soft" />
+        <SideItem ico={Bookmark} label="Saved" count={savedList(st).length || null} active={view === 'saved'} onClick={() => show('saved')} />
+        <SideItem ico={Clock} label="Recent" count={recentViews(st).length || null} active={view === 'recent'} onClick={() => show('recent')} />
         <GroupTag>Tools</GroupTag>
-        <SideItem ico="✨" label="AI Evaluation" onClick={() => navigate('/dashboard/evaluate')} />
+        <SideItem ico={Sparkles} label="AI Evaluation" onClick={() => navigate('/dashboard/evaluate')} />
       </ul>
       <SideFoot st={st} active={view === 'profile'} onProfile={() => show('profile')} onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
     </>
@@ -543,8 +560,70 @@ function JourneyRail({ opts, go }) {
   )
 }
 
+/* ================= profile-completion card =================
+   One canonical checklist for the whole app — exactly one "done" signal per
+   row (a circular check, or, mutually exclusive, a "Next" button in that
+   same slot). Never add a second signal (leading checkbox, strikethrough, a
+   "Completed" badge) — that was a real bug in the reviewed design. See
+   COMPONENTS.md's ProfileChecklist entry. */
+function ProfileChecklist({ st, show }) {
+  return (
+    <div className="mt-4">
+      {PROFILE_STEPS.map((s) => {
+        const v = st[s.key]
+        const ok = s.test ? s.test(v) : !!(v && String(v).trim())
+        return (
+          <div key={s.key} className="flex items-center justify-between gap-3 border-b border-dash-line-soft py-2 last:border-0">
+            <span className="text-[13px] text-dash-ink">{s.label}</span>
+            {ok ? (
+              <span aria-label="Completed" className="grid h-5 w-5 place-items-center rounded-full bg-dash-ok text-white">
+                <Check className="h-3 w-3" />
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => show('profile')}
+                className="btn btn-outline btn-sm rounded-btn inline-flex items-center gap-1 border-dash-line px-2.5 py-1 text-xs text-dash-ink"
+              >
+                Next <ArrowRight className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+/* Rail's home widget: ring + CTA + the checklist above. `homeRail()` in the
+   prototype hides this entirely at 100% completion rather than collapsing
+   it — return null here, not a hidden div, so the grid it leaves behind can
+   reflow to use the freed width. */
+function ProfileProgressCard({ st, show }) {
+  const { pct } = profileScore(st)
+  if (pct >= 100) return null
+  const done = PROFILE_STEPS.filter((s) => {
+    const v = st[s.key]
+    return s.test ? s.test(v) : !!(v && String(v).trim())
+  }).length
+  return (
+    <div className="rounded-card border border-dash-line-soft bg-white p-5 shadow-dash">
+      <h3 className="font-display text-[15px] font-bold text-dash-ink">Your progress</h3>
+      <div className="mt-3 flex items-center gap-4">
+        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-4 border-signal text-[13px] font-bold text-dash-ink">{pct}%</div>
+        <div>
+          <div className="text-[13px] font-medium text-dash-ink">Profile completion</div>
+          <div className="text-xs text-dash-muted">{done} of {PROFILE_STEPS.length} steps</div>
+        </div>
+      </div>
+      <button type="button" onClick={() => show('profile')} className="btn btn-primary btn-sm btn-block mt-3 rounded-btn inline-flex items-center justify-center gap-1">
+        Complete profile <ArrowRight className="h-3 w-3" />
+      </button>
+      <ProfileChecklist st={st} show={show} />
+    </div>
+  )
+}
+
 function Rail({ st, mode, show, go }) {
-  const certs = selfCerts(st).length
   if (mode === 'mentor') {
     return (
       <JourneyRail
@@ -560,22 +639,9 @@ function Rail({ st, mode, show, go }) {
       />
     )
   }
-  const xp = xpFor(st, certs)
-  const lvl = levelFor(xp)
-  return (
-    <JourneyRail
-      go={go}
-      opts={{
-        xp: true,
-        title: 'Getting started',
-        blurb: 'Five steps from account to certificate. Each one earns XP.',
-        levelLabel: `Level ${lvl.level} · ${xp} XP across your whole account`,
-        steps: innovatorSteps(st, certs),
-        badges: badgesFor(st, certs),
-        next: innovatorNext(st),
-        emptyNext: 'Register for an initiative and it shows up here with its next step.',
-        onGo: show,
-      }}
-    />
-  )
+  /* Innovator rail is the profile-completion card only, below 100% — no
+     "Getting started" XP widget here (that read never disagreed with the
+     reference: app.html's own homeRail() calls ProfileProgressCard, full
+     stop, for every innovator view). */
+  return <ProfileProgressCard st={st} show={show} />
 }

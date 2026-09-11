@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell has-rail" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body" style="max-width:1300px">
+      <div class="shell-main-wrap">
+        <div id="main"></div>
+        <aside class="app-rail" id="rail"></aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="shell.js"></script>
+<script>
+const qp = new URLSearchParams(location.search);
+const oid = qp.get('id');
+const o = byId(oid);
+if (!o){ location.href = 'app.html?view=recommended'; throw 'not found'; }
+
+let st = S.read();
+if (!st.onboarded){
+  location.href = 'auth.html?mode=login&next=' + encodeURIComponent(location.pathname + '?id=' + oid + (qp.get('register') ? '&register=1' : ''));
+  throw 'redirect';
+}
+logRecentView(o.id);
+
+document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'innovator', active:'', persona:'innovator', st });
+document.getElementById('topbarMount').innerHTML = Topbar({ st });
+mountBell('innovator');
+
+let tab = 'overview';
+const meta = purposeMeta(o.purpose);
+const purposeTabLabel = o.purpose === 'learning' ? 'Curriculum' : o.purpose === 'learncompete' ? 'Problem statements' : 'Teams';
+
+function isRegistered(){ return (S.read().registered || []).includes(o.id); }
+
+function renderAll(){
+  st = S.read();
+  document.getElementById('main').innerHTML = mainHTML();
+  document.getElementById('rail').innerHTML = railHTML();
+}
+
+function mainHTML(){
+  return `
+  <div class="card" style="overflow:hidden">
+    <div class="init-cover ${meta.cover}" style="height:120px;align-items:flex-end;padding:20px 24px">
+      <div class="row gap8 wrap" style="position:absolute;top:20px;left:24px">
+        ${statusPill(o.status)}
+        <span class="pill" style="background:rgba(255,255,255,.25);color:#fff">${o.mode || ''}</span>
+        <span class="pill" style="background:rgba(255,255,255,.25);color:#fff">${o.region || ''}</span>
+      </div>
+    </div>
+    <div class="card-pad">
+      <h1>${o.name}</h1>
+      <p class="small muted mt6">${o.org} · ${(o.regs||0).toLocaleString()} registered</p>
+      <p class="small mt12">${o.blurb || ''}</p>
+    </div>
+    <div class="card-pad" style="padding-top:0">
+      <div class="tabs">
+        ${tabBtn('overview','Overview')}
+        ${tabBtn('work',purposeTabLabel)}
+        ${o.timeline || o.regClose || o.deadline ? tabBtn('timeline','Timeline') : ''}
+        ${o.prizes || o.prize ? tabBtn('prizes','Prizes & rewards') : ''}
+        ${tabBtn('rules','Rules & eligibility')}
+      </div>
+      <div class="mt20">${tabBody()}</div>
+    </div>
+  </div>`;
+}
+function tabBtn(k,label){ return `<div class="tab${tab===k?' active':''}" onclick="tab='${k}';renderAll()">${label}</div>`; }
+
+function tabBody(){
+  if (tab === 'overview') return `
+    <div class="grid g3">
+      <div class="col gap4"><span class="xs faint">Areas</span><span class="small medium">${(o.areas||[]).join(', ')}</span></div>
+      <div class="col gap4"><span class="xs faint">Format</span><span class="small medium">${o.mode || '—'}</span></div>
+      <div class="col gap4"><span class="xs faint">Prize pool</span><span class="small medium">${o.prize || '—'}</span></div>
+    </div>
+    <p class="small mt20">${o.blurb || 'More details will appear here as the organiser adds them.'}</p>`;
+
+  if (tab === 'work'){
+    if (o.purpose === 'learning'){
+      const mods = modules(o);
+      return `<div class="col gap8">${mods.map((m,i) => `
+        <div class="rail-list-item"><span class="icon-chip sm green">${Icon('BookOpen',{size:14})}</span>
+          <span class="col grow"><span class="small medium">${i+1}. ${m.title}</span><span class="xs muted">${m.kind} · ${m.mins} min</span></span>
+        </div>`).join('')}</div>`;
+    }
+    if (o.purpose === 'learncompete'){
+      const ps = problemStatements(o);
+      return `<div class="grid g2">${ps.map(p => `
+        <div class="card card-soft card-pad"><span class="tag">${p.code}</span><h4 class="mt6">${p.title}</h4><p class="xs muted mt6">${p.desc}</p></div>`).join('')}</div>`;
+    }
+    const teams = openTeams(o.id);
+    return `<div class="grid g2">${teams.map(t => `
+      <div class="card card-soft card-pad">
+        <div class="row between"><strong class="small">${t.name}</strong><span class="pill pill-outline">${t.members.length}/${t.cap} members</span></div>
+        <p class="xs muted mt8">Looking for: ${t.wants || 'any skillset'}</p>
+      </div>`).join('')}</div>`;
+  }
+
+  if (tab === 'timeline'){
+    const rows = [
+      ['Registration opens', o.regOpen], ['Registration closes', o.regClose || o.deadline],
+      ['Submissions close', o.deadline], ['Results', o.resultsOn]
+    ].filter(r => r[1]);
+    return `<div class="col gap8">${rows.map(r => `
+      <div class="row between" style="padding:10px 0;border-bottom:1px solid var(--line-soft)">
+        <span class="small">${r[0]}</span><span class="small medium mono">${r[1]}</span>
+      </div>`).join('')}</div>`;
+  }
+  if (tab === 'prizes') return `<p class="lg bold">${o.prize || 'To be announced'}</p>
+    ${o.prizes ? `<div class="col gap8 mt12">${o.prizes.map(p => `<div class="row between"><span class="small">${p.label}</span><span class="small medium">${p.value}</span></div>`).join('')}</div>` : ''}`;
+
+  if (tab === 'rules'){
+    const r = o.rules || { teamMin:1, teamMax:4, soloAllowed:true };
+    const elig = eligibility(o, S.read());
+    return `<div class="col gap10">
+      <p class="small">Team size: ${r.teamMin}–${r.teamMax}${r.soloAllowed ? ' (solo allowed)' : ''}</p>
+      ${r.employeeOnly ? `<p class="small">Open to ${o.org} employees only.</p>` : ''}
+      ${!elig.ok ? elig.reasons.map(x => `<p class="small" style="color:var(--danger)">${x}</p>`).join('') : ''}
+    </div>`;
+  }
+  return '';
+}
+
+function railHTML(){
+  const win = regWindow(o);
+  const elig = eligibility(o, st);
+  const registered = isRegistered();
+  return `
+  <div class="card card-pad">
+    <h3>Registration</h3>
+    <p class="xs muted mt6">${win.why}</p>
+    ${registered ? `
+      <div class="card card-soft card-pad mt16">
+        <div class="row gap8"><span class="icon-chip sm green">${Icon('CheckCircle2',{size:16})}</span><strong class="small">You're registered</strong></div>
+      </div>
+      <a class="btn btn-primary btn-block mt12" href="workspace.html?id=${o.id}">Open workspace ${Icon('ArrowRight',{size:14})}</a>`
+    : win.state === 'closed' ? `<button class="btn btn-outline btn-block mt16" disabled>Registration closed</button>`
+    : win.state === 'early' ? `<button class="btn btn-outline btn-block mt16" disabled>Opens ${o.regOpen}</button>`
+    : !elig.ok ? `<button class="btn btn-outline btn-block mt16" disabled>Not eligible</button>
+        <p class="xs mt8" style="color:var(--danger)">${elig.reasons[0]}</p>`
+    : `<button class="btn btn-primary btn-block btn-lg mt16" onclick="doRegister()">${o.purpose==='learning' ? 'Enrol now' : 'Register now'} ${Icon('ArrowRight',{size:14})}</button>
+       <p class="xs faint mt8" style="text-align:center">One click — no forms.</p>`}
+    <div class="divider mt16 mb16"></div>
+    <div class="col gap10">
+      <div class="row gap8"><span class="icon-chip sm blue">${Icon('Calendar',{size:14})}</span><span class="xs muted">${daysLeftLabel(o.deadline)}</span></div>
+      <div class="row gap8"><span class="icon-chip sm purple">${Icon('Users',{size:14})}</span><span class="xs muted">${(o.regs||0).toLocaleString()} registered</span></div>
+      <div class="row gap8"><span class="icon-chip sm amber">${Icon('Globe',{size:14})}</span><span class="xs muted">${o.mode || ''} · ${o.region || ''}</span></div>
+    </div>
+  </div>`;
+}
+
+function doRegister(){
+  const st2 = S.read();
+  if (!(st2.registered || []).includes(o.id)){
+    /* joining a program is a real signal of interest — fold its areas into
+       the profile so recommendations and mentor matching pick it up too */
+    const interests = st2.interests || [];
+    const newAreas = (o.areas || []).filter(a => !interests.includes(a));
+    S.save({ registered:(st2.registered || []).concat([o.id]),
+              interests: newAreas.length ? interests.concat(newAreas) : interests });
+    logActivity('You registered for ' + o.name);
+  }
+  showSuccess();
+}
+function showSuccess(){
+  const back = document.createElement('div');
+  back.className = 'modal-backdrop';
+  back.innerHTML = `
+    <div class="modal" style="max-width:400px;text-align:center">
+      <div class="modal-body" style="padding:40px 32px">
+        <span class="icon-chip lg green round" style="width:64px;height:64px;margin:0 auto 16px">${Icon('CheckCircle2',{size:30})}</span>
+        <h2>You're in! 🎉</h2>
+        <p class="small muted mt8">You've successfully registered for<br><strong>${o.name}</strong></p>
+        <a class="btn btn-primary btn-block btn-lg mt20" href="workspace.html?id=${o.id}">Go to workspace ${Icon('ArrowRight',{size:14})}</a>
+        <button class="btn btn-outline btn-block mt10" onclick="this.closest('.modal-backdrop').remove();renderAll()">Stay on this page</button>
+      </div>
+    </div>`;
+  document.body.appendChild(back);
+}
+
+/* the deep-link return path: registering while logged out sends you through
+   auth with ?register=1 and lands you back here already registered — one click total */
+if (qp.get('register') === '1' && !isRegistered()){
+  doRegister();
+  history.replaceState(null, '', location.pathname + '?id=' + oid);
+}
+renderAll();
+</script>
+</body>
+</html>

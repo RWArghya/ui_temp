@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill — Book a demo</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--canvas)">
+<div class="card card-pad" style="max-width:420px;width:100%">
+  <a class="brand" href="index.html" style="padding:0 0 20px"><span class="brand-mark">H2S</span><span class="brand-name">Hack2skill</span></a>
+  <div id="body"></div>
+</div>
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script>
+function form(){
+  return `
+  <h2>Book a demo</h2>
+  <p class="small muted mt6">Tell us who you are — three fields, that's it. The H2S team follows up.</p>
+  <form class="col gap16 mt20" onsubmit="return submitLead(event)">
+    <div class="field"><label>Full name</label><input class="input" name="name" required></div>
+    <div class="field"><label>Work email</label><input class="input" name="email" type="email" required></div>
+    <div class="field"><label>Organisation</label><input class="input" name="org" required></div>
+    <button class="btn btn-primary btn-block btn-lg">Request a demo</button>
+  </form>
+  <p class="xs muted mt16" style="text-align:center">Running this yourself instead? <a style="color:var(--primary);font-weight:700" href="customer-register.html">Set up self-serve</a></p>`;
+}
+function done(ticket){
+  return `<div class="empty-state">
+    <span class="icon-chip lg green">${Icon('CheckCircle2',{size:24})}</span>
+    <h3 class="mt8">Request sent</h3>
+    <p class="small muted">Ticket ${ticket} — the H2S team will reach out within one business day.</p>
+    <a class="btn btn-outline mt12" href="index.html">Back to home</a>
+  </div>`;
+}
+function submitLead(e){
+  e.preventDefault();
+  const f = e.target;
+  const ticket = 'SPN-' + Math.floor(1000 + Math.random()*9000);
+  const st = S.read();
+  S.save({ sponsorTicket: ticket, sponsorLead:{ name:f.name.value, email:f.email.value, org:f.org.value } });
+  document.getElementById('body').innerHTML = done(ticket);
+  return false;
+}
+document.getElementById('body').innerHTML = form();
+</script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill — Log in</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="auth-split">
+  <div class="auth-visual">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">H2S</span><span class="brand-name">Hack2skill</span>
+    </a>
+    <h1>Build your skills, create your future</h1>
+    <p class="mt12">Join thousands of learners. Build real projects, compete in hackathons, and grow your career.</p>
+    <div class="auth-blob" style="width:280px;height:280px;top:-60px;right:-60px"></div>
+    <div class="auth-blob" style="width:180px;height:180px;bottom:-40px;left:40px"></div>
+  </div>
+
+  <div class="auth-form-wrap">
+    <div class="auth-card" id="card"></div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+const qp = new URLSearchParams(location.search);
+let mode = qp.get('mode') || 'login';
+const intent = qp.get('intent') || '';
+const next = qp.get('next') || '';
+let step = 'creds';           // creds | otp | forgot
+let pendingAccount = null;
+let otpCode = '';
+
+function render(){ document.getElementById('card').innerHTML = views[step](); }
+
+const views = {
+  creds: () => `
+    <div class="auth-tabs">
+      <a class="${mode==='login'?'active':''}" onclick="setMode('login')">Login</a>
+      <a class="${mode==='signup'?'active':''}" onclick="setMode('signup')">Sign Up</a>
+    </div>
+    <form onsubmit="return submitCreds(event)" class="col gap16">
+      ${mode==='signup' ? `
+      <div class="field"><label>Full name</label><input class="input" name="name" required></div>
+      ` : ''}
+      <div class="field">
+        <label>Email address</label>
+        <div class="input-icon-wrap">${Icon('Mail',{size:16})}<input class="input" name="email" type="email" placeholder="you@company.com" required></div>
+      </div>
+      ${mode==='signup' ? `
+      <div class="field"><label>Mobile number</label>
+        <div class="input-icon-wrap">${Icon('Phone',{size:16})}<input class="input" name="mobile" placeholder="+91 98765 43210" required></div>
+      </div>` : ''}
+      <div class="field">
+        <label>Password</label>
+        <div class="input-icon-wrap">
+          ${Icon('Lock',{size:16})}
+          <input class="input" name="password" type="password" id="pw" placeholder="Enter your password" required oninput="${mode==='signup' ? 'strength(this.value)' : ''}">
+          <span class="icon-r" onclick="togglePw()">${Icon('Eye',{size:16,cls:'toggleEye'})}</span>
+        </div>
+        ${mode==='signup' ? `<div class="strength-bar"><i id="strengthI" style="width:0%"></i></div>` : `<div style="text-align:right"><a class="xs" style="color:var(--primary)" onclick="step='forgot';render()">Forgot password?</a></div>`}
+      </div>
+      ${mode==='signup' ? `<label class="check-row"><input type="checkbox" required><span class="xs muted">I agree to the Terms of Service and Privacy Policy.</span></label>` : `<label class="check-row"><input type="checkbox"><span class="xs muted">Remember me</span></label>`}
+      <div id="credErr" class="error-text" style="display:none"></div>
+      <button class="btn btn-primary btn-block btn-lg">${mode==='login' ? 'Login' : 'Sign Up'}</button>
+    </form>
+    <div class="or-sep">or continue with</div>
+    <div class="oauth-row">
+      <button class="oauth-btn" onclick="oauth()">${Icon('Mail',{size:15})} Google</button>
+      <button class="oauth-btn" onclick="oauth()">${Icon('Linkedin',{size:15})} LinkedIn</button>
+    </div>
+    <p class="xs muted mt16" style="text-align:center">
+      ${mode==='login' ? `Don't have an account? <a style="color:var(--primary);font-weight:700" onclick="setMode('signup')">Sign up</a>`
+        : `Already have an account? <a style="color:var(--primary);font-weight:700" onclick="setMode('login')">Log in</a>`}
+    </p>`,
+
+  otp: () => `
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:12px" onclick="step='creds';render()">${Icon('ArrowLeft',{size:14})} Back</button>
+    <h2>Verify your email</h2>
+    <p class="small muted mt6">We sent a code to <strong>${pendingAccount.email}</strong>.</p>
+    <div class="card card-soft card-pad mt12"><p class="xs mono">Prototype OTP: <strong>${otpCode}</strong></p></div>
+    <form class="mt16" onsubmit="return submitOtp(event)">
+      <div class="otp-row">
+        ${[0,1,2,3].map(i => `<input class="input" maxlength="1" inputmode="numeric" oninput="otpMove(this)">`).join('')}
+      </div>
+      <div id="otpErr" class="error-text mt8" style="display:none">That code doesn't match — check the prototype OTP above.</div>
+      <button class="btn btn-primary btn-block btn-lg mt20">Verify & continue</button>
+    </form>
+    <p class="xs muted mt16" style="text-align:center" id="resendWrap">Resend code in <span id="resendT">30</span>s</p>`,
+
+  forgot: () => `
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:12px" onclick="step='creds';render()">${Icon('ArrowLeft',{size:14})} Back</button>
+    <h2>Reset your password</h2>
+    <p class="small muted mt6">Enter your email and we'll send a reset link if an account exists.</p>
+    <form class="col gap16 mt16" onsubmit="return submitForgot(event)">
+      <div class="field"><label>Email address</label><input class="input" name="email" type="email" required></div>
+      <button class="btn btn-primary btn-block btn-lg">Send reset link</button>
+    </form>`,
+
+  forgotDone: () => `
+    <div class="empty-state">
+      <span class="icon-chip lg blue">${Icon('Mail',{size:24})}</span>
+      <h3 class="mt8">Check your inbox</h3>
+      <p class="small muted">If an account exists for that email, a reset link is on its way.</p>
+      <a class="btn btn-outline mt12" onclick="step='creds';render()">Back to login</a>
+    </div>`
+};
+
+function setMode(m){ mode = m; step = 'creds'; render(); }
+function togglePw(){
+  const i = document.getElementById('pw');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+function strength(v){
+  const el = document.getElementById('strengthI'); if (!el) return;
+  const score = [v.length >= 8, /[A-Z]/.test(v), /[0-9]/.test(v), /[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
+  const pct = score * 25;
+  const color = score <= 1 ? 'var(--danger)' : score <= 2 ? 'var(--warn)' : 'var(--ok)';
+  el.style.width = pct + '%'; el.style.background = color;
+}
+function otpMove(el){
+  if (el.value && el.nextElementSibling) el.nextElementSibling.focus();
+}
+function showErr(id, msg){ const e = document.getElementById(id); e.textContent = msg; e.style.display = 'block'; }
+
+function submitCreds(e){
+  e.preventDefault();
+  const f = e.target;
+  const email = f.email.value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showErr('credErr', 'Enter a valid email address.'); return false; }
+  if (f.password.value.length < 6){ showErr('credErr', 'Password must be at least 6 characters.'); return false; }
+
+  const st = S.read();
+  if (mode === 'signup'){
+    if (st.account && st.account.email === email){
+      toast('That email is already registered — log in instead.');
+      setMode('login');
+      return false;
+    }
+    pendingAccount = { name:f.name.value.trim(), email, mobile:f.mobile.value.trim() };
+    otpCode = String(Math.floor(1000 + Math.random() * 9000));
+    step = 'otp'; render(); startResend();
+    return false;
+  }
+  // login
+  if (!st.account || st.account.email !== email){ showErr('credErr', 'No account found for that email.'); return false; }
+  afterAuth();
+  return false;
+}
+function submitOtp(e){
+  e.preventDefault();
+  const digits = [...e.target.querySelectorAll('input')].map(i => i.value).join('');
+  if (digits !== otpCode){ document.getElementById('otpErr').style.display = 'block'; return false; }
+  S.save({ account: Object.assign({}, pendingAccount, { verified:true, created:new Date().toISOString() }),
+           name: pendingAccount.name, email: pendingAccount.email, onboarded:false });
+  location.href = 'onboarding.html' + (intent ? '?intent=' + intent : '') + (next ? (intent ? '&' : '?') + 'next=' + encodeURIComponent(next) : '');
+  return false;
+}
+function submitForgot(e){ e.preventDefault(); step = 'forgotDone'; render(); return false; }
+function oauth(){
+  const st = S.read();
+  if (!st.account){
+    S.save({ account:{ name:'Aarav Sharma', email:'aarav@example.com', verified:true, created:new Date().toISOString() },
+             name:'Aarav Sharma', email:'aarav@example.com', onboarded:false });
+  }
+  if (!S.read().onboarded){ location.href = 'onboarding.html'; return; }
+  afterAuth();
+}
+function afterAuth(){
+  const st = S.read();
+  if (intent === 'mentor'){ location.href = 'app.html?view=mentor'; return; }
+  if (next){ location.href = next; return; }
+  location.href = 'app.html';
+}
+
+/* alert() blocks the whole page (and looks broken mid-form) — a small
+   self-dismissing banner instead, same idea as shell.js's toast() but
+   this page doesn't load shell.js just for one function. */
+function toast(msg){
+  let wrap = document.querySelector('.toast-wrap');
+  if (!wrap){ wrap = document.createElement('div'); wrap.className = 'toast-wrap'; document.body.appendChild(wrap); }
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3600);
+}
+
+/* if you're already fully signed in, this page has nothing to do */
+(function(){
+  const st = S.read();
+  if (st.onboarded && mode === 'login' && !qp.get('force')) { /* still let them see the form on purpose (prototype convenience) */ }
+})();
+
+render();
+function startResend(){
+  let t = 30;
+  const el = document.getElementById('resendT');
+  const iv = setInterval(() => {
+    t--; if (el) el.textContent = t;
+    if (t <= 0){ clearInterval(iv); const w = document.getElementById('resendWrap');
+      if (w) w.innerHTML = `<a style="color:var(--primary);font-weight:700" onclick="otpCode=String(Math.floor(1000+Math.random()*9000));document.querySelector('.mono strong').textContent=otpCode;startResend();document.getElementById('resendWrap').textContent='Resend code in 30s'">Resend code</a>`; }
+  }, 1000);
+}
+</script>
+</body>
+</html>

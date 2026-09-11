@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill for Enterprises</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body"><div id="main"></div></div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="programs.js"></script>
+<script src="shell.js"></script>
+<script>
+let st = S.read();
+if (!st.customer || !st.customer.created){ location.href = 'customer-register.html'; throw 'redirect'; }
+const c = () => S.read().customer;
+
+document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'sponsor', active:'overview', persona:'sponsor', st });
+document.getElementById('topbarMount').innerHTML = Topbar({ st });
+mountBell('sponsor');
+
+const el = id => document.getElementById(id);
+function setActive(v){
+  document.querySelectorAll('.side-link').forEach(a => a.classList.remove('active'));
+  const map = { overview:0, programs:1, talent:2 };
+  const idx = map[v]; if (idx == null) return;
+  const links = document.querySelectorAll('.side-link');
+  if (links[idx]) links[idx].classList.add('active');
+}
+
+function render(){
+  const v = new URLSearchParams(location.search).get('v') || 'overview';
+  history.replaceState(null,'','customer.html' + (v === 'overview' ? '' : '?v=' + v));
+  setActive(v);
+  el('main').innerHTML = { overview: overviewMain, programs: programsMain, talent: talentMain }[v]() || overviewMain();
+}
+function go(v){ location.href = 'customer.html' + (v === 'overview' ? '' : '?v=' + v); }
+
+/* ---------------------------------------------------------------- OVERVIEW */
+function overviewMain(){
+  const cust = c();
+  const scoped = (cust.programs || []).filter(id => stageOf((cust.specs||{})[id]));
+  const needsSignoff = scoped.filter(id => stageOf((cust.specs||{})[id]) === 'scoped');
+  const reach = scoped.reduce((n,id) => n + funnel((cust.specs||{})[id], id).actual.registrations, 0);
+
+  return `
+  <div class="rounded-banner">
+    <div>
+      <div class="xs bold" style="letter-spacing:.06em;color:var(--primary)">WELCOME BACK</div>
+      <h1 class="mt6">${cust.org}</h1>
+      <p class="small muted mt8">${cust.programs.length} program${cust.programs.length===1?'':'s'} in your workspace.</p>
+    </div>
+    <span class="icon-chip lg purple" style="width:72px;height:72px;flex-shrink:0">${Icon('Building2',{size:32})}</span>
+  </div>
+
+  <div class="grid g4 mt24">
+    ${statTile(cust.programs.length,'Programs')}
+    ${statTile(scoped.length,'Scoped or live')}
+    ${statTile(needsSignoff.length,'Awaiting your sign-off')}
+    ${statTile(reach.toLocaleString('en-IN'),'Innovators reached')}
+  </div>
+
+  ${needsSignoff.length ? `<div class="card card-pad mt20" style="border-color:var(--warn)">
+    <div class="row between wrap gap12">
+      <div><span class="tag" style="color:var(--warn)">Needs you</span>
+        <p class="small mt8">${needsSignoff.length} program${needsSignoff.length===1?'':'s'} scoped and waiting on your sign-off.</p></div>
+      <a class="btn btn-primary btn-sm" href="program.html?id=${needsSignoff[0]}">Review & sign off ${Icon('ArrowRight',{size:13})}</a>
+    </div>
+  </div>` : ''}
+
+  <div class="mt24">
+    <div class="card-head"><h2>Your programs</h2><a class="link-more" href="customer.html?v=programs">Manage all ${Icon('ArrowRight',{size:13})}</a></div>
+    ${cust.programs.length ? `<div class="col gap0">${cust.programs.slice(0,4).map(programRow).join('')}</div>`
+      : `<div class="card empty-state"><p class="small muted">Nothing scoped yet.</p>
+          <a class="btn btn-primary mt12" href="customer.html?v=programs">Scope your first program</a></div>`}
+  </div>
+
+  <div class="mt24 card card-pad">
+    <div class="row gap12"><span class="icon-chip blue">${Icon('MessageCircle',{size:18})}</span>
+      <div><h4>Your success manager</h4><p class="xs muted mt4">Priya Nair · priya@hack2skill.com — reach out any time.</p></div></div>
+  </div>`;
+}
+function statTile(n, label){ return `<div class="card stat"><div class="n">${n}</div><div class="small muted">${label}</div></div>`; }
+function programRow(id){
+  const cust = c();
+  const p = programById(id);
+  const pulse = programPulse(cust, id);
+  const stage = stageOf((cust.specs||{})[id]);
+  return `<a class="row between gap16 wrap" style="padding:14px 0;border-bottom:1px solid var(--line-soft)" href="program.html?id=${id}">
+    <div style="min-width:220px"><div class="row gap8 mb6"><strong class="small">${progName(cust,id)}</strong>
+      <span class="pill pill-outline">${p.label}</span></div>
+      <p class="xs" style="color:${pulse.tone==='warn'?'var(--warn)':pulse.tone==='ok'?'var(--ok)':'var(--muted)'}">${pulse.text}</p></div>
+    <span class="pill ${stage==='live'?'pill-live':stage==='signed-off'?'pill-ok':'pill-outline'}">${STAGE_LABEL[stage] || 'Not scoped'}</span>
+  </a>`;
+}
+
+/* ---------------------------------------------------------------- PROGRAMS */
+function programsMain(){
+  const cust = c();
+  const added = cust.programs || [];
+  const available = PROGRAMS.filter(p => !added.includes(p.id));
+  return `
+  <h1>Programs</h1><p class="small muted mt6">Everything you're running, and what you can add.</p>
+  <div class="mt20">
+    <div class="card-head"><h2>Your programs</h2></div>
+    ${added.length ? `<div class="col">${added.map(programRow).join('')}</div>` : `<p class="small muted">Nothing scoped yet — pick a type below.</p>`}
+  </div>
+  ${available.length ? `<div class="mt24">
+    <div class="card-head"><h2>Add a program</h2></div>
+    <div class="grid g3">${available.map(p => `
+      <div class="card card-pad">
+        <span class="icon-chip blue">${Icon(programIco(p.id),{size:18})}</span>
+        <h4 class="mt10">${p.label}</h4>
+        <p class="xs muted mt6">${p.blurb}</p>
+        <p class="xs faint mt10">${p.runs} · ${p.scale}</p>
+        <a class="btn btn-primary btn-sm btn-block mt12" href="program.html?type=${p.id}">Get started ${Icon('ArrowRight',{size:13})}</a>
+      </div>`).join('')}</div>
+  </div>` : ''}`;
+}
+function programIco(id){
+  return { innovation:'Zap', internal:'Users', evangelism:'Rocket', startup:'TrendingUp', recruitment:'Briefcase', student:'GraduationCap' }[id] || 'Layers';
+}
+
+/* ---------------------------------------------------------------- TALENT POOL */
+function talentMain(){
+  const cust = c();
+  const live = (cust.programs || []).filter(id => stageOf((cust.specs||{})[id]) && stageOf((cust.specs||{})[id]) !== 'scoped');
+  const pools = live.map(id => ({ id, ...participantsFor(id, (cust.specs||{})[id], id) }));
+  const totalReach = pools.reduce((n,p) => n + p.total, 0);
+  return `
+  <h1>Talent Pool</h1><p class="small muted mt6">${totalReach.toLocaleString('en-IN')} innovators across your live and closed programs.</p>
+  ${pools.length ? pools.map(p => `
+    <div class="mt20">
+      <div class="card-head"><h3>${progName(cust,p.id)}</h3><a class="link-more" href="participants.html?id=${p.id}&as=sponsor">See all ${p.total} ${Icon('ArrowRight',{size:13})}</a></div>
+      <div class="card card-pad">
+        ${p.rows.slice(0,5).map(r => `<div class="row between gap12" style="padding:9px 0;border-bottom:1px solid var(--line-soft)">
+          <div class="row gap10"><span class="avatar sm" style="width:28px;height:28px;font-size:11px">${initials(r.name)}</span>
+            <span class="small">${r.name}</span><span class="xs faint">${r.org}</span></div>
+          <span class="xs ${r.submitted ? 'muted' : 'faint'}">${r.submitted ? 'Score ' + r.score : 'Registered'}</span>
+        </div>`).join('')}
+      </div>
+    </div>`).join('') : `<div class="card empty-state mt20"><p class="small muted">No live programs yet — the pool fills in once one launches.</p></div>`}`;
+}
+
+render();
+</script>
+</body>
+</html>

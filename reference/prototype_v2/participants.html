@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talent Pool — Hack2skill</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body"><div id="main"></div></div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="programs.js"></script>
+<script src="shell.js"></script>
+<script>
+const qp = new URLSearchParams(location.search);
+const key = qp.get('id');
+const asEnabler = qp.get('as') === 'enabler';
+let st = S.read();
+const cust = st.customer;
+if (!asEnabler && (!cust || !cust.created)){ location.href = 'customer-register.html'; throw 'redirect'; }
+if (!key){ location.href = asEnabler ? 'enabler.html' : 'customer.html?v=talent'; throw 'no program'; }
+
+if (asEnabler){
+  document.getElementById('shell').className = 'shell';
+} else {
+  document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'sponsor', active:'talent', persona:'sponsor', st });
+  document.getElementById('topbarMount').innerHTML = Topbar({ st });
+  mountBell('sponsor');
+}
+
+let filter = 'all';
+function render(){
+  const spec = ((cust||{}).specs || {})[key] || {};
+  const pool = participantsFor(key, spec, key);
+  const shortlist = (JSON.parse(localStorage.getItem('h2s_shortlist_' + key) || '[]'));
+  const rows = pool.rows.filter(r => filter === 'all' ? true : filter === 'submitted' ? r.submitted : shortlist.includes(r.id));
+
+  document.getElementById('main').innerHTML = `
+    ${asEnabler ? '' : `<a class="btn btn-ghost btn-sm" href="customer.html?v=talent">${Icon('ArrowLeft',{size:14})} Talent Pool</a>`}
+    <h1 class="mt12">${progName(cust||{}, key)} — Talent Pool</h1>
+    <div class="grid g3 mt16">
+      <div class="card stat"><div class="n">${pool.total}</div><div class="small muted">Registered</div></div>
+      <div class="card stat"><div class="n">${pool.submitted}</div><div class="small muted">Submitted</div></div>
+      <div class="card stat"><div class="n">${shortlist.length}</div><div class="small muted">Shortlisted</div></div>
+    </div>
+    <div class="row gap8 mt16">
+      ${[['all','Everyone'],['submitted','Submitted'],['shortlisted','Shortlisted']].map(([k,l]) =>
+        `<button class="chip-filter${filter===k?' active':''}" onclick="filter='${k}';render()">${l}</button>`).join('')}
+    </div>
+    <div class="card mt16">
+      ${rows.length ? rows.map(r => `
+        <div class="row between gap12" style="padding:12px 16px;border-bottom:1px solid var(--line-soft)">
+          <div class="row gap10"><span class="avatar" style="width:32px;height:32px;font-size:12px">${initials(r.name)}</span>
+            <div class="col"><strong class="small">${r.name}</strong><span class="xs muted">${r.org} · ${r.region}</span></div></div>
+          <div class="row gap12">
+            <span class="xs ${r.submitted?'muted':'faint'}">${r.submitted ? 'Score ' + r.score : 'Registered only'}</span>
+            <button class="btn ${shortlist.includes(r.id)?'btn-primary':'btn-outline'} btn-sm" onclick="toggleShortlist('${r.id}')">${shortlist.includes(r.id)?'Shortlisted':'Shortlist'}</button>
+          </div>
+        </div>`).join('') : `<div class="empty-state" style="padding:32px"><p class="small muted">Nobody matches this filter yet.</p></div>`}
+    </div>`;
+}
+function toggleShortlist(id){
+  const k = 'h2s_shortlist_' + key;
+  const list = JSON.parse(localStorage.getItem(k) || '[]');
+  const i = list.indexOf(id);
+  if (i === -1) list.push(id); else list.splice(i,1);
+  localStorage.setItem(k, JSON.stringify(list));
+  render();
+}
+render();
+</script>
+</body>
+</html>

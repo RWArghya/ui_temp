@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell has-rail" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body">
+      <div class="shell-main-wrap">
+        <div id="main"></div>
+        <aside class="app-rail" id="rail"></aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="shell.js"></script>
+<script>
+const el = id => document.getElementById(id);
+
+/* ================================================================= router */
+function currentView(){
+  return new URLSearchParams(location.search).get('view') || 'home';
+}
+function isMentorView(v){ return v === 'mentor' || v.indexOf('m_') === 0; }
+
+function show(view){
+  const st = S.read();
+  if (!st.onboarded){
+    location.href = 'auth.html?mode=login&next=' + encodeURIComponent('app.html' + (view === 'home' ? '' : '?view=' + view));
+    throw 'redirecting';
+  }
+  history.replaceState(null, '', 'app.html' + (view === 'home' ? '' : '?view=' + view));
+  const mode = isMentorView(view) ? 'mentor' : 'innovator';
+  const hasRail = mode === 'mentor' || profileScore(st).pct < 100;
+  document.getElementById('shell').className = 'shell' + (hasRail ? ' has-rail' : '') + (mode === 'mentor' ? ' mode-mentor' : '');
+  const activeKey = ['continuing','recommended'].includes(view) ? 'home' : view;
+  document.getElementById('sidebarMount').innerHTML = Sidebar({
+    mode, active:activeKey, persona: mode === 'mentor' ? 'mentor' : 'innovator', st
+  });
+  document.getElementById('topbarMount').innerHTML = Topbar({ st });
+  mountBell(mode);
+  document.getElementById('main').innerHTML = mainFor(view, st);
+  document.getElementById('rail').innerHTML = railFor(view, st);
+  wireView(view, st);
+}
+
+/* ================================================================= views */
+function comingSoon(title, sub){
+  return `<div class="card empty-state">
+    <span class="icon-chip lg blue">${Icon('Sparkles',{size:24})}</span>
+    <h3 class="mt8">${title}</h3>
+    <p class="small muted" style="max-width:360px">${sub}</p>
+    <a class="btn btn-outline mt12" href="app.html">${Icon('ArrowLeft',{size:14})} Back to Home</a>
+  </div>`;
+}
+
+function mainFor(view, st){
+  if (view === 'home') return homeMain(st);
+  if (view === 'continuing') return continuingMain(st);
+  if (view === 'recommended') return recommendedMain(st);
+  if (['learning','competing','learncompete'].includes(view)) return purposeMain(view, st);
+  if (view === 'arena') return arenaMain(st);
+  if (view === 'saved') return savedMain(st);
+  if (view === 'recent') return recentMain(st);
+  if (view === 'mentor') return mentorMain(st);
+  if (view === 'm_queue') return mentorStatus(st) === 'approved' ? mentorQueueView(st) : mentorMain(st);
+  if (view === 'm_teams') return mentorStatus(st) === 'approved' ? mentorTeamsView(st) : mentorMain(st);
+  if (view === 'm_sessions') return mentorStatus(st) === 'approved' ? mentorSessionsView(st) : mentorMain(st);
+  if (view === 'm_challenges') return mentorChallengesMain(st);
+  if (view === 'm_impact') return mentorStatus(st) === 'approved' ? mentorImpactView(st) : mentorMain(st);
+  return homeMain(st);
+}
+function railFor(view, st){
+  if (view === 'home') return homeRail(st);
+  if (isMentorView(view)) return mentorRail(st);
+  return homeRail(st);
+}
+function wireView(view, st){
+  if (view === 'home') wireHome(st);
+  if (view === 'mentor') wireMentor(st);
+}
+
+/* ---------------------------------------------------------------- HOME */
+/* "Actively involved in" — registered, not yet finished. Used by the home
+   preview row AND its dedicated "view all" section, so the two can never
+   disagree about what counts as active. */
+function activeList(st){
+  return (st.registered || []).map(byId).filter(o => o && o.status !== 'past');
+}
+/* Recommended = not registered, not past, matched against the areas and
+   region the person actually gave us. Falls back to popularity when they
+   have neither set, rather than showing nothing. */
+function recommendedList(st){
+  const registeredIds = st.registered || [];
+  const areas = st.interests || [];
+  const region = st.region || '';
+  let list = INITIATIVES.filter(o => o.status !== 'past' && !registeredIds.includes(o.id) && !o.unlisted);
+  if (areas.length || region){
+    const matched = list.filter(o => (o.areas || []).some(a => areas.includes(a)) || o.region === region);
+    if (matched.length) list = matched;
+  }
+  return list.slice().sort((a,b) => {
+    const liveA = a.status === 'live', liveB = b.status === 'live';
+    if (liveA !== liveB) return liveA ? -1 : 1;
+    return daysLeft(a.deadline) - daysLeft(b.deadline);
+  });
+}
+
+function homeMain(st){
+  const active = activeList(st);
+  const recs = recommendedList(st);
+
+  return `
+  <div class="rounded-banner">
+    <div>
+      <div class="xs bold" style="letter-spacing:.06em;color:var(--primary)">WELCOME BACK</div>
+      <h1 class="mt6">${st.name || 'there'} 👋</h1>
+      <p class="small muted mt8">Build your skills, complete initiatives, and grow your career.</p>
+    </div>
+    <span class="icon-chip lg purple" style="width:72px;height:72px;flex-shrink:0">${Icon('Sparkles',{size:32})}</span>
+  </div>
+
+  <div class="mt24">
+    <div class="card-head"><h2>Continue where you left off</h2>
+      ${active.length ? `<a class="link-more" href="app.html?view=continuing">View all ${Icon('ArrowRight',{size:13})}</a>` : ''}
+    </div>
+    ${active.length ? `<div class="grid g3">
+        ${active.slice(0,3).map(o => continueCard(o, nextStepFor(o, st))).join('')}
+      </div>`
+      : `<div class="card empty-state">
+          <span class="icon-chip lg blue">${Icon('Compass',{size:24})}</span>
+          <h3 class="mt8">No data yet</h3>
+          <p class="small muted">It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started.</p>
+          <a class="btn btn-primary mt12" href="app.html?view=recommended">Explore initiatives ${Icon('ArrowRight',{size:14})}</a>
+        </div>`}
+  </div>
+
+  <div class="mt24">
+    <div class="card-head"><h2>Recommended for you</h2>
+      ${recs.length ? `<a class="link-more" href="app.html?view=recommended">View all ${Icon('ArrowRight',{size:13})}</a>` : ''}
+    </div>
+    ${recs.length ? `<div class="grid g3">${recs.slice(0,3).map(o => initiativeCard(o)).join('')}</div>`
+      : `<div class="card empty-state">
+          <span class="icon-chip lg blue">${Icon('Sparkles',{size:22})}</span>
+          <h4 class="mt8">No recommendations available yet</h4>
+          <p class="xs muted">Check back soon for personalized recommendations based on your interests.</p>
+        </div>`}
+  </div>`;
+}
+
+/* "View all" destinations — same cards, same data, just the full list, in
+   the main column only (sidebar and rail stay put), Flipkart-style. */
+function continuingMain(st){
+  const active = activeList(st);
+  return `
+  <a class="btn btn-ghost btn-sm" href="app.html">${Icon('ArrowLeft',{size:14})} Dashboard</a>
+  <h1 class="mt12">Continue where you left off</h1>
+  <p class="small muted mt6">${active.length} initiative${active.length === 1 ? '' : 's'} you're actively working on.</p>
+  <div class="grid g3 mt20">${active.length ? active.map(o => continueCard(o, nextStepFor(o, st))).join('')
+    : `<div class="card empty-state" style="grid-column:1/-1"><p class="small muted">Nothing in progress yet.</p></div>`}</div>`;
+}
+function recommendedMain(st){
+  const recs = recommendedList(st);
+  return `
+  <a class="btn btn-ghost btn-sm" href="app.html">${Icon('ArrowLeft',{size:14})} Dashboard</a>
+  <h1 class="mt12">Recommended for you</h1>
+  <p class="small muted mt6">${(st.interests||[]).length || st.region ? 'Matched to ' + [...(st.interests||[]).slice(0,3), st.region].filter(Boolean).join(', ') : 'Popular right now'}.</p>
+  <div class="grid g3 mt20">${recs.length ? recs.map(o => initiativeCard(o)).join('')
+    : `<div class="card empty-state" style="grid-column:1/-1"><p class="small muted">Nothing to recommend yet.</p></div>`}</div>`;
+}
+
+function homeRail(st){
+  const { pct } = profileScore(st);
+  return pct >= 100 ? '' : ProfileProgressCard(st);
+}
+
+/* ---------------------------------------------------------- LEARN/COMPETE/BUILD */
+function purposeMain(view, st){
+  const meta = purposeMeta(view);
+  const registeredIds = st.registered || [];
+  const mine = registeredIds.map(byId).filter(o => o && o.purpose === view);
+
+  return `
+  <div class="row between">
+    <div>
+      <h1>${meta.label}</h1>
+      <p class="small muted mt6">${VIEWS[view] ? VIEWS[view].blurb : ''}</p>
+    </div>
+    <span class="icon-chip lg ${meta.cover === 'c-competing' ? 'blue' : meta.cover === 'c-learning' ? 'green' : 'amber'}">${Icon(meta.ico,{size:24})}</span>
+  </div>
+
+  ${mine.length ? `
+    <div class="mt24">
+      <div class="card-head"><h2>In progress</h2></div>
+      <div class="grid g3">${mine.map(o => continueCard(o, nextStepFor(o, st))).join('')}</div>
+    </div>` : ''}
+
+  <div class="mt24">
+    <div class="card-head"><h2>Open for you</h2></div>
+    ${purposeFilterBar(view)}
+    <div class="grid g3 mt16" id="purposeGrid">${purposeGridHTML(view, st)}</div>
+  </div>`;
+}
+function purposeOpenList(view, st, filters){
+  filters = filters || {};
+  const registeredIds = st.registered || [];
+  let list = INITIATIVES.filter(o => o.purpose === view && !registeredIds.includes(o.id) && !o.unlisted);
+  if (filters.q) list = list.filter(o => (o.name + o.org).toLowerCase().includes(filters.q.toLowerCase()));
+  if (filters.area && filters.area !== 'all') list = list.filter(o => (o.areas || []).includes(filters.area));
+  if (filters.region && filters.region !== 'all') list = list.filter(o => o.region === filters.region);
+  if (filters.status && filters.status !== 'all') list = list.filter(o => o.status === filters.status);
+  else list = list.filter(o => o.status !== 'past');
+  if (filters.mode && filters.mode !== 'all') list = list.filter(o => o.mode === filters.mode);
+  return list;
+}
+function purposeGridHTML(view, st, filters){
+  const list = purposeOpenList(view, st, filters);
+  return list.length ? list.map(o => initiativeCard(o)).join('')
+    : `<div class="card empty-state" style="grid-column:1/-1"><p class="small muted">Nothing matches right now — check back soon.</p></div>`;
+}
+function purposeAreasList(view){ return Array.from(new Set(INITIATIVES.filter(o => o.purpose === view).flatMap(o => o.areas || []))).sort(); }
+window.__purposeFilters = {};
+function purposeFilterBar(view){
+  window.__purposeFilters[view] = window.__purposeFilters[view] || { q:'', area:'all', region:'all', status:'all', mode:'all' };
+  const f = window.__purposeFilters[view];
+  return `
+  <div class="card card-pad">
+    <div class="row gap12 wrap">
+      <div class="topbar-search grow" style="max-width:none">
+        ${Icon('Search',{size:16})}
+        <input placeholder="Search by name or organiser…" value="${f.q}" oninput="purposeFilter('${view}','q',this.value)">
+      </div>
+      <select class="select" style="width:auto" onchange="purposeFilter('${view}','area',this.value)">
+        <option value="all">All areas</option>
+        ${purposeAreasList(view).map(a => `<option ${f.area===a?'selected':''}>${a}</option>`).join('')}
+      </select>
+      <select class="select" style="width:auto" onchange="purposeFilter('${view}','region',this.value)">
+        <option value="all">All regions</option>
+        ${REGIONS.map(r => `<option ${f.region===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <select class="select" style="width:auto" onchange="purposeFilter('${view}','status',this.value)">
+        <option value="all">Any status</option>
+        <option value="live" ${f.status==='live'?'selected':''}>Live</option>
+        <option value="upcoming" ${f.status==='upcoming'?'selected':''}>Upcoming</option>
+        <option value="past" ${f.status==='past'?'selected':''}>Completed</option>
+      </select>
+      <select class="select" style="width:auto" onchange="purposeFilter('${view}','mode',this.value)">
+        <option value="all">Any format</option>
+        ${Array.from(new Set(INITIATIVES.filter(o=>o.purpose===view).map(o=>o.mode))).map(m => `<option ${f.mode===m?'selected':''}>${m}</option>`).join('')}
+      </select>
+    </div>
+  </div>`;
+}
+function purposeFilter(view, key, val){
+  window.__purposeFilters[view][key] = val;
+  el('purposeGrid').innerHTML = purposeGridHTML(view, S.read(), window.__purposeFilters[view]);
+}
+
+/* ---------------------------------------------------------------- ARENA */
+function arenaMain(st){
+  const drop = pwCurrent();
+  const entered = pwEntries(st).includes(drop.id);
+  const sub = pwSub(drop.id, st);
+  const credits = pwCredits(st);
+  const board = pwLeaderboard(drop.id, st).slice(0,6);
+  return `
+  <div class="row between">
+    <div><h1>Arena</h1><p class="small muted mt6">PromptWars — the vibe coding arena. A fortnightly loop: drop, build, get scored, climb the board.</p></div>
+    <span class="pill pill-hat">${Icon('Zap',{size:13})} ${credits} credits</span>
+  </div>
+
+  <div class="card card-pad mt20">
+    <div class="row between">
+      <div>
+        <span class="pill pill-live"><span class="pill-dot"></span>Live drop · #${drop.no}</span>
+        <h2 class="mt10">${drop.theme}</h2>
+        <p class="xs muted mt6">${drop.city} · ${drop.sponsor ? drop.sponsor.org + ' sponsored' : 'Hack2skill'}</p>
+      </div>
+    </div>
+    ${sub ? `
+      <div class="mt16 card card-soft card-pad">
+        <div class="row between"><strong class="small">Your submission is in</strong><span class="pill pill-done">Score ${sub.score.total}</span></div>
+        <p class="xs muted mt8">${sub.feedback ? sub.feedback[0] : ''}</p>
+      </div>`
+    : entered ? `
+      <form class="mt16 col gap12" onsubmit="return submitPw(event,'${drop.id}')">
+        <div class="field"><label>Build / repo URL</label><input class="input" name="repo" placeholder="https://github.com/…" required></div>
+        <div class="field"><label>Live demo URL (optional)</label><input class="input" name="url" placeholder="https://…"></div>
+        <div class="field"><label>Prompt count</label><input class="input" name="prompts" type="number" min="1" placeholder="e.g. 42" required></div>
+        <button class="btn btn-primary" style="align-self:flex-start">Submit entry ${Icon('ArrowRight',{size:14})}</button>
+      </form>`
+    : `<button class="btn btn-primary mt16" onclick="enterPw('${drop.id}')">Enter this drop ${Icon('ArrowRight',{size:14})}</button>`}
+  </div>
+
+  <div class="card card-pad mt20">
+    <div class="card-head"><h3>Drop leaderboard</h3></div>
+    <div class="col">
+      ${board.map((r,i) => `<div class="rail-list-item">
+        <span class="xs faint" style="width:20px">#${i+1}</span>
+        <span class="small grow ${r.you ? 'bold' : ''}">${r.name}${r.you ? ' (you)' : ''}</span>
+        <span class="xs muted">${r.credits} cr</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+function enterPw(id){ pwEnter(id); logActivity('You entered PromptWars drop #' + pwCurrent().no); show('arena'); }
+function submitPw(e, id){
+  e.preventDefault();
+  const f = e.target;
+  pwSubmit(id, { repo:f.repo.value, url:f.url.value, prompts:+f.prompts.value });
+  logActivity('You submitted your PromptWars entry');
+  show('arena');
+  return false;
+}
+
+/* ---------------------------------------------------------------- SAVED / RECENT */
+function savedMain(st){
+  const list = savedList(st).map(byId).filter(Boolean);
+  return `<h1>Saved initiatives</h1><p class="small muted mt6">${list.length} saved</p>
+  <div class="grid g3 mt20">
+    ${list.length ? list.map(o => initiativeCard(o,{cta:'View'})).join('')
+      : `<div class="card empty-state" style="grid-column:1/-1">
+          <span class="icon-chip lg blue">${Icon('Bookmark',{size:22})}</span>
+          <h3 class="mt8">Nothing saved yet</h3>
+          <p class="small muted">Tap the bookmark on any initiative to keep it here.</p>
+          <a class="btn btn-primary mt12" href="app.html?view=recommended">Browse initiatives</a>
+        </div>`}
+  </div>`;
+}
+function recentMain(st){
+  const list = recentViews(st).map(byId).filter(Boolean);
+  return `<h1>Recently viewed</h1><p class="small muted mt6">${list.length} viewed recently</p>
+  <div class="grid g3 mt20">
+    ${list.length ? list.map(o => initiativeCard(o,{cta:'View'})).join('')
+      : `<div class="card empty-state" style="grid-column:1/-1">
+          <span class="icon-chip lg blue">${Icon('Clock',{size:22})}</span>
+          <h3 class="mt8">Nothing viewed yet</h3>
+          <p class="small muted">Initiatives you open will show up here.</p>
+          <a class="btn btn-primary mt12" href="app.html?view=recommended">Browse initiatives</a>
+        </div>`}
+  </div>`;
+}
+
+/* ================================================================= MENTOR
+   Ported from prototype_v1's app.html mentor surfaces — same state machine
+   (none → applying → pending/info/rejected → approved), same derived
+   metrics, new components. Per-challenge scoring lives in mentor.html. */
+const M_AREAS = ['AI / GenAI','Agentic AI','Web3','Blockchain','AR / VR','Cloud','Cybersecurity',
+                 'Data Science','IoT','Robotics','FinTech','HealthTech','Sustainability','Space',
+                 'Product','UI/UX','Business / GTM'];
+
+function mentorMatchAreas(st){
+  const a = st.mentorApp || {};
+  return (a.areas && a.areas.length) ? a.areas : [].concat(st.interests || [], st.skills || []);
+}
+const compactNum = n => n >= 1000000 ? (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M+'
+                      : n >= 1000    ? Math.floor(n/1000) + 'K+' : String(n);
+
+function statTile(n, label){ return `<div class="card stat"><div class="n">${n}</div><div class="small muted">${label}</div></div>`; }
+
+function mentorMetrics(st, s){
+  const matched = suggestedChallenges(mentorMatchAreas(st));
+  const reach   = matched.reduce((n,o) => n + (o.regs || 0), 0);
+  const mapped  = approvedChallenges(st).length;
+  return `<div class="grid g4 mb24">
+    ${statTile(matched.length, 'Challenges match your expertise')}
+    ${statTile(compactNum(reach), 'Innovators across them')}
+    ${statTile(mapped, 'Challenges mapped to you')}
+    ${statTile(s === 'rejected' ? '—' : '2–3 days', s === 'pending' || s === 'info' ? 'Decision expected in' : 'Typical review time')}
+  </div>`;
+}
+/* generic initiative row — used only by the mentor "recommended" list */
+function initRow(o, opt){
+  opt = opt || {};
+  return `<div class="row between gap16 wrap" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
+    <div style="min-width:220px">
+      <div class="row gap8 mb6">${statusPill(o.status)}${opt.tag ? `<span class="pill">${opt.tag}</span>` : ''}<strong class="small">${o.name}</strong></div>
+      <p class="xs muted">${opt.meta || (o.org + ' · ' + o.mode + ' · ' + o.region)}</p>
+    </div>
+    <a class="btn btn-outline btn-sm" href="${opt.workspace ? 'workspace' : 'initiative'}.html?id=${o.id}">${opt.cta || 'Open'}</a>
+  </div>`;
+}
+function mentorRecommended(st, s){
+  const areas = mentorMatchAreas(st);
+  const matched = suggestedChallenges(areas).slice().sort((a,b) => {
+    const openA = daysLeft(a.deadline) >= 0, openB = daysLeft(b.deadline) >= 0;
+    if (openA !== openB) return openA ? -1 : 1;
+    return (b.pop || 0) - (a.pop || 0);
+  });
+  const shown = matched.slice(0, 5);
+  const lead = s === 'none'
+    ? 'Where your expertise would land once you\'re approved — an Enabler maps mentors to specific challenges.'
+    : 'What you\'ll be able to request once your registration is approved.';
+  return `<div class="card card-pad"><h3>Recommended for you</h3>
+    ${!areas.length ? `<p class="small muted mt8">Add interests and skills in your Profile and we'll match you to challenges here.</p>`
+    : !matched.length ? `<p class="small muted mt8">Nothing open matches ${areas.slice(0,3).join(', ')} right now.</p>`
+    : `<p class="small muted mt8">${lead}</p>
+      <div class="row wrap gap8 mt12 mb8">
+        ${areas.slice(0,5).map(x => `<span class="pill pill-outline">${x}</span>`).join('')}
+        ${areas.length > 5 ? `<span class="pill pill-outline">+${areas.length - 5} more</span>` : ''}
+      </div>
+      ${shown.map(o => initRow(o, { tag:(VIEWS[o.purpose]||{}).label, cta:'Preview' })).join('')}`}</div>`;
+}
+
+function mentorMain(st){
+  const s = mentorStatus(st);
+  if (s === 'none')     return mentorIntro(st);
+  if (s === 'applying') return mentorForm(st);
+  if (s === 'approved') return mentorApproved(st);
+  return mentorTracker(st, s, st.mentorApp || {});
+}
+
+function mentorIntro(st){
+  return `
+  <h1>Mentor</h1><p class="small muted mt6">Guide teams and score submissions for initiatives on H2S.</p>
+  ${mentorMetrics(st, 'none')}
+  <div class="grid g2 mb20">
+    <div class="card card-pad"><h4>What mentors do</h4><p class="small muted mt8">Run office hours, unblock teams, review approaches before submission. Typically 2–4 hours per initiative.</p></div>
+    <div class="card card-pad"><h4>What evaluators do</h4><p class="small muted mt8">Score submissions against a published rubric, write feedback, and help shortlist for the jury round.</p></div>
+  </div>
+  <div class="locked">
+    <span class="icon-chip lg slate" style="margin:0 auto">${Icon('Lock',{size:24})}</span>
+    <h3 class="mt16">This view unlocks after approval</h3>
+    <p class="muted small mt8" style="max-width:480px;margin:8px auto 0">We verify expertise before giving anyone access to participants' submissions. It takes about 5 minutes to register and 2–3 working days to hear back.</p>
+    <button class="btn btn-primary mt24" onclick="startApply()">Register as a mentor</button>
+    <p class="xs faint mt16">Registering never restricts anything else on your account.</p>
+  </div>
+  <div class="mt20">${mentorRecommended(st, 'none')}</div>`;
+}
+
+let F = { roles:[], areas:[], years:'', title:'', org:'', linkedin:'', hours:'', bio:'', consent:false };
+function startApply(){
+  const st = S.read(); const a = st.mentorApp || {};
+  F = { roles:a.roles||[], areas:a.areas||[], years:a.years||'', title:a.title||'',
+        org:a.org||st.org||'', linkedin:a.linkedin||'', hours:a.hours||'', bio:a.bio||'', consent:false };
+  S.save({ mentorApp: Object.assign({}, a, { status:'applying' }) });
+  show('mentor');
+}
+function mentorForm(st){
+  const resubmit = (st.mentorApp || {}).reviewNote;
+  return `
+  <h1>Register as a mentor</h1>
+  <p class="small muted mt6">Five fields we actually read. Everything else on your account stays open while we review.</p>
+  ${resubmit ? `<div class="nudge mt16"><strong class="small">More information requested</strong>
+    <p class="small mt8">"${resubmit}"</p><p class="xs faint mt8">Update the relevant field below and resubmit.</p></div>` : ''}
+  <div class="card card-pad mt16">
+    <span class="tag">I want to</span>
+    <div class="row gap8 wrap mt12">
+      ${[['mentor','Mentor teams'],['evaluator','Evaluate submissions']].map(([k,l]) =>
+        `<span class="chip ${F.roles.includes(k)?'on':''}" onclick="mTgl('roles','${k}')">${l}</span>`).join('')}
+    </div>
+    <p class="xs faint mt8">Pick both if you're happy to do both — most approved reviewers do.</p>
+  </div>
+  <div class="card card-pad mt16">
+    <span class="tag">Areas of expertise</span>
+    <p class="xs faint mt6 mb12">We route submissions to you by these. Pick up to five.</p>
+    <div class="row gap8 wrap">${M_AREAS.map(a => `<span class="chip ${F.areas.includes(a)?'on':''}" onclick="mTgl('areas','${a}')">${a}</span>`).join('')}</div>
+  </div>
+  <div class="card card-pad mt16">
+    <div class="grid g2">
+      <div class="field"><label>Current title</label><input class="input" id="m_title" value="${F.title}" oninput="F.title=this.value;mValid()" placeholder="Staff Engineer"></div>
+      <div class="field"><label>Organisation</label><input class="input" id="m_org" value="${F.org}" oninput="F.org=this.value;mValid()" placeholder="Acme Technologies"></div>
+      <div class="field"><label>Years of experience</label>
+        <select class="select" id="m_years" onchange="F.years=this.value;mValid()">
+          ${['','2–4','5–8','9–14','15+'].map(y => `<option value="${y}" ${F.years===y?'selected':''}>${y||'Select…'}</option>`).join('')}
+        </select></div>
+      <div class="field"><label>Availability</label>
+        <select class="select" id="m_hours" onchange="F.hours=this.value;mValid()">
+          ${['','2–4 hrs / month','5–10 hrs / month','10+ hrs / month'].map(h => `<option value="${h}" ${F.hours===h?'selected':''}>${h||'Select…'}</option>`).join('')}
+        </select></div>
+    </div>
+    <div class="field"><label>LinkedIn or portfolio</label><input class="input" id="m_li" value="${F.linkedin}" oninput="F.linkedin=this.value;mValid()" placeholder="linkedin.com/in/…"></div>
+    <div class="field" style="margin-bottom:0"><label>Anything we should know? <span class="faint">(optional)</span></label>
+      <textarea class="input" id="m_bio" rows="3" oninput="F.bio=this.value" placeholder="Judged 3 hackathons at… / built and shipped…">${F.bio}</textarea></div>
+  </div>
+  <div class="card card-pad mt16">
+    <div class="check" style="cursor:pointer" onclick="mTglConsent()">
+      <span class="box${F.consent?' done':''}">${F.consent ? Icon('Check',{size:11}) : ''}</span>
+      <span class="ctext small">I agree to the reviewer code of conduct and will keep every submission I see confidential. I'll declare any conflict of interest before scoring.</span>
+    </div>
+  </div>
+  <div class="row gap12 mt16">
+    <button class="btn btn-ghost" onclick="mCancel()">Cancel</button>
+    <button class="btn btn-primary btn-lg" id="submitApp" disabled onclick="mSubmit()">${resubmit ? 'Resubmit application' : 'Submit application'}</button>
+    <span class="small faint" id="mValidMsg"></span>
+  </div>`;
+}
+function mTgl(bag, val){
+  const a = F[bag], i = a.indexOf(val);
+  if (i > -1) a.splice(i,1);
+  else if (bag === 'areas' && a.length >= 5){ toast('Pick up to 5 areas.'); return; }
+  else a.push(val);
+  show('mentor');
+}
+function mTglConsent(){ F.consent = !F.consent; show('mentor'); }
+function mValid(){
+  const ok = F.roles.length && F.areas.length && F.years && F.title && F.org && F.linkedin && F.hours && F.consent;
+  const b = el('submitApp');
+  if (b){ b.disabled = !ok; el('mValidMsg').textContent = ok ? '' : 'Fill every field and accept the code of conduct.'; }
+  return ok;
+}
+function mCancel(){
+  const st = S.read(); const a = st.mentorApp || {};
+  S.save({ mentorApp: a.submitted ? Object.assign({}, a, {status:'info'}) : null });
+  show('mentor');
+}
+function mSubmit(){
+  if (!mValid()) return;
+  const prev = S.read().mentorApp || {};
+  S.save({ mentorApp:{ status:'pending', roles:F.roles, areas:F.areas, years:F.years, title:F.title,
+    org:F.org, linkedin:F.linkedin, hours:F.hours, bio:F.bio, submitted:new Date().toISOString(),
+    resubmitted:!!prev.submitted, reviewNote:null } });
+  logActivity('You applied to become a mentor');
+  show('mentor');
+}
+
+function mentorTracker(st, s, a){
+  const stages = [
+    ['Application submitted', true, a.submitted ? new Date(a.submitted).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : ''],
+    ['Under review by the H2S team', true, s === 'pending' ? 'In progress' : 'Done'],
+    [s === 'rejected' ? 'Decision — not approved this time' : s === 'info' ? 'More information requested' : 'Decision',
+      s !== 'pending', s === 'pending' ? 'Expected in 2–3 working days' : '']
+  ];
+  const head = {
+    pending:  ['Clock','Application under review','Our team is verifying your expertise. Typical turnaround is 2–3 working days — we\'ll notify you here and this view unlocks automatically.'],
+    info:     ['Edit3','We need a bit more from you','A reviewer has a question before deciding. Nothing else on your account is affected.'],
+    rejected: ['X','Not approved this time','This doesn\'t affect anything else on your account — you keep full access to every other view.']
+  }[s];
+  return `
+  <h1>Mentor</h1>
+  ${mentorMetrics(st, s)}
+  <div class="card card-pad" style="text-align:center;padding:36px">
+    <span class="icon-chip lg slate" style="margin:0 auto">${Icon(head[0],{size:24})}</span>
+    <h3 class="mt16">${head[1]}</h3>
+    <p class="muted small mt8" style="max-width:480px;margin:8px auto 0">${head[2]}</p>
+    ${a.reviewNote ? `<div class="nudge mt20" style="text-align:left"><span class="tag">Reviewer note</span><p class="small mt8">"${a.reviewNote}"</p></div>` : ''}
+    <div class="row gap12 mt20" style="justify-content:center">
+      ${s === 'info'     ? `<button class="btn btn-primary" onclick="startApply()">Update and resubmit</button>` : ''}
+      ${s === 'pending'  ? `<button class="btn btn-ghost" onclick="startApply()">Edit application</button><button class="btn btn-quiet" onclick="mWithdraw()">Withdraw</button>` : ''}
+      ${s === 'rejected' ? `<button class="btn btn-ghost" onclick="startApply()">Apply again</button>` : ''}
+    </div>
+  </div>
+  <div class="grid g2 mt20">
+    <div class="card card-pad"><h4>Progress</h4><div class="tl mt16">
+      ${stages.map(([t,done,when],i) => `<div class="tl-item ${i===0?'done':(s==='pending'&&i===1)?'now':(s!=='pending'&&i<=2)?'done':''}">
+        <div class="row between gap12 wrap"><strong class="small">${t}</strong><span class="small muted">${when}</span></div></div>`).join('')}
+    </div></div>
+    <div class="card card-pad"><h4>What you submitted</h4><div class="col mt12">
+      <div class="kv"><span>Applying as</span><strong>${mentorRoleLabel(st)}</strong></div>
+      <div class="kv"><span>Title</span><strong>${a.title || '—'}</strong></div>
+      <div class="kv"><span>Organisation</span><strong>${a.org || '—'}</strong></div>
+      <div class="kv"><span>Experience</span><strong>${a.years || '—'}</strong></div>
+      <div class="kv"><span>Availability</span><strong>${a.hours || '—'}</strong></div>
+      <div class="kv"><span>Expertise</span><strong style="text-align:right">${(a.areas||[]).join(', ') || '—'}</strong></div>
+    </div></div>
+  </div>
+  <div class="mt20">${mentorRecommended(st, s)}</div>
+  <div class="mt16 card card-soft card-pad"><p class="small muted"><strong>This gate is additive only.</strong>
+    While it's ${s === 'rejected' ? 'closed' : 'open'}, you keep unrestricted access to Learn, Compete and Build. Only this view is affected.</p></div>`;
+}
+function mWithdraw(){ S.save({ mentorApp:null }); show('mentor'); }
+
+const mScores = () => allScores();
+const mAssigned = st => assignmentsFor(approvedChallenges(st), (st.mentorApp || {}).areas);
+
+function mentorApproved(st){
+  const a = st.mentorApp || {};
+  const all = mAssigned(st);
+  const done = all.filter(q => mScores()[q.key]);
+  const todo = all.filter(q => !mScores()[q.key]);
+  const mentored = [...new Set(all.map(q => q.id))];
+  return `
+  <div class="row gap12 wrap"><h1>Mentor</h1><span class="pill pill-ok">Approved · ${mentorRoleLabel(st)}</span></div>
+  <p class="small muted mt6">Routed to you by your declared expertise: ${(a.areas||[]).map(x => `<span class="pill pill-outline">${x}</span>`).join(' ')}
+    <a onclick="startApply()" style="color:var(--primary);cursor:pointer;font-weight:600">change</a></p>
+  <div class="grid g4 mt16 mb20">
+    ${statTile(todo.length, 'Awaiting your score')}
+    ${statTile(done.length, 'Scored')}
+    ${statTile(mentored.length, 'Challenges approved on')}
+    ${statTile(a.hours ? a.hours.split(' ')[0] : '—', 'Hrs / month pledged')}
+  </div>
+  <div class="card card-pad">
+    <h4>Waiting on you</h4>
+    <p class="small muted mt8">${todo.length ? todo.length + ' submission' + (todo.length===1?'':'s') + ' routed to you, nearest deadline first.' : 'Queue clear. Nothing routed to you needs a score.'}</p>
+    ${todo.slice(0,3).map(q => { const o = byId(q.id) || {}; return `
+      <div class="row between gap16 wrap" style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
+        <div><strong class="small">${q.team}</strong><p class="xs muted mt6">${o.name || ''} · ${q.brief}</p></div>
+        <a class="btn btn-primary btn-sm" href="mentor.html?id=${q.id}">Evaluate</a>
+      </div>`; }).join('')}
+    ${todo.length > 3 ? `<p class="xs faint mt12"><a onclick="show('m_queue')" style="color:var(--primary);cursor:pointer">See all ${todo.length} in the queue →</a></p>` : ''}
+  </div>
+  <div class="mt16 card card-pad">
+    <h4>Your challenges</h4>
+    <p class="small muted mt8">${mentored.length ? 'Approved on ' + mentored.length + ' challenge' + (mentored.length===1?'':'s') + '.' : 'No mappings yet — requesting one is what routes work to you.'}</p>
+    <p class="xs faint mt12"><a onclick="show('m_challenges')" style="color:var(--primary);cursor:pointer">Manage challenges →</a></p>
+  </div>
+  ${mentorNextSessionCard(st)}`;
+}
+function mentorNextSessionCard(st){
+  const roles = (st.mentorApp || {}).roles || [];
+  if (!roles.includes('mentor')) return '';
+  const rows = approvedChallenges(st).map(byId).filter(Boolean).filter(o => mentoringOn(o))
+    .flatMap(o => mySessions(o, st).map(b => Object.assign({ o }, b)))
+    .filter(b => !b.past).sort((x,y) => (x.day + x.time).localeCompare(y.day + y.time));
+  if (!rows.length) return '';
+  const nx = rows[0];
+  return `<div class="mt16 card card-pad"><h4>Next mentor session</h4>
+    <div class="row between gap12 wrap mt8">
+      <div><strong class="small">${nx.team || nx.by || 'A participant'} · ${mentorCatName(nx.cat)}</strong>
+        <p class="xs muted mt6">${nx.today ? 'Today' : new Date(nx.day).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})} at ${nx.time} · ${nx.mins} min · ${nx.o.name}</p></div>
+      <a class="btn btn-ghost btn-sm" onclick="show('m_sessions')" style="cursor:pointer">All ${rows.length} booked →</a>
+    </div></div>`;
+}
+
+function mentorQueueView(st){
+  const a = st.mentorApp || {};
+  const canEval = (a.roles || []).includes('evaluator');
+  const all = mAssigned(st);
+  return `
+  <h1>Evaluation queue</h1><p class="small muted mt6">Submissions routed to you by the challenges you're approved on.</p>
+  <div class="card card-pad mt16">
+    ${canEval ? (all.length ? all.map(q => { const o = byId(q.id) || {}, s = mScores()[q.key]; return `
+      <div class="row between gap16 wrap" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
+        <div style="min-width:220px"><div class="row gap8 mb6"><strong class="small">${q.team}</strong><span class="pill pill-outline">${o.name || ''}</span></div>
+          <p class="small muted">${q.brief}</p></div>
+        <div class="row gap8">
+          ${s ? (s.conflict ? '<span class="pill pill-warn">Conflict declared</span>' : `<span class="pill pill-ok">Scored ${scoreAvg(s)} / 5</span>`)
+              : `<span class="small ${daysLeft(q.due) <= 7 ? '' : 'muted'}" style="${daysLeft(q.due) <= 7 ? 'color:var(--warn);font-weight:600' : ''}">${deadlineText(o)}</span>`}
+          <a class="btn ${s ? 'btn-outline' : 'btn-primary'} btn-sm" href="mentor.html?id=${q.id}">${s ? 'Review' : 'Evaluate'}</a>
+        </div></div>`; }).join('')
+      : `<p class="small faint">No submissions yet — you're not approved on any challenge. Request one below and your Enabler will confirm the mapping.</p>`)
+    : `<p class="small muted">You applied as a mentor, not an evaluator. Want to score submissions too? <a onclick="startApply()" style="color:var(--primary);cursor:pointer">Add the evaluator role</a>.</p>`}
+  </div>`;
+}
+
+function mentorTeamsView(st){
+  const a = st.mentorApp || {};
+  const canMentor = (a.roles || []).includes('mentor');
+  const mentored = [...new Set(mAssigned(st).map(q => q.id))];
+  if (!canMentor) return `<h1>Teams & office hours</h1><p class="small muted mt6">The mentoring half of the job.</p>
+    <div class="card card-pad mt16"><p class="small muted">You registered as an evaluator, not a mentor. Want to guide teams too? <a onclick="startApply()" style="color:var(--primary);cursor:pointer">Add the mentor role</a>.</p></div>`;
+  const connect = mentored.map(byId).filter(Boolean).filter(o => mentoringOn(o));
+  const legacy  = mentored.map(byId).filter(Boolean).filter(o => !mentoringOn(o));
+  const booked = connect.flatMap(o => mySessions(o, st)).filter(b => !b.past).length;
+  return `
+  <h1>Teams & office hours</h1><p class="small muted mt6">Who you're guiding, and when you're available.</p>
+  ${connect.length ? `<div class="nudge mt16"><div class="row between gap16 wrap">
+    <div class="grow" style="min-width:240px"><strong class="small">${connect.length} program${connect.length===1?' runs':'s run'} bookable mentor hours</strong>
+      <p class="small mt8">${connect.map(o => o.name).join(', ')}${booked ? ` — ${booked} session${booked===1?' is':'s are'} already on your calendar` : ''}.</p></div>
+    <button class="btn btn-primary btn-sm" onclick="show('m_sessions')">Booked sessions →</button></div></div>` : ''}
+  <div class="card card-pad mt16"><h4>Informal office hours</h4>
+    ${legacy.length ? legacy.map(o => { const open = (st.mentorSlots || {})[o.id]; return `
+      <div class="row between gap12 wrap" style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
+        <div><strong class="small">${o.name}</strong><p class="xs muted mt6">${open ? 'Thursday 6–7pm IST · open' : 'No slot open'}</p></div>
+        <button class="btn ${open ? 'btn-outline' : 'btn-primary'} btn-sm" onclick="mToggleSlot('${o.id}')">${open ? 'Close slot' : 'Open a slot'}</button>
+      </div>`; }).join('')
+    : `<p class="small faint mt8">${mentored.length ? 'Every program you are on runs bookable mentor hours, so there is nothing to open informally.' : 'Office hours appear once you are assigned to an initiative.'}</p>`}
+  </div>`;
+}
+function mToggleSlot(id){ const m = S.read().mentorSlots || {}; m[id] = !m[id]; S.save({ mentorSlots:m }); show('m_teams'); }
+
+const isoPlus = n => new Date(Date.now() + n * 86400000).toISOString().slice(0,10);
+function mSessRow(o, b){
+  const when = new Date(b.day + 'T00:00:00Z');
+  return `<div class="wrow ${b.past ? 'done' : b.today ? 'current' : ''}">
+    <span class="jn" style="${b.past ? 'background:var(--ok);color:#fff' : ''}">${b.past ? Icon('Check',{size:11}) : Icon('ChevronRight',{size:11})}</span>
+    <div class="grow">
+      <div class="wtitle">${b.team || b.by || 'A participant'} <span class="pill pill-outline" style="margin-left:6px">${mentorCatName(b.cat)}</span>
+        ${b.orphaned ? '<span class="pill pill-warn" style="margin-left:4px">Outside your hours</span>' : ''}</div>
+      <p class="xs muted">${DOW[when.getUTCDay()]} ${when.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} at ${b.time} · ${b.mins} min${b.ps ? ' · ' + b.ps : ''}</p>
+      ${b.ask && !b.past ? `<p class="xs mt6"><strong>Asked about:</strong> ${b.ask}</p>` : ''}
+      ${b.past && b.note ? `<p class="xs mt6"><strong>Your note:</strong> ${b.note}</p>` : ''}
+      ${b.past && !b.note ? `<p class="xs mt6" style="color:var(--warn)">No note yet — <a href="mentor.html?id=${o.id}&t=sessions" style="color:var(--warn);font-weight:600">write one</a></p>` : ''}
+    </div>
+    <a class="btn btn-outline btn-sm" href="mentor.html?id=${o.id}&t=sessions">${b.past ? 'Note' : 'Details'}</a>
+  </div>`;
+}
+function mentorSessionsView(st){
+  const a = st.mentorApp || {};
+  if (!(a.roles || []).includes('mentor')) return `<h1>Booked sessions</h1>
+    <div class="card card-pad mt16"><p class="small muted">You registered as an evaluator, not a mentor, so nobody books time with you. <a onclick="startApply()" style="color:var(--primary);cursor:pointer">Add the mentor role</a> if you want to.</p></div>`;
+  const mapped = Object.entries(mentorChallenges(st)).filter(([,v]) => v === 'approved').map(([id]) => byId(id)).filter(Boolean);
+  const connect = mapped.filter(o => mentoringOn(o));
+  const legacy  = mapped.filter(o => !mentoringOn(o));
+  const blocks = connect.map(o => {
+    const seats = myMentorSeats(o, st);
+    const cats  = myMentorCats(o, st);
+    const av    = mentorAvail(o, st);
+    const rows  = mySessions(o, st);
+    const open  = seats.flatMap(m => mentorSlots(o, m, st)).filter(sl => !bookingsAll(st)[sl.key] && sl.day >= TODAY()).length;
+    const today = rows.filter(b => b.today), soon = rows.filter(b => !b.past && !b.today), past = rows.filter(b => b.past);
+    if (!seats.length) return `<div class="card card-pad mt16" style="border-color:var(--warn)">
+      <div class="row between wrap gap12"><div><strong class="small">${o.name}</strong>
+        <p class="xs muted mt6">Mentor Connect is on, but you have not picked a category — so nobody can book you.</p></div>
+        <a class="btn btn-primary btn-sm" href="mentor.html?id=${o.id}&t=avail">Set availability</a></div></div>`;
+    return `<div class="card card-pad mt16">
+      <div class="row between wrap gap12"><div class="grow" style="min-width:230px"><strong>${o.name}</strong>
+        <p class="xs muted mt6">${cats.map(mentorCatName).join(' · ')} · ${av.paused ? '<span style="color:var(--warn)">bookings paused</span>' : av.days.map(d => DOW[d]).join(' ') + ' at ' + av.times.join(', ')} · ${open} open slot${open===1?'':'s'} left</p></div>
+        <a class="btn btn-outline btn-sm" href="mentor.html?id=${o.id}&t=sessions">Open console →</a></div>
+      ${!rows.length ? `<p class="small faint mt12">Nothing booked on this program yet.</p>`
+        : [['Today',today,'var(--warn)'],['Upcoming',soon,''],['Held',past,'']].filter(g => g[1].length).map(([label,list,tone]) => `
+          <div class="row between wrap gap8" style="margin:16px 0 8px"><span class="tag" ${tone?`style="color:${tone}"`:''}>${label}</span><span class="xs muted">${list.length}</span></div>
+          ${list.map(b => mSessRow(o, b)).join('')}`).join('')}
+    </div>`;
+  }).join('');
+  const allRows = connect.flatMap(o => mySessions(o, st));
+  const noNote = allRows.filter(b => b.past && !(b.note||'').trim()).length;
+  return `
+  <h1>Booked sessions</h1><p class="small muted mt6">Every slot a team has booked with you, across every program you mentor.</p>
+  <div class="grid g4 mt16 mb20">
+    ${statTile(allRows.filter(b=>b.today).length,'Today')}
+    ${statTile(allRows.filter(b=>!b.past && b.day<=isoPlus(7)).length,'Next 7 days')}
+    ${statTile(allRows.length,'All time')}
+    ${statTile(connect.length,'Programs')}
+  </div>
+  ${noNote ? `<div class="nudge"><strong class="small">${noNote} held session${noNote===1?'':'s'} with no note</strong><p class="small mt8">The note is what the team takes away — never the jury, never a score.</p></div>` : ''}
+  ${blocks || (connect.length ? '' : `<div class="empty"><p class="small">None of your programs run Mentor Connect.</p><p class="xs muted mt8">Booking only exists where the sponsor switched it on. On the others you can still open informal office hours.</p></div>`)}
+  ${legacy.length ? `<div class="card card-soft card-pad mt16"><span class="tag">No booking on these</span>
+    <p class="xs muted mt6 mb12">${legacy.map(o=>o.name).join(', ')} — not enabled Mentor Connect. Informal office hours still work.</p>
+    ${legacy.map(o => { const open = (st.mentorSlots||{})[o.id]; return `
+      <div class="row between gap12 wrap" style="padding:10px 0;border-top:1px solid var(--line-soft)">
+        <div><strong class="small">${o.name}</strong><p class="xs muted mt6">${open?'Thursday 6–7pm IST · open':'No slot open'}</p></div>
+        <button class="btn ${open?'btn-outline':'btn-primary'} btn-sm" onclick="mToggleSlot('${o.id}')">${open?'Close slot':'Open a slot'}</button>
+      </div>`; }).join('')}</div>` : ''}`;
+}
+
+const MAP_PILL = { requested:['Awaiting Enabler','pill-warn'], approved:['Approved','pill-ok'], declined:['Not approved','pill'] };
+function mentorChallengesMain(st){
+  const map = mentorChallenges(st);
+  const chosen = Object.keys(map);
+  const suggest = suggestedChallenges((st.mentorApp || {}).areas).filter(o => !chosen.includes(o.id));
+  return `
+  <h1>My challenges</h1><p class="small muted mt6">Mappings you hold, requests waiting on an Enabler, and what matches your expertise.</p>
+  <div class="card card-pad mt16"><h4>Challenges you mentor</h4>
+    <p class="small muted mt8 mb12">Pick the challenges you want to work on. Your Enabler confirms each mapping before submissions are routed to you.</p>
+    ${chosen.length ? chosen.map(id => { const o = byId(id); if (!o) return ''; const [lab,cls] = MAP_PILL[map[id]] || MAP_PILL.requested; return `
+      <div class="row between gap16 wrap" style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
+        <div style="min-width:220px"><div class="row gap8 mb6"><strong class="small">${o.name}</strong><span class="pill ${cls}">${lab}</span></div>
+          <p class="xs muted">${o.org} · ${o.areas.join(' · ')}</p></div>
+        ${map[id] === 'approved' ? `<div class="row gap8"><span class="small muted">${assignmentsFor([id]).length} routed</span><a class="btn btn-primary btn-sm" href="mentor.html?id=${id}">Open console</a></div>`
+          : `<button class="btn btn-quiet btn-sm" onclick="mUnrequest('${id}')">${map[id] === 'declined' ? 'Dismiss' : 'Withdraw'}</button>`}
+      </div>`; }).join('') : '<p class="small faint mb12">Nothing requested yet.</p>'}
+    ${suggest.length ? `<p class="tag mt20 mb8">Suggested for your expertise</p>
+      <div class="row gap8 wrap">${suggest.slice(0,6).map(o => `<span class="chip" onclick="mRequest('${o.id}')" title="${o.areas.join(', ')}">+ ${o.name}</span>`).join('')}</div>` : ''}
+  </div>
+  <div class="mt16">${mentorRecommended(st, mentorStatus(st))}</div>`;
+}
+function mRequest(id){ const m = mentorChallenges(S.read()); m[id] = 'requested'; S.save({ mentorChallenges:m }); show('m_challenges'); }
+function mUnrequest(id){ const m = mentorChallenges(S.read()); delete m[id]; S.save({ mentorChallenges:m }); show('m_challenges'); }
+
+function mentorImpactView(st){
+  const all = mAssigned(st);
+  const scored = all.filter(q => mScores()[q.key] && !mScores()[q.key].conflict);
+  const avg = scored.length ? (scored.reduce((t,q) => t + Number(scoreAvg(mScores()[q.key])), 0) / scored.length).toFixed(1) : '—';
+  const slots = Object.keys(st.mentorSlots || {}).length;
+  return `
+  <h1>Impact</h1><p class="small muted mt6">What your feedback actually did — the reason an unpaid expert comes back.</p>
+  <div class="grid g4 mt16 mb20">
+    ${statTile(scored.length,'Submissions scored')}
+    ${statTile(all.length - scored.length,'Still open')}
+    ${statTile(avg,'Your average score')}
+    ${statTile(slots,'Office hour slots')}
+  </div>
+  <div class="card card-pad"><h4>What you wrote</h4>
+    ${scored.length ? scored.map(q => `<div style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
+        <div class="row between gap12 wrap mb6"><strong class="small">${q.team}</strong><span class="pill pill-ok">${scoreAvg(mScores()[q.key])} / 5</span></div>
+        <p class="small muted">${mScores()[q.key].note || '<span class="faint">No written feedback</span>'}</p>
+      </div>`).join('') : '<p class="small faint mt8">Nothing scored yet. Your first evaluation shows up here.</p>'}
+  </div>`;
+}
+function wireMentor(){}
+
+/* ---------------------------------------------------------------- home wiring */
+function wireHome(){}
+
+document.addEventListener('DOMContentLoaded', () => show(currentView()));
+</script>
+</body>
+</html>

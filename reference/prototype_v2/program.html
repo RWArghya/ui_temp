@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill for Enterprises</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body" style="max-width:900px"><div id="main"></div></div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="programs.js"></script>
+<script src="shell.js"></script>
+<script>
+let st = S.read();
+if (!st.customer || !st.customer.created){ location.href = 'customer-register.html'; throw 'redirect'; }
+const el = id => document.getElementById(id);
+const qp = new URLSearchParams(location.search);
+let key = qp.get('id') || qp.get('type');
+if (!key){ location.href = 'customer.html?v=programs'; throw 'no program'; }
+
+document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'sponsor', active:'', persona:'sponsor', st });
+document.getElementById('topbarMount').innerHTML = Topbar({ st });
+mountBell('sponsor');
+
+function cust(){ return S.read().customer; }
+function saveCust(patch){ S.save({ customer: Object.assign({}, cust(), patch) }); }
+
+function render(){
+  const c = cust();
+  const p = programById(key);
+  const added = (c.programs || []).includes(key);
+  const spec = (c.specs || {})[key] || {};
+  el('main').innerHTML = !added ? aboutView(p)
+    : !spec.scoped ? scopeForm(c, p, spec)
+    : scopedSummary(c, p, spec);
+}
+
+/* ---------------------------------------------------------- ABOUT (not yet added) */
+function aboutView(p){
+  return `
+  <a class="btn btn-ghost btn-sm" href="customer.html?v=programs">${Icon('ArrowLeft',{size:14})} Programs</a>
+  <div class="row between wrap mt12">
+    <div><h1>${p.label}</h1><p class="small muted mt6">${p.blurb}</p></div>
+    <span class="icon-chip lg blue">${Icon('Zap',{size:24})}</span>
+  </div>
+  <div class="grid g3 mt20">
+    <div class="card card-pad"><span class="tag">Typical outcome</span><p class="small mt8">${p.outcome}</p></div>
+    <div class="card card-pad"><span class="tag">Runs</span><p class="small mt8">${p.runs}</p></div>
+    <div class="card card-pad"><span class="tag">Scale</span><p class="small mt8">${p.scale}</p></div>
+  </div>
+  <div class="card card-pad mt20"><h4>What you get</h4>
+    <div class="col gap8 mt12">${p.youGet.map(x => `<div class="row gap8"><span class="icon-chip sm green">${Icon('Check',{size:12})}</span><span class="small">${x}</span></div>`).join('')}</div>
+  </div>
+  <div class="card card-pad mt16"><h4>Who this is for</h4><p class="small muted mt8">${p.whoFor}</p></div>
+  <button class="btn btn-primary btn-lg mt20" onclick="addProgram()">Start scoping ${Icon('ArrowRight',{size:14})}</button>`;
+}
+function addProgram(){
+  const c = cust();
+  const list = c.programs || [];
+  const finalKey = nextProgKey(c, key);
+  const specs = Object.assign({}, c.specs, { [finalKey]: {} });
+  saveCust({ programs: list.concat([finalKey]), specs });
+  key = finalKey;
+  history.replaceState(null,'','program.html?id=' + key);
+  render();
+}
+
+/* ---------------------------------------------------------- SCOPE FORM */
+const CRIT_DEFAULT = [['Problem fit',40],['Technical execution',30],['Innovation',20],['Presentation',10]];
+function scopeForm(c, p, spec){
+  const d = progDesign(c, key);
+  window.__draft = window.__draft || { spec: Object.assign({ objective:'', focus:'', metric:'', participants:'', budget:'', weeks:'6', start:'' }, spec),
+    statements: (d.statements||[]).length ? d.statements.slice() : [],
+    submission: Object.assign({}, d.submission),
+    criteria: CRIT_DEFAULT.map(([label,weight]) => ({label,weight})),
+    prizes: (d.prizes||[]).length ? d.prizes.slice() : [] };
+  const dr = window.__draft;
+  const blockers = designBlockers({ statements:dr.statements, submission:dr.submission, rounds:[{criteria:dr.criteria}], prizes:dr.prizes, timeline: dr.spec.start ? progDesign.__t(new Date(dr.spec.start), +dr.spec.weeks||6) : {} }, key, dr.spec);
+
+  return `
+  <a class="btn btn-ghost btn-sm" href="customer.html?v=programs">${Icon('ArrowLeft',{size:14})} Programs</a>
+  <h1 class="mt12">Scope — ${p.label}</h1>
+  <p class="small muted mt6">Fill this in once — it becomes the brief you sign off on.</p>
+
+  <div class="card card-pad mt20">
+    <h4>The brief</h4>
+    <div class="col gap16 mt12">
+      <div class="field"><label>Objective</label><input class="input" id="f_objective" value="${dr.spec.objective}" placeholder="What should this program achieve?" onchange="dr('objective',this.value)"></div>
+      <div class="grid g2">
+        <div class="field"><label>Focus area</label><input class="input" id="f_focus" value="${dr.spec.focus}" placeholder="${p.focusHint}" onchange="dr('focus',this.value)"></div>
+        <div class="field"><label>Success metric</label><input class="input" id="f_metric" value="${dr.spec.metric}" placeholder="How will you know it worked?" onchange="dr('metric',this.value)"></div>
+      </div>
+      <div class="grid g2">
+        <div class="field"><label>Target participants</label>
+          <select class="select" id="f_participants" onchange="dr('participants',this.value)">
+            <option ${dr.spec.participants===''?'selected':''}></option>
+            ${['Under 500','500–5,000','5,000–50,000','50,000+'].map(v => `<option ${dr.spec.participants===v?'selected':''}>${v}</option>`).join('')}
+          </select></div>
+        <div class="field"><label>Prize / reward budget</label><input class="input" id="f_budget" value="${dr.spec.budget}" placeholder="₹10L" onchange="dr('budget',this.value)"></div>
+        <div class="field"><label>Duration (weeks)</label><input class="input" id="f_weeks" type="number" min="2" max="16" value="${dr.spec.weeks}" onchange="dr('weeks',this.value)"></div>
+        <div class="field"><label>Kickoff date</label><input class="input" id="f_start" type="date" value="${dr.spec.start}" onchange="dr('start',this.value)"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-pad mt16">
+    <div class="row between"><h4>Problem statements</h4><span class="xs muted">${dr.statements.length} added</span></div>
+    <div class="col mt10">${dr.statements.map((s,i) => `
+      <div class="row between gap12" style="padding:9px 0;border-bottom:1px solid var(--line-soft)">
+        <div><strong class="small">${s.title}</strong><p class="xs muted mt4">${s.desc}</p></div>
+        <button class="btn btn-quiet btn-sm" onclick="removeStatement(${i})">Remove</button>
+      </div>`).join('') || '<p class="small faint">None yet — add at least one.</p>'}</div>
+    <div class="row gap8 wrap mt12">
+      <input class="input" id="ps_title" placeholder="Statement title" style="flex:1;min-width:160px">
+      <input class="input" id="ps_desc" placeholder="One line detail" style="flex:2;min-width:200px">
+      <button class="btn btn-outline btn-sm" onclick="addStatement()">Add</button>
+    </div>
+  </div>
+
+  <div class="card card-pad mt16">
+    <h4>What teams hand in</h4>
+    <div class="row gap16 wrap mt12">
+      ${['repo','demo','deck','video','doc'].map(k => `<label class="check-row"><input type="checkbox" ${dr.submission[k]?'checked':''} onchange="dr2('submission','${k}',this.checked)"><span class="small">${{repo:'Source repo',demo:'Demo URL',deck:'Pitch deck',video:'Video',doc:'Write-up'}[k]}</span></label>`).join('')}
+    </div>
+  </div>
+
+  <div class="card card-pad mt16">
+    <div class="row between"><h4>Judging rubric</h4><span class="xs ${critTotal()===100?'muted':''}" style="${critTotal()!==100?'color:var(--warn);font-weight:600':''}">${critTotal()}% total</span></div>
+    <div class="col mt10">${dr.criteria.map((c,i) => `
+      <div class="row between gap12" style="padding:8px 0">
+        <span class="small">${c.label}</span>
+        <input class="input" type="number" min="0" max="100" value="${c.weight}" style="width:80px" onchange="critWeight(${i},this.value)">
+      </div>`).join('')}</div>
+  </div>
+
+  <div class="card card-pad mt16">
+    <div class="row between"><h4>Prizes</h4></div>
+    <div class="col mt10">${dr.prizes.map((pz,i) => `
+      <div class="row between gap12" style="padding:8px 0;border-bottom:1px solid var(--line-soft)">
+        <span class="small">${pz.place} — ${pz.label}</span><span class="small medium">${pz.value}</span>
+        <button class="btn btn-quiet btn-sm" onclick="removePrize(${i})">Remove</button>
+      </div>`).join('') || '<p class="small faint">None yet.</p>'}</div>
+    <div class="row gap8 wrap mt12">
+      <input class="input" id="pz_place" placeholder="Winner" style="width:120px">
+      <input class="input" id="pz_label" placeholder="Grand prize" style="flex:1;min-width:140px">
+      <input class="input" id="pz_value" placeholder="₹5L" style="width:100px">
+      <button class="btn btn-outline btn-sm" onclick="addPrize()">Add</button>
+    </div>
+  </div>
+
+  ${blockers.length ? `<div class="nudge mt16"><strong class="small">Still needed before this can be scoped</strong>
+    <div class="col gap4 mt8">${blockers.map(b => `<p class="xs muted">· ${b}</p>`).join('')}</div></div>` : ''}
+  <button class="btn btn-primary btn-lg mt16" ${blockers.length?'disabled':''} onclick="saveScope()">Save & scope ${Icon('ArrowRight',{size:14})}</button>`;
+}
+function critTotal(){ return (window.__draft.criteria||[]).reduce((n,c) => n + (+c.weight||0), 0); }
+function dr(field, val){ window.__draft.spec[field] = val; renderSoft(); }
+function dr2(bag, field, val){ window.__draft[bag][field] = val; renderSoft(); }
+function critWeight(i, val){ window.__draft.criteria[i].weight = +val; renderSoft(); }
+function addStatement(){
+  const t = el('ps_title').value.trim(), d = el('ps_desc').value.trim();
+  if (!t) return;
+  window.__draft.statements.push({ title:t, desc:d, area:'' });
+  renderSoft();
+}
+function removeStatement(i){ window.__draft.statements.splice(i,1); renderSoft(); }
+function addPrize(){
+  const place = el('pz_place').value.trim(), label = el('pz_label').value.trim(), value = el('pz_value').value.trim();
+  if (!place || !label) return;
+  window.__draft.prizes.push({ place, label, value });
+  renderSoft();
+}
+function removePrize(i){ window.__draft.prizes.splice(i,1); renderSoft(); }
+/* re-render without losing the in-progress draft — the draft lives on
+   window, keyed by nothing but the fact there's only ever one open form */
+function renderSoft(){ render(); }
+function saveScope(){
+  const dr = window.__draft;
+  const c = cust();
+  const specs = Object.assign({}, c.specs, { [key]: Object.assign({}, dr.spec, { scoped:true, stage:'scoped' }) });
+  const design = Object.assign({}, c.design, { [key]: {
+    statements: dr.statements, submission: dr.submission,
+    rounds: [{ name:'Jury evaluation', jury:2, criteria: dr.criteria }],
+    prizes: dr.prizes, timeline: progDesign.__t(new Date(dr.spec.start), +dr.spec.weeks || 6),
+    features: { aiEval:{enabled:false,tiers:['basic']}, mentorConnect:{enabled:false} },
+    rules: { teamMin:1, teamMax:4, soloAllowed:true, onePerPerson:true, employeeOnly:false, eligibility:'' }
+  }});
+  saveCust({ specs, design });
+  window.__draft = null;
+  render();
+}
+
+/* ---------------------------------------------------------- SCOPED / SIGNED-OFF SUMMARY */
+function scopedSummary(c, p, spec){
+  const stage = stageOf(spec);
+  const pulse = programPulse(c, key);
+  const design = progDesign(c, key);
+  const f = funnel(spec, key);
+  const signed = signoffOf(c, key);
+  const drift = signed ? signoffDrift(c, key) : null;
+
+  return `
+  <a class="btn btn-ghost btn-sm" href="customer.html?v=programs">${Icon('ArrowLeft',{size:14})} Programs</a>
+  <div class="row between wrap mt12">
+    <div><h1>${progName(c,key)}</h1><p class="small mt6" style="color:${pulse.tone==='warn'?'var(--warn)':pulse.tone==='ok'?'var(--ok)':'var(--muted)'}">${pulse.text}</p></div>
+    <span class="pill ${stage==='live'?'pill-live':stage==='signed-off'?'pill-ok':'pill-outline'}">${STAGE_LABEL[stage]}</span>
+  </div>
+
+  ${stage === 'scoped' ? `<div class="card card-pad mt20" style="border-color:var(--warn)">
+    <span class="tag" style="color:var(--warn)">Awaiting sign-off</span>
+    <p class="small mt8">Review the brief and sign it off — nothing goes live until you do.</p>
+    <a class="btn btn-primary mt12" href="program-signoff.html?id=${key}">Review & sign off ${Icon('ArrowRight',{size:14})}</a>
+  </div>` : ''}
+
+  ${drift && drift.material && drift.material.length ? `<div class="nudge mt16">
+    <strong class="small">The brief changed since you signed it</strong>
+    <p class="xs muted mt8">${drift.material.join(', ')} — re-sign to confirm the new terms.</p>
+    <a class="btn btn-outline btn-sm mt8" href="program-signoff.html?id=${key}">Review changes</a>
+  </div>` : ''}
+
+  <div class="grid g4 mt20">
+    ${statTile2(f.actual.registrations.toLocaleString('en-IN'),'Registered')}
+    ${statTile2(f.actual.submissions.toLocaleString('en-IN'),'Submitted')}
+    ${statTile2(f.actual.shortlist.toLocaleString('en-IN'),'Shortlisted')}
+    ${statTile2(f.actual.outcome.toLocaleString('en-IN'),f.label)}
+  </div>
+
+  <div class="grid g2 mt20">
+    <div class="card card-pad"><h4>Brief</h4><div class="col gap6 mt10">
+      <div class="kv"><span>Objective</span><strong style="text-align:right">${spec.objective}</strong></div>
+      <div class="kv"><span>Target participants</span><strong>${spec.participants}</strong></div>
+      <div class="kv"><span>Budget</span><strong>${spec.budget}</strong></div>
+      <div class="kv"><span>Duration</span><strong>${spec.weeks} weeks</strong></div>
+    </div></div>
+    <div class="card card-pad"><h4>Timeline</h4><div class="col gap6 mt10">
+      <div class="kv"><span>Kickoff</span><strong>${design.timeline.kickoff}</strong></div>
+      <div class="kv"><span>Registration closes</span><strong>${design.timeline.regClose}</strong></div>
+      <div class="kv"><span>Submissions close</span><strong>${design.timeline.submitClose}</strong></div>
+      <div class="kv"><span>Results</span><strong>${design.timeline.resultsOn}</strong></div>
+    </div></div>
+  </div>
+
+  ${stage !== 'scoped' ? `<a class="btn btn-outline mt20" href="participants.html?id=${key}&as=sponsor">View talent pool ${Icon('ArrowRight',{size:14})}</a>` : ''}`;
+}
+const statTile2 = (n,l) => `<div class="card stat"><div class="n">${n}</div><div class="small muted">${l}</div></div>`;
+
+render();
+</script>
+</body>
+</html>

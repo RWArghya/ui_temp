@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill for Enterprises</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body style="background:var(--canvas)">
+<div style="max-width:640px;margin:0 auto;padding:48px 24px 80px">
+  <div class="row between" style="margin-bottom:28px">
+    <a class="brand" href="index.html" style="padding:0"><span class="brand-mark">H2S</span><span class="brand-name">Hack2skill</span></a>
+    <div class="step-dots" id="dots"></div>
+  </div>
+  <div class="card card-pad"><div id="body"></div></div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="journey.js"></script>
+<script src="programs.js"></script>
+<script src="shell.js"></script>
+<script>
+let step = 1;
+const qpProgram = new URLSearchParams(location.search).get('program');
+let F = { name:'', email:'', password:'', org:'', web:'', type:'', size:'', hq:'', role:'', programs: qpProgram ? [qpProgram] : [], primary:'' };
+
+function goStep(n){ step = n; render(); }
+function render(){
+  document.getElementById('dots').innerHTML = [1,2,3].map(i => `<span class="step-dot${i===step?' on':i<step?' done':''}"></span>`).join('');
+  document.getElementById('body').innerHTML = views[step]();
+  window.scrollTo(0,0);
+}
+const views = {
+  1: () => `
+    <h2>Create your sponsor account</h2>
+    <p class="small muted mt6">Run a program on the Hack2skill network — scope it, sign off, reach the pool.</p>
+    <div class="col gap16 mt20">
+      <div class="field"><label>Full name</label><input class="input" id="r_name" value="${F.name}"></div>
+      <div class="field"><label>Work email</label><input class="input" id="r_email" type="email" value="${F.email}"></div>
+      <div class="field"><label>Password</label><input class="input" id="r_pw" type="password" value="${F.password}"></div>
+    </div>
+    <button class="btn btn-primary btn-block btn-lg mt20" onclick="step1Next()">Continue</button>
+    <p class="xs muted mt16" style="text-align:center">Already set up? <a href="customer.html" style="color:var(--primary);font-weight:700">Go to your workspace</a></p>`,
+  2: () => `
+    <h2>About your organisation</h2>
+    <div class="col gap16 mt20">
+      <div class="field"><label>Organisation name</label><input class="input" id="r_org" value="${F.org}"></div>
+      <div class="field"><label>Website</label><input class="input" id="r_web" value="${F.web}" placeholder="https://…"></div>
+      <div class="grid g2">
+        <div class="field"><label>Type</label><select class="select" id="r_type"><option ${F.type===''?'selected':''}></option>${['Enterprise','Government','Startup','Non-profit'].map(t=>`<option ${F.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="field"><label>Size</label><select class="select" id="r_size"><option ${F.size===''?'selected':''}></option>${['1-50','51-500','501-5,000','5,000+'].map(t=>`<option ${F.size===t?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="field"><label>HQ region</label><select class="select" id="r_hq"><option ${F.hq===''?'selected':''}></option>${REGIONS.map(r => `<option ${F.hq===r?'selected':''}>${r}</option>`).join('')}</select></div>
+        <div class="field"><label>Your role</label><select class="select" id="r_role"><option ${F.role===''?'selected':''}></option>${['Founder/CXO','HR/Talent','Product/DevRel','Innovation/R&D','Marketing'].map(t=>`<option ${F.role===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div class="row gap12 mt20"><button class="btn btn-ghost" onclick="goStep(1)">Back</button>
+      <button class="btn btn-primary btn-lg" onclick="step2Next()">Continue</button></div>`,
+  3: () => `
+    <h2>What do you want to run?</h2>
+    <p class="small muted mt6">Pick everything you're interested in — you can scope one now and add more later.</p>
+    <div class="grid g2 mt16">
+      ${PROGRAMS.map(p => `<div role="button" tabindex="0" class="pick-card${F.programs.includes(p.id)?' on':''}" onclick="toggleProgram('${p.id}')">
+        <strong class="small">${p.label}</strong>
+        <span class="xs muted">${p.blurb}</span>
+        ${F.programs.includes(p.id) ? `<button type="button" class="xs" style="align-self:flex-start;color:${F.primary===p.id?'var(--primary)':'var(--faint)'};font-weight:700" onclick="event.stopPropagation();F.primary='${p.id}';render()">${F.primary===p.id?'★ Primary':'☆ Set as primary'}</button>` : ''}
+      </div>`).join('')}
+    </div>
+    <div class="field mt16"><label>What are you hoping to get out of this? <span class="faint">(optional)</span></label>
+      <textarea class="input" id="r_goal" rows="2" placeholder="e.g. 5 pilot-ready solutions in Q2"></textarea></div>
+    <div class="row gap12 mt20"><button class="btn btn-ghost" onclick="goStep(2)">Back</button>
+      <button class="btn btn-primary btn-lg" onclick="finish()" ${F.programs.length?'':'disabled'}>Create workspace</button></div>`
+};
+function toggleProgram(id){
+  const i = F.programs.indexOf(id);
+  if (i === -1) F.programs.push(id); else F.programs.splice(i,1);
+  if (!F.primary && F.programs.length) F.primary = F.programs[0];
+  if (!F.programs.includes(F.primary)) F.primary = F.programs[0] || '';
+  render();
+}
+function step1Next(){
+  F.name = el('r_name').value.trim(); F.email = el('r_email').value.trim(); F.password = el('r_pw').value;
+  if (!F.name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(F.email) || F.password.length < 6){ toast('Fill every field — a valid email and a 6+ character password.'); return; }
+  goStep(2);
+}
+function step2Next(){
+  F.org = el('r_org').value.trim(); F.web = el('r_web').value.trim();
+  F.type = el('r_type').value; F.size = el('r_size').value; F.hq = el('r_hq').value; F.role = el('r_role').value;
+  if (!F.org || !F.type || !F.size || !F.role){ toast('Fill every field.'); return; }
+  goStep(3);
+}
+function finish(){
+  const ticket = 'ENT-' + Math.floor(1000 + Math.random()*9000);
+  S.save({ customer:{ name:F.name, email:F.email, org:F.org, web:F.web, type:F.type, size:F.size, hq:F.hq,
+    role:F.role, programs:F.programs.slice(), primary:F.primary, created:new Date().toISOString(),
+    specs:{}, design:{}, signoff:{}, meta:{} },
+    sponsorTicket: ticket });
+  location.href = 'customer.html?new=1';
+}
+const el = id => document.getElementById(id);
+render();
+</script>
+</body>
+</html>

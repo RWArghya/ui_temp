@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill — Build it, prove it, get seen.</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  body{ background:var(--surface); }
+  .pub-header{ position:sticky; top:0; z-index:20; background:rgba(255,255,255,.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line); padding:14px 0; }
+  .pub-wrap{ max-width:1180px; margin:0 auto; padding:0 28px; }
+  .pub-nav{ display:flex; align-items:center; gap:28px; }
+  .pub-nav a.navlink{ font-size:13.5px; font-weight:600; color:var(--ink-soft); }
+  .hero{ padding:64px 0 40px; }
+  .hero-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:48px; align-items:center; }
+  @media (max-width:860px){ .hero-grid{ grid-template-columns:1fr; } }
+  .hero-visual{ background:linear-gradient(150deg,#2f5fe6,#5b3df0 60%,#2a1866); border-radius:var(--r-lg);
+    height:340px; position:relative; overflow:hidden; }
+  .hero-visual .blob{ position:absolute; border-radius:50%; background:rgba(255,255,255,.1); }
+  .stat-row{ display:flex; gap:32px; margin-top:28px; }
+  .stat-row .n{ font-size:22px; font-weight:800; }
+  .stat-row .l{ font-size:12px; color:var(--muted); }
+  .section{ padding:48px 0; border-top:1px solid var(--line-soft); }
+  .explore-card{ border:1px solid var(--line); border-radius:var(--r-lg); padding:22px; text-align:left; background:var(--surface); cursor:pointer; }
+  .explore-card:hover{ box-shadow:var(--sh); transform:translateY(-2px); transition:.15s; }
+  .prog-card{ border:1px solid var(--line); border-radius:var(--r); padding:16px; }
+  .pub-footer{ background:var(--navy); color:rgba(255,255,255,.75); padding:40px 0; margin-top:40px; }
+  .pub-footer a{ color:rgba(255,255,255,.75); }
+</style>
+</head>
+<body>
+<header class="pub-header">
+  <div class="pub-wrap row between">
+    <div class="pub-nav">
+      <a class="brand" href="index.html" style="padding:0"><span class="brand-mark">H2S</span><span class="brand-name">Hack2skill</span></a>
+      <a class="navlink" href="#explore">Explore</a>
+      <a class="navlink" href="#enterprise">For enterprises</a>
+    </div>
+    <div class="row gap10" id="authArea"></div>
+  </div>
+</header>
+
+<section class="hero pub-wrap">
+  <div class="hero-grid">
+    <div>
+      <span class="pill pill-hat">One platform. Endless opportunities.</span>
+      <h1 class="mt16">Build it, prove it,<br>get seen.</h1>
+      <p class="small muted mt16" style="max-width:440px;font-size:15px">Join thousands of learners and builders. Take courses, compete in hackathons,
+        ship real projects — and get discovered by the companies running them.</p>
+      <div class="row gap12 mt24">
+        <a class="btn btn-primary btn-lg" href="auth.html?mode=signup">Get started</a>
+        <a class="btn btn-outline btn-lg" href="#explore">Explore initiatives</a>
+      </div>
+      <div class="stat-row">
+        <div><div class="n">7–8M</div><div class="l">innovators on the network</div></div>
+        <div><div class="n">120+</div><div class="l">enterprise partners</div></div>
+        <div><div class="n">2,400+</div><div class="l">challenges run</div></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="blob" style="width:220px;height:220px;top:-50px;right:-40px"></div>
+      <div class="blob" style="width:140px;height:140px;bottom:-30px;left:20px"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section pub-wrap" id="explore">
+  <div class="row between wrap gap12" style="margin-bottom:24px">
+    <div><h2>What brings you here?</h2><p class="small muted mt6">Pick a door — you'll confirm your account first, then land straight in it.</p></div>
+  </div>
+  <div class="grid g3" id="exploreGrid"></div>
+  <div class="grid g2 mt16">
+    <button class="explore-card row gap12" onclick="goExplore('mentor')">
+      <span class="icon-chip purple" id="icoMentor"></span>
+      <span class="col"><strong class="small">Mentor or evaluate</strong><span class="xs muted">Guide teams and judge submissions — needs H2S approval.</span></span>
+    </button>
+    <button class="explore-card row gap12" onclick="location.href='sponsor.html'">
+      <span class="icon-chip amber" id="icoSponsor"></span>
+      <span class="col"><strong class="small">Run a challenge</strong><span class="xs muted">Scope a program, reach the network, hire from it.</span></span>
+    </button>
+  </div>
+</section>
+
+<section class="section pub-wrap" id="enterprise" style="border-top:1px solid var(--line-soft)">
+  <div class="row between wrap gap12" style="margin-bottom:24px">
+    <div><h2>For enterprises</h2><p class="small muted mt6">Six ways to run a program on the network.</p></div>
+  </div>
+  <div class="grid g3" id="progGrid"></div>
+  <div class="row gap16 wrap mt24" style="align-items:center">
+    <a class="btn btn-primary btn-lg" href="customer-register.html">Set up self-serve</a>
+    <a class="btn btn-outline btn-lg" href="sponsor.html">Book a demo instead</a>
+  </div>
+</section>
+
+<footer class="pub-footer">
+  <div class="pub-wrap row between wrap gap16">
+    <div class="row gap10"><span class="brand-mark" style="background:rgba(255,255,255,.15)">H2S</span><strong style="color:#fff">Hack2skill</strong></div>
+    <p class="xs">Learn · Build · Grow</p>
+  </div>
+</footer>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+document.getElementById('authArea').innerHTML = authAreaHTML();
+
+document.getElementById('exploreGrid').innerHTML = Object.entries(VIEWS).map(([k,v]) => `
+  <button class="explore-card" onclick="goExplore('${k}')">
+    <span class="icon-chip ${k==='learning'?'green':k==='competing'?'blue':'amber'}">${Icon(v.ico,{size:19})}</span>
+    <h4 class="mt10">${v.label}</h4>
+    <p class="xs muted mt6">${v.blurb}</p>
+  </button>`).join('');
+document.getElementById('icoMentor').innerHTML = Icon('ClipboardCheck',{size:19});
+document.getElementById('icoSponsor').innerHTML = Icon('Building2',{size:19});
+
+const PROG_PREVIEW = [
+  ['Innovation Challenge','Zap','Crowdsource solutions to a real R&D problem.'],
+  ['Internal Hackathon','Users','Run a private hackathon for your own employees.'],
+  ['Product Evangelism','Rocket','Get developers building on your SDK or API.'],
+  ['Startup Pitch','TrendingUp','Source and evaluate early-stage startups.'],
+  ['Recruitment Drive','Briefcase','Hire from real, assessed project work.'],
+  ['Student Challenge','GraduationCap','Reach campuses with a branded challenge.']
+];
+document.getElementById('progGrid').innerHTML = PROG_PREVIEW.map(([label,ico,blurb]) => `
+  <div class="prog-card">
+    <span class="icon-chip sm blue">${Icon(ico,{size:15})}</span>
+    <h4 class="mt10">${label}</h4>
+    <p class="xs muted mt6">${blurb}</p>
+  </div>`).join('');
+
+function goExplore(k){
+  const dest = k === 'mentor' ? 'app.html?view=mentor' : 'app.html?view=' + k;
+  const st = S.read();
+  if (st.onboarded){ location.href = dest; return; }
+  location.href = 'auth.html?mode=signup' + (k === 'mentor' ? '&intent=mentor' : '') + '&next=' + encodeURIComponent(dest);
+}
+</script>
+</body>
+</html>

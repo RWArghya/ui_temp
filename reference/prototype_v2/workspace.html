@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workspace — Hack2skill</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body" style="max-width:1000px">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="page-head" id="head"></div>
+      <div class="journey" id="journey"></div>
+      <div id="body"></div>
+      <div class="pager" id="pager"></div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script src="journey.js"></script>
+<script src="shell.js"></script>
+<script>
+let st = S.read();
+const o  = byId(new URLSearchParams(location.search).get('id'));
+if (!st.onboarded){ location.href = 'auth.html?mode=login&next=' + encodeURIComponent(location.href); throw 'redirect'; }
+if (!o){ location.href = 'app.html'; throw 'not found'; }
+
+const V   = VIEWS[o.purpose];
+const el  = id => document.getElementById(id);
+const reg = () => (S.read().registered || []).includes(o.id);
+document.title = o.name + ' — Workspace';
+
+document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'innovator', active:o.purpose, persona:'innovator' });
+document.getElementById('topbarMount').innerHTML = Topbar({ st });
+
+/* not registered → nothing to work on. Send them to the event page to join first. */
+if (!reg()){ location.href = 'initiative.html?id=' + o.id; throw 'not registered'; }
+
+/* ---------- per-initiative state ---------- */
+const bag = (key, def) => (S.read()[key] || {})[o.id] || def;
+function put(key, val){
+  const m = S.read()[key] || {}; m[o.id] = val;
+  S.save({ [key]: m }); st = S.read(); render();
+}
+const doneModules = () => bag('lessons', []);
+const doneTasks   = () => bag('tasks', []);
+const submission  = () => bag('submission', null);
+const assessment  = () => bag('assessment', null);
+const myPS        = () => bag('chosenPS', null);
+const myTeam      = () => bag('teams', null);
+const myApps      = () => bag('applications', []);
+
+/* ---------- journey: which step are we on ---------- */
+const STEPS = journeyFor(o);          /* Mentoring is in here only if the program enabled it */
+const M_STEP = mentorStepIdx(o);
+
+function reached(){ return toScreenStep(o, reachedFor(o, S.read())); }
+let step = Math.min(Number(new URLSearchParams(location.search).get('step') ?? reached()), STEPS.length - 1);
+
+let focusMod = (() => {
+  const raw = new URLSearchParams(location.search).get('m');
+  return raw === null || raw === '' ? -1 : Number(raw);
+})();
+function settleFocus(){
+  if (focusMod < 0) return;
+  const node = document.getElementById('mod' + focusMod);
+  focusMod = -1;
+  if (node) node.scrollIntoView({ block:'center', behavior:'smooth' });
+}
+
+function go(n){
+  if (n < 0 || n > STEPS.length - 1) return;
+  step = n;
+  history.replaceState({}, '', `workspace.html?id=${o.id}&step=${n}`);
+  render();
+}
+
+/* ---------- chrome ---------- */
+function crumbs(){
+  el('crumbs').innerHTML = `
+    <a href="app.html">My Dashboard</a><span class="sep">›</span>
+    <a href="app.html?view=${o.purpose}">${V.label}</a><span class="sep">›</span>
+    <a href="initiative.html?id=${o.id}">${o.name}</a><span class="sep">›</span>
+    <span class="here">${STEPS[step]}</span>`;
+
+  el('head').innerHTML = `
+    <div class="row between gap16 wrapflex">
+      <div>
+        <h2 class="row gap8">${Icon(V.ico,{size:20})} ${o.name}</h2>
+        <p class="muted">${o.org} · ${o.mode} · ${deadlineText(o)}</p>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="initiative.html?id=${o.id}">Event details</a>
+    </div>`;
+
+  el('journey').innerHTML = STEPS.map((s,i) => {
+    const cls = i < reached() ? 'done' : i === step ? 'now' : i > reached() ? 'locked' : '';
+    return `<div class="jstep ${i === step ? 'now' : cls}" onclick="${i <= reached() ? `go(${i})` : ''}">
+      <span class="jn">${i < reached() ? Icon('Check',{size:12}) : i + 1}</span>
+      <span class="jl">${s}</span></div>`;
+  }).join('');
+
+  const prev = step > 0 ? `<button class="btn btn-ghost" onclick="go(${step-1})">${Icon('ArrowLeft',{size:14})} ${STEPS[step-1]}</button>` : '<span></span>';
+  const canNext = step < STEPS.length - 1 && step < reached();
+  el('pager').innerHTML = prev + (canNext
+    ? `<button class="btn btn-primary" onclick="go(${step+1})">${STEPS[step+1]} ${Icon('ArrowRight',{size:14})}</button>`
+    : `<a class="btn btn-ghost" href="app.html?view=${o.purpose}">Back to ${V.label}</a>`);
+}
+
+/* ================= LEARNING ================= */
+function learning(){
+  const m = modules(o), done = doneModules();
+  if (step === 0) return intro('You\'re enrolled', `${m.length} modules · self-paced · certificate on completion`);
+  if (step === 1){
+    const next = m.find(x => !done.includes(x.i));
+    return `
+      <div class="row between gap12 wrapflex mb16">
+        <h3>Modules</h3>
+        <span class="small muted">${done.length} of ${m.length} complete</span>
+      </div>
+      <div class="meter mb24"><i style="width:${done.length/m.length*100}%"></i></div>
+      ${m.map(x => `<div id="mod${x.i}" class="wrow ${done.includes(x.i) ? 'done' : next && x.i === next.i ? 'current' : ''}${
+          x.i === focusMod ? ' focus' : ''}">
+        <span class="jn" style="${done.includes(x.i) ? 'background:var(--ok);color:#fff' : ''}">
+          ${done.includes(x.i) ? Icon('Check',{size:12}) : x.i + 1}</span>
+        <div class="grow">
+          <div class="wtitle">${x.title}</div>
+          <p class="xs muted">${x.kind} · ${x.mins} min</p>
+        </div>
+        <button class="btn ${done.includes(x.i) ? 'btn-quiet' : 'btn-ghost'} btn-sm"
+          onclick="toggleModule(${x.i})">${done.includes(x.i) ? 'Undo' : 'Mark complete'}</button>
+      </div>`).join('')}`;
+  }
+  if (step === 2){
+    const all = done.length === m.length;
+    return all
+      ? card('Capstone submitted', 'All modules complete. Your capstone was accepted — the certificate is ready to claim.')
+      : locked('Finish the modules first', `${m.length - done.length} module${m.length-done.length===1?'':'s'} left before the capstone unlocks.`);
+  }
+  const claimed = bag('claimed', false);
+  return claimed
+    ? card('Certificate issued', `Added to your profile. <a href="profile.html?tab=certs" style="color:var(--primary)">View certificates</a>`)
+    : `<div class="locked">
+        <span class="icon-chip lg amber" style="margin:0 auto">${Icon('Award',{size:26})}</span>
+        <h3 class="mt16">Your certificate is ready</h3>
+        <p class="muted small mt8">Issued by ${o.org} · verifiable ID generated on claim.</p>
+        <button class="btn btn-primary mt24" onclick="claimCert()">Claim certificate</button>
+      </div>`;
+}
+function claimCert(){
+  put('claimed', true);
+  logActivity('You earned a certificate — ' + o.name);
+  notify('innovator', { title:'Certificate issued',
+    body:o.name + ' — added to your profile with a verifiable ID.', link:'profile.html?tab=certs' });
+}
+function toggleModule(i){
+  const d = doneModules(), at = d.indexOf(i);
+  at > -1 ? d.splice(at,1) : d.push(i);
+  put('lessons', d);
+}
+
+/* ================= COMPETING / LEARN & COMPETE (compete phase) ================= */
+function building(stepOverride){
+  const curStep = stepOverride !== undefined ? stepOverride : step;
+  if (curStep === 0) return intro('You\'re registered', `${o.regs.toLocaleString('en-IN')} others are too. ${deadlineText(o)}.`);
+
+  if (curStep === 1){
+    if (o.purpose === 'competing'){
+      const t = myTeam();
+      return t
+        ? card(`Team: ${t.name}`, `${t.members.length} of 5 · ${t.members.map(x=>x.name).join(', ')}
+            <br><a href="initiative.html?id=${o.id}" style="color:var(--primary)">Manage team</a>`)
+        : locked('No team yet', `You can compete solo, but most winning entries are teams of 3–4.
+            <br><a href="initiative.html?id=${o.id}" style="color:var(--primary)">Find or start a team</a>`);
+    }
+    const ps = myPS() && problemStatements(o).find(x => x.code === myPS());
+    return ps
+      ? card(`${ps.code} — ${ps.title}`, `${ps.desc}
+          <br><a href="initiative.html?id=${o.id}" style="color:var(--primary)">Change statement</a>`)
+      : locked('Pick a problem statement', `You need one before you can submit.
+          <br><a href="initiative.html?id=${o.id}" style="color:var(--primary)">Choose one</a>`);
+  }
+
+  if (curStep === 2) return `
+    <h3 class="mb16">Build</h3>
+    <div class="card card-soft card-pad mb16">
+      <p class="small">Nothing to do here on the platform — this is where you go and build.
+        Come back to <strong>Submit</strong> before ${deadlineText(o).toLowerCase()}.</p>
+    </div>
+    ${card('What the jury scores', `
+      <div class="stack gap8 mt8">
+        ${['Problem fit','Technical execution','Innovation','Presentation']
+          .map(c => `<div class="row gap8"><span class="pill">${c}</span></div>`).join('')}
+      </div>`)}`;
+
+  if (curStep === 3) return submitForm();
+
+  /* results / evaluation */
+  const s = submission();
+  if (!s) return locked('Nothing submitted', 'Submit your project to see results here.');
+
+  const pub  = resultsPublished(S.read(), o.id);
+  const wins = winnersOf(S.read(), o.id);
+  const mine = wins.findIndex(w => w.key === SELF_KEY(o.id));
+  const place = ['Winner','Runner-up','Third place'][mine] || null;
+  const prize = place && (o.prizes || [])[mine];
+
+  const verdict = scoreFor(SELF_KEY(o.id));
+  if (verdict && !verdict.conflict) return `
+    ${aiCard()}
+    ${pub && place ? `<div class="card card-pad mb16" style="border-color:var(--ok);background:var(--ok-soft)">
+      <span class="tag" style="color:var(--ok)">Result</span>
+      <h3 class="mt8">${place} — ${o.name}</h3>
+      ${prize ? `<p class="small mt8">${prize.label || ''}${
+        prize.value ? ' · ' + prize.value : ''}</p>` : ''}
+      <p class="xs mt8">Your certificate is claimable from your profile.</p>
+    </div>` : ''}
+    ${pub && !place ? `<div class="card card-soft card-pad mb16">
+      <span class="tag">Results are out</span>
+      <p class="small mt8">You did not place this time. Your score and the jury's written feedback
+        are below — and the winning builds are worth reading on the initiative page.</p>
+    </div>` : ''}
+    ${!pub ? `<div class="card card-soft card-pad mb16">
+      <span class="tag">Provisional</span>
+      <p class="small mt8">Scored, but results are not published yet. Placement is decided once
+        every entry has been through the jury.</p>
+    </div>` : ''}
+    <h3 class="mb16">Evaluation</h3>
+    ${card(`Scored ${scoreAvg(verdict)} / 5`, `
+      <div class="stack gap8 mt16">
+        ${Object.keys(verdict.rubric || {}).map(c => `<div class="row between gap12">
+          <span class="small muted">${esc(c)}</span>
+          <div class="row gap4">${[1,2,3,4,5].map(nn =>
+            `<span style="width:16px;height:6px;border-radius:3px;background:${
+              nn <= verdict.rubric[c] ? 'var(--primary)' : 'var(--line)'}"></span>`).join('')}</div>
+        </div>`).join('')}
+      </div>
+      ${verdict.note ? `<div class="card card-soft card-pad mt16">
+        <span class="tag">Feedback from your evaluator</span>
+        <p class="small mt8">"${verdict.note}"</p>
+        <p class="xs faint mt8">${verdict.by} · ${verdict.at}</p></div>` : ''}`)}
+    ${o.status !== 'past' ? `<p class="small muted mt16">
+      Final results are announced after the deadline.</p>` : ''}`;
+
+  if (o.status !== 'past') return aiCard() + card('Under evaluation', `
+    Submitted ${s.at}. Jury scoring is in progress — results are announced after the deadline.
+    <br><span class="small muted">You can still edit your submission until ${o.deadline}.</span>`);
+  const rank = 1 + hashStr(o.id + (myTeam() ? myTeam().name : 'solo')) % 40;
+  return card('Results', `
+    <div class="row gap24 wrapflex mt8">
+      <div><strong style="font-size:24px">#${rank}</strong><p class="xs muted">of ${o.regs.toLocaleString('en-IN')}</p></div>
+      <div><strong style="font-size:24px">${(3 + (hashStr(o.id) % 20) / 10).toFixed(1)}</strong><p class="xs muted">jury score / 5</p></div>
+    </div>
+    <p class="small muted mt16">Certificate auto-issued to your profile.</p>`);
+}
+
+function submitForm(){
+  const s = submission();
+  const ps = myPS() && problemStatements(o).find(x => x.code === myPS());
+  if (s){
+    const sp = submitSpec(o), w = submitWindow(o);
+    const g  = submitAllowed(o, SELF_KEY(o.id), S.read());
+    return `
+    <h3 class="mb16">Submitted ${Icon('Check',{size:15,cls:'faint'})}</h3>
+    ${card(s.title, `
+      ${sp.fields.map(([k,label]) => `<div class="kv"><span>${label}</span>
+        <strong style="text-align:right;max-width:60%;word-break:break-all">${s[k] || '—'}</strong></div>`).join('')}
+      ${ps ? `<div class="kv"><span>Statement</span><strong>${ps.code}</strong></div>` : ''}
+      <div class="kv"><span>Submitted</span><strong>${s.at}</strong></div>
+      <p class="small muted mt16">${s.notes || ''}</p>`)}
+    ${g.via === 'grant' && g.replace ? `
+      <div class="card card-pad mt16" style="border-color:var(--warn);background:var(--warn-soft)">
+        <span class="tag" style="color:var(--warn)">Exception granted</span>
+        <p class="small mt8">Hack2skill reopened submissions for your team
+          until <strong>${g.grant.until}</strong>, so you can replace what is on file.
+          Reason on record: "${g.grant.reason}"</p>
+        <p class="xs mt8">Your entry stays marked late for the jury —
+          the exception says you were allowed in, not that you were on time.</p>
+      </div>` : ''}
+    <div class="row gap8 mt16 wrapflex">
+      ${w.state === 'open'
+        ? `<button class="btn btn-ghost btn-sm" onclick="put('submission', null)">Edit submission</button>
+           <span class="small faint" style="align-self:center">Editable for another
+             ${w.closesIn} day${w.closesIn === 1 ? '' : 's'}${w.extendedTo ? ' — the window was extended' : ''}.</span>`
+        : g.ok && g.replace
+        ? `<button class="btn btn-ghost btn-sm" onclick="put('submission', null)">Replace submission</button>
+           <span class="small faint" style="align-self:center">Until ${g.grant.until}.</span>`
+        : `<span class="small" style="color:var(--warn);align-self:center">Locked — ${w.why}
+             ${g.via === 'grant' ? 'Your exception covers a first submission, not a replacement.'
+               : 'This is what the jury sees.'}</span>`}
+    </div>`;
+  }
+
+  const sp = submitSpec(o);
+  const w  = submitWindow(o);
+  const g  = submitAllowed(o, SELF_KEY(o.id), S.read());
+
+  if (w.state === 'closed' && !g.ok) return `
+    <h3 class="mb16">Submissions are closed</h3>
+    <div class="card card-pad" style="border-color:var(--warn);background:var(--warn-soft)">
+      <p class="small"><strong>${w.why}</strong>
+        That was ${w.lateBy} day${w.lateBy === 1 ? '' : 's'} ago, so nothing further can be
+        handed in and what is on file is what gets judged.</p>
+      <p class="xs mt8">Your team did not submit. Results are still
+        published — the statements and the winning builds are worth reading.</p>
+      ${g.grant && g.grant.expired ? `<p class="xs mt8">
+        An exception was open for you until ${g.grant.until}. It has expired.</p>` : `
+        <p class="xs mt8">If something on our side stopped you handing in,
+          the organiser can reopen the window for your team. Ask them.</p>`}
+    </div>`;
+
+  const mblock = mentoringBlock(o, S.read());
+  return `
+    <h3 class="mb16">Submit your project</h3>
+    ${ps ? `<p class="small muted mb16">Against <strong>${ps.code}</strong> — ${ps.title}</p>` : ''}
+    ${mblock ? `<div class="card card-pad mb16" style="border-color:var(--warn);background:var(--warn-soft)">
+      <span class="tag" style="color:var(--warn)">Mentoring required first</span>
+      <p class="small mt8">${esc(mblock)}</p>
+      <button class="btn btn-ghost btn-sm mt8" onclick="go(${M_STEP})">Go to mentor hours ${Icon('ArrowRight',{size:13})}</button>
+    </div>` : ''}
+    <div class="card card-pad">
+      <div class="field"><label>Project title</label>
+        <input id="s_title" placeholder="What did you build?"><span class="xs error-text" id="s_title_err"></span></div>
+      ${sp.fields.map(([k,label,ph]) => `
+        <div class="field"><label>${label} <span style="color:var(--warn)">*</span></label>
+          <input id="s_${k}" placeholder="${ph}"><span class="xs error-text" id="s_${k}_err"></span></div>`).join('')}
+      <div class="field" style="margin-bottom:0"><label>What it does, in three lines</label>
+        <textarea id="s_notes" rows="3" placeholder="The problem, your approach, what works today."></textarea></div>
+    </div>
+    ${sp.note ? `<div class="card card-soft card-pad mt16"><span class="tag">Before you submit</span>
+      <p class="small mt8">${sp.note}</p></div>` : ''}
+    ${g.via === 'grant' ? `
+      <div class="card card-pad mt16" style="border-color:var(--warn);background:var(--warn-soft)">
+        <span class="tag" style="color:var(--warn)">Submissions reopened for you</span>
+        <p class="small mt8">The deadline passed on ${o.deadline}, and
+          Hack2skill opened a window for your team until <strong>${g.grant.until}</strong>.
+          Reason on record: "${g.grant.reason}"</p>
+        <p class="xs mt8">Hand in before then. Your entry will be marked
+          late — that is honest, and the jury also sees that you were allowed in.</p>
+      </div>` : w.extendedTo ? `
+      <p class="small mt16" style="color:var(--warn)">The window was extended to
+        <strong>${w.extendedTo}</strong> for everyone.</p>` : ''}
+    <div class="row gap12 mt16 wrapflex">
+      <button class="btn btn-primary btn-lg" ${mblock ? 'disabled' : ''}
+        onclick="doSubmit()">Submit project</button>
+      <span class="small ${w.state !== 'open' || w.closesIn <= 2 ? '' : 'faint'}"
+        style="${w.state !== 'open' || w.closesIn <= 2 ? 'color:var(--warn);font-weight:600' : ''}">${
+        w.state !== 'open' ? 'Your exception closes ' + g.grant.until + '.'
+        : w.closesIn === 0 ? 'Closes today — this is your last chance to edit.'
+        : 'You can edit until the deadline · ' + w.closesIn + ' day' + (w.closesIn === 1 ? '' : 's') + ' left.'}</span>
+    </div>`;
+}
+function doSubmit(){
+  if (!submitAllowed(o, SELF_KEY(o.id), S.read()).ok) return;
+  if (mentoringBlock(o, S.read())) return;
+  const sp = submitSpec(o);
+  const t = el('s_title').value.trim();
+  let bad = false;
+  el('s_title_err').textContent = t ? '' : (bad = true, 'Give your project a title');
+  const vals = {};
+  sp.fields.forEach(([k,label]) => {
+    const v = (el('s_' + k) || {}).value ? el('s_' + k).value.trim() : '';
+    vals[k] = v;
+    const ok = /^https?:\/\/.+\..+/.test(v);
+    el('s_' + k + '_err').textContent = ok ? ''
+      : (bad = true, 'Add a full URL starting with http — ' + label.toLowerCase() + ' is required here');
+  });
+  if (bad) return;
+  const subs = S.read().submissions || [];
+  if (!subs.includes(o.id)) subs.push(o.id);
+  S.save({ submissions: subs });
+  put('submission', Object.assign({ title:t, notes:el('s_notes').value.trim(),
+                                    at:new Date().toISOString().slice(0,10) }, vals));
+  logActivity('You submitted ' + t + ' — ' + o.name);
+  const er0 = engineRoundOf();
+  if (er0){
+    queueAi(SELF_KEY(o.id), er0.ev.engine, 'submission received');
+    notify('innovator', { title:'Your submission is being analysed',
+      body:AI_TIERS[er0.ev.engine].label + ' — a report lands on your Evaluation step in '
+         + AI_TIERS[er0.ev.engine].mins + '.', link:'workspace.html?id=' + o.id });
+  }
+  notify('mentor', { title:'New submission to evaluate',
+    body:`${t} — ${o.name}.`, link:'mentor.html?id=' + o.id + '&step=1' });
+}
+
+/* ================= BUILD (learn → compete) ================= */
+function learncompete(){
+  if (!bag('lcCapstone', false)){
+    const m = modules(o), done = doneModules();
+    if (step === 0) return intro('You\'re enrolled', `${m.length} modules · self-paced · then the compete phase unlocks`);
+    if (step === 1){
+      const next = m.find(x => !done.includes(x.i));
+      return `
+        <div class="row between gap12 wrapflex mb16">
+          <h3>Modules</h3>
+          <span class="small muted">${done.length} of ${m.length} complete</span>
+        </div>
+        <div class="meter mb24"><i style="width:${done.length/m.length*100}%"></i></div>
+        ${m.map(x => `<div class="wrow ${done.includes(x.i) ? 'done' : next && x.i === next.i ? 'current' : ''}">
+          <span class="jn" style="${done.includes(x.i) ? 'background:var(--ok);color:#fff' : ''}">
+            ${done.includes(x.i) ? Icon('Check',{size:12}) : x.i + 1}</span>
+          <div class="grow">
+            <div class="wtitle">${x.title}</div>
+            <p class="xs muted">${x.kind} · ${x.mins} min</p>
+          </div>
+          <button class="btn ${done.includes(x.i) ? 'btn-quiet' : 'btn-ghost'} btn-sm"
+            onclick="toggleModule(${x.i})">${done.includes(x.i) ? 'Undo' : 'Mark complete'}</button>
+        </div>`).join('')}`;
+    }
+    const all = done.length === m.length;
+    return all
+      ? `<div class="locked" style="border-color:var(--ok)">
+          <span class="icon-chip lg green" style="margin:0 auto">${Icon('Zap',{size:24})}</span>
+          <h3 class="mt16">Capstone complete — compete phase unlocked</h3>
+          <p class="muted small mt8">Pick a problem statement next — same rubric loop every build on H2S goes through.</p>
+          <button class="btn btn-primary mt24" onclick="unlockCompete()">Continue to Statement ${Icon('ArrowRight',{size:14})}</button>
+        </div>`
+      : locked('Finish the modules first', `${m.length - done.length} module${m.length-done.length===1?'':'s'} left before the compete phase unlocks.`);
+  }
+  return building(step - 3);
+}
+function unlockCompete(){ put('lcCapstone', true); go(3); }
+
+/* ---------- shared bits ---------- */
+const esc = x => String(x == null ? '' : x)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const card   = (t, b) => `<div class="card card-pad"><h3>${t}</h3><p class="small muted mt8">${b}</p></div>`;
+const locked = (t, b) => `<div class="locked"><span class="icon-chip lg slate" style="margin:0 auto">${Icon('Lock',{size:22})}</span>
+  <h3 class="mt16">${t}</h3><p class="muted small mt8">${b}</p></div>`;
+const intro  = (t, b) => `<div class="card card-pad"><div class="row gap12">
+  <span class="icon-chip green">${Icon('CheckCircle2',{size:18})}</span><div><h3>${t}</h3><p class="small muted mt8">${b}</p></div></div></div>`;
+
+const SURFACE = { learning, competing:building, learncompete };
+
+function engineRoundOf(){
+  const rs = roundsFor(o);
+  for (let i = 0; i < rs.length; i++){
+    const e = roundEval(rs[i]);
+    if (e.engine !== 'none') return { idx:i, ev:e, r:rs[i] };
+  }
+  return null;
+}
+function aiCard(){
+  const er = engineRoundOf(); if (!er) return '';
+  const key = SELF_KEY(o.id);
+  const run = aiRun(st, aiKey(key, er.ev.engine));
+  const t = AI_TIERS[er.ev.engine] || {};
+  if (!run) return '';
+  if (!aiDone(run)) return `
+    <div class="card card-pad mb16" style="border-color:var(--primary);background:var(--primary-soft)">
+      <div class="row between wrapflex gap12">
+        <span class="tag" style="color:var(--primary)">${esc(t.label)} · running</span>
+        <span class="xs muted">${esc(t.mins)} typically</span>
+      </div>
+      <p class="small mt8">${esc(aiPhase(run)[2])}…</p>
+      <div class="meter mt8"><i style="width:${aiPct(run)}%"></i></div>
+      <p class="xs muted mt8">Your submission is being read now. Leave the page if you like —
+        the report will be here when you come back.</p>
+    </div>`;
+  const res = aiResult(o, key, er.ev.engine);
+  const sc = scoreFor(key) || {};
+  const appealed = !!(st.aiAppeals || {})[key];
+  return `
+  <div class="card card-pad mb16">
+    <div class="row between wrapflex gap12 mb16">
+      <span class="tag">${esc(t.label)} · automated read</span>
+      <span class="mono-sm xs muted">${res.cats.length} categor${res.cats.length === 1 ? 'y' : 'ies'}
+        · confidence ${Math.round(res.confidence * 100)}%</span>
+    </div>
+    ${res.cats.map(c2 => `
+      <div style="padding:9px 0;border-bottom:1px solid var(--line-soft)">
+        <div class="row between gap12">
+          <strong class="small">${esc(AI_CATS[c2].label)}</strong>
+          <span class="mono-lg" style="font-size:15px">${res.rubric[AI_CATS[c2].label]} / 5</span>
+        </div>
+        <p class="xs muted mt8" style="margin-top:3px">${esc(res.notes[AI_CATS[c2].label])}</p>
+      </div>`).join('')}
+    ${res.missing.length ? `<p class="xs mt16" style="color:var(--warn)">
+      Not assessed: ${res.missing.map(m => esc(m.label)).join(', ')} — this program did not ask for
+      ${[...new Set(res.missing.flatMap(m => m.needs))].join(' or ')}, so the engine left
+      ${res.missing.length === 1 ? 'it' : 'them'} out rather than guess.</p>` : ''}
+    ${res.flags.length ? `<div class="card card-soft card-pad mt16">
+      <span class="tag">Flagged for a human to look at</span>
+      ${res.flags.map(f2 => `<p class="xs mt8">· ${esc(f2)}</p>`).join('')}
+    </div>` : ''}
+    <p class="xs faint mt16">${er.ev.human
+      ? (sc.reviewed
+          ? (sc.overrode
+              ? 'A human reviewer disagreed with this read and scored it themselves. Their score is the one that counts.'
+              : 'A human reviewer has confirmed this read.')
+          : 'A human reviewer still has to confirm or overrule this before it counts. ' +
+            (er.ev.aiWeight ? 'The engine is ' + er.ev.aiWeight + '% of this round.' : 'It is advisory only.'))
+      : 'This round is scored by the engine alone — ' + esc(o.org) + ' designed it that way.'}</p>
+    ${appealed ? `<p class="xs mt8" style="color:var(--warn)">You have asked for a human read.
+      Hack2skill has it — "${esc((st.aiAppeals || {})[key])}"</p>`
+      : `<div class="mt16">
+      <div class="field" style="margin-bottom:8px"><label>Something wrong in this report?</label>
+        <input id="apWhy" placeholder="The performance number came from a rate-limited demo, not slow code."></div>
+      <button class="btn btn-ghost btn-sm" onclick="appealAi()">Ask for a human read</button>
+    </div>`}
+  </div>`;
+}
+function appealAi(){
+  const why = ((el('apWhy') || {}).value || '').trim();
+  if (why.length < 8) return;
+  const m = S.read().aiAppeals || {};
+  m[SELF_KEY(o.id)] = why;
+  S.save({ aiAppeals:m });
+  notify('enabler', { title:'Engine score challenged — ' + o.name,
+    body:(myTeam() ? myTeam().name : (st.name || 'A participant')) + ': ' + why,
+    link:'judging.html?id=' + o.id });
+  render();
+}
+
+/* ================= MENTORING ================= */
+let mCat = null, mMentor = null;
+
+function mentoringStep(){
+  const cfg = mentoringOf(o), cov = coverageFor(o, st);
+  const mine = bookingsFor(o, st);
+  const win = cfg.from && cfg.to;
+  const openNow = win && TODAY() >= cfg.from && TODAY() <= cfg.to;
+  const mentors = programMentors(o);
+
+  return `
+  <div class="row between gap12 wrapflex mb16">
+    <h3>Mentor hours</h3>
+    <span class="small ${cov.complete ? '' : 'muted'}">${cov.met} of ${cov.total} categories covered</span>
+  </div>
+  <div class="meter mb16"><i style="width:${cov.total ? cov.met/cov.total*100 : 0}%"></i></div>
+
+  <div class="card card-soft card-pad mb24">
+    <p class="small">${esc(cfg.note) || 'Book time with the people ' + esc(o.org) + ' put on this program.'}</p>
+    <p class="xs muted mt8">${cfg.sessionMins}-minute sessions · mentor hours run
+      ${esc(cfg.from || '—')} → ${esc(cfg.to || '—')}${openNow ? '' : ' · <strong>closed right now</strong>'}
+      · ${cov.required
+        ? '<strong style="color:var(--warn)">one session per category is required before you can submit</strong>'
+        : 'recommended, not required'}</p>
+  </div>
+
+  ${mine.length ? `
+    <h3 class="mb16" style="font-size:16px">Your sessions</h3>
+    ${mine.map(bk => {
+      const m = mentorById(o, bk.mentor) || { name:'Mentor', role:'', org:'' };
+      const past = bk.day < TODAY();
+      return `<div class="wrow ${past ? 'done' : 'current'}">
+        <span class="jn" style="${past ? 'background:var(--ok);color:#fff' : ''}">${past ? Icon('Check',{size:12}) : Icon('ChevronRight',{size:12})}</span>
+        <div class="grow">
+          <div class="wtitle">${esc(m.name)} · ${esc(mentorCatName(bk.cat))}</div>
+          <p class="xs muted">${esc(m.role)}, ${esc(m.org)} · ${esc(bk.day)} at ${esc(bk.time)}
+            · ${bk.mins} min</p>
+          ${bk.note ? `<p class="xs mt8"><strong>Their note:</strong> ${esc(bk.note)}</p>` : ''}
+        </div>
+        ${past ? '<span class="pill pill-ok">Done</span>'
+          : `<button class="btn btn-ghost btn-sm" onclick="cancelBk('${bk.key}')">Cancel</button>`}
+      </div>`;
+    }).join('')}
+    <p class="xs faint mt8 mb24">What a mentor writes here is for you and for Hack2skill.
+      It is never shown to the jury and never affects your score.</p>` : ''}
+
+  <h3 class="mb16" style="font-size:16px">${mine.length ? 'Book the rest' : 'Book a session'}</h3>
+  ${cov.cats.map(cc => {
+    const list = mentors.filter(m => m.cat === cc.id);
+    const openCat = mCat === cc.id;
+    return `
+    <div class="card card-pad mb16" style="${cc.met ? 'border-color:var(--ok)' : ''}">
+      <div class="row between wrapflex gap12" style="cursor:pointer" onclick="openCatToggle('${cc.id}')">
+        <div class="grow" style="min-width:200px">
+          <div class="row gap8" style="align-items:center">
+            <strong>${esc(cc.name)}</strong>
+            ${cc.met ? '<span class="pill pill-ok">Covered</span>'
+              : `<span class="pill pill-warn">${cc.need - cc.booked} to book</span>`}
+          </div>
+          <p class="xs muted mt8">${esc((MENTOR_CATS.find(x => x.id === cc.id) || {}).blurb || '')}</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" type="button">${openCat ? 'Hide' : 'See ' + list.length + ' mentors'}</button>
+      </div>
+      ${openCat ? `<div style="border-top:1px solid var(--line-soft);margin-top:14px;padding-top:14px">
+        ${list.map(m => {
+          const slots = mentorSlots(o, m).filter(sl => !bookingsAll(st)[sl.key]);
+          const showing = mMentor === m.id;
+          return `
+          <div class="card card-soft card-pad mb16">
+            <div class="row between wrapflex gap12">
+              <div class="grow" style="min-width:200px">
+                <strong class="small">${esc(m.name)}</strong>
+                <p class="xs muted mt8">${esc(m.role)} · ${esc(m.org)} · ${m.years} yrs
+                  ${m.also ? '· also ' + esc(mentorCatName(m.also)) : ''}</p>
+                <p class="xs mt8">${esc(m.bio)}</p>
+              </div>
+              <button class="btn ${showing ? 'btn-quiet' : 'btn-ghost'} btn-sm" type="button"
+                onclick="openMentor('${m.id}')">${showing ? 'Hide slots'
+                  : slots.length ? slots.length + ' slots' : 'No slots'}</button>
+            </div>
+            ${showing ? (slots.length ? `<div class="row gap8 wrapflex mt16">
+              ${slots.slice(0,9).map(sl => `<button class="btn btn-ghost btn-sm" type="button"
+                ${openNow ? '' : 'disabled title="Mentor hours are not open"'}
+                onclick="bookSlot('${m.id}','${cc.id}','${sl.key}','${sl.day}','${sl.time}',${sl.mins})">
+                ${new Date(sl.day).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
+                · ${sl.time}</button>`).join('')}
+            </div>` : `<p class="xs muted mt16">Fully booked. Try another mentor in this category.</p>`) : ''}
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('')}
+
+  ${cov.complete ? `<div class="card card-pad" style="border-color:var(--ok);background:var(--ok-soft)">
+    <strong class="small">Every category covered.</strong>
+    <p class="xs mt8">You have used the mentoring this program offers. Go and build.</p>
+  </div>` : ''}`;
+}
+function openCatToggle(id){ mCat = mCat === id ? null : id; mMentor = null; render(); }
+function openMentor(id){ mMentor = mMentor === id ? null : id; render(); }
+function bookSlot(mid, cat, key, day, time, mins){
+  const m = mentorById(o, mid) || {};
+  const t = myTeam();
+  putBooking(key, { mentor:mid, cat, day, time, mins, at:new Date().toISOString(),
+                    by: st.name || 'A participant',
+                    team: t ? t.name : (st.name || 'You') + ' (solo)',
+                    ps: myPS() || '', ask:'' });
+  logActivity('You booked a mentor session — ' + mentorCatName(cat));
+  notify('mentor', { title:'New session booked',
+    body:(t ? t.name : (st.name || 'A participant')) + ' booked ' + day + ' at ' + time
+       + ' — ' + mentorCatName(cat) + ', ' + o.name + '.',
+    link:'mentor.html?id=' + o.id });
+  mMentor = null; render();
+}
+function cancelBk(key){ putBooking(key, null); render(); }
+
+function render(){
+  st = S.read();
+  crumbs();
+  if (M_STEP >= 0 && step === M_STEP){
+    el('body').innerHTML = mentoringStep();
+    settleFocus();
+    return;
+  }
+  const screen = step;
+  step = toLogicalStep(o, step);
+  el('body').innerHTML = (SURFACE[o.purpose] || (() => locked('Nothing here yet','')))();
+  step = screen;
+  settleFocus();
+}
+render();
+mountBell('innovator');
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hack2skill — Welcome</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  body{ background:var(--canvas); }
+  .ob-wrap{ max-width:640px; margin:0 auto; padding:48px 24px 80px; }
+  .ob-step{ display:none; }
+  .ob-step.on{ display:block; }
+</style>
+</head>
+<body>
+<div class="ob-wrap">
+  <div class="row between" style="margin-bottom:28px">
+    <a class="brand" href="index.html" style="padding:0"><span class="brand-mark">H2S</span><span class="brand-name">Hack2skill</span></a>
+    <div class="step-dots" id="dots"></div>
+  </div>
+
+  <div class="card card-pad">
+    <div class="ob-step on" id="step1">
+      <h2>What brings you to H2S?</h2>
+      <p class="small muted mt6">Pick everything that applies — you can switch anytime from the sidebar. Star the one you want as your home screen.</p>
+      <div class="grid g3 mt20" id="intentGrid"></div>
+
+      <div class="divider mt20 mb20"></div>
+      <label class="check-row">
+        <input type="checkbox" id="mentorInterest">
+        <span class="small">I'm also interested in mentoring or evaluating <span class="xs faint">(needs H2S approval — you can apply from your profile anytime)</span></span>
+      </label>
+
+      <div class="row between mt24">
+        <a class="xs muted" onclick="skipAll()">Skip — just let me explore</a>
+        <button class="btn btn-primary" onclick="goStep(2)">Continue</button>
+      </div>
+    </div>
+
+    <div class="ob-step" id="step2">
+      <h2>A little about you</h2>
+      <p class="small muted mt6">Thirty seconds — this is what programs use to recommend the right opportunities.</p>
+      <div class="col gap16 mt20">
+        <div class="field"><label>Full name</label><input class="input" id="f_name"></div>
+        <div class="field"><label>Headline</label><input class="input" id="f_headline" placeholder="e.g. Final-year CS student, ML enthusiast"></div>
+        <div class="grid g2">
+          <div class="field"><label>College / company</label><input class="input" id="f_org"></div>
+          <div class="field"><label>Region</label>
+            <select class="select" id="f_region"><option value="">Select…</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="row between mt24">
+        <button class="btn btn-ghost" onclick="goStep(1)">Back</button>
+        <button class="btn btn-primary" onclick="goStep(3)">Continue</button>
+      </div>
+    </div>
+
+    <div class="ob-step" id="step3">
+      <h2>What you're into</h2>
+      <p class="small muted mt6">Pick a few interest areas and skills — we'll use these to recommend initiatives.</p>
+      <div class="field mt20"><label>Interest areas</label>
+        <div class="row wrap gap8 mt6" id="areaChips"></div>
+      </div>
+      <div class="field mt20"><label>Skills</label>
+        <div class="row wrap gap8 mt6" id="skillChips"></div>
+      </div>
+      <div class="row between mt24">
+        <button class="btn btn-ghost" onclick="goStep(2)">Back</button>
+        <button class="btn btn-primary btn-lg" onclick="finish()">Get started</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+const st0 = S.read();
+if (!st0.account){ location.href = 'auth.html?mode=signup'; throw 'no account'; }
+
+let picked = [];      // intent keys
+let primary = null;
+let areas = [];
+let skills = [];
+const SKILLS = ['Python','JavaScript','React','Node.js','SQL','Docker','TypeScript','Java','AWS','Figma','TensorFlow','Solidity'];
+
+function goStep(n){
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('on'));
+  document.getElementById('step' + n).classList.add('on');
+  document.querySelectorAll('.step-dot').forEach((d,i) => {
+    d.classList.toggle('on', i === n - 1);
+    d.classList.toggle('done', i < n - 1);
+  });
+  window.scrollTo(0,0);
+}
+
+function renderIntentGrid(){
+  document.getElementById('intentGrid').innerHTML = Object.entries(VIEWS).map(([k,v]) => `
+    <div role="button" tabindex="0" class="pick-card${picked.includes(k) ? ' on' : ''}" onclick="toggleIntent('${k}')" onkeydown="if(event.key==='Enter')toggleIntent('${k}')">
+      <span class="icon-chip ${k==='learning'?'green':k==='competing'?'blue':'amber'}">${Icon(v.ico,{size:19})}</span>
+      <strong class="small">${v.label}</strong>
+      <span class="xs muted">${v.blurb}</span>
+      ${picked.includes(k) ? `<button type="button" class="xs" style="align-self:flex-start;color:${primary===k?'var(--primary)':'var(--faint)'};font-weight:700" onclick="event.stopPropagation();setPrimary('${k}')">${primary===k ? '★ Primary' : '☆ Set as primary'}</button>` : ''}
+    </div>`).join('');
+}
+function toggleIntent(k){
+  const i = picked.indexOf(k);
+  if (i === -1) picked.push(k); else { picked.splice(i,1); if (primary === k) primary = picked[0] || null; }
+  if (!primary && picked.length) primary = picked[0];
+  renderIntentGrid();
+}
+function setPrimary(k){ primary = k; renderIntentGrid(); }
+
+function renderRegions(){
+  const sel = document.getElementById('f_region');
+  REGIONS.forEach(r => sel.insertAdjacentHTML('beforeend', `<option>${r}</option>`));
+}
+function renderChips(){
+  const areaBank = Object.keys(PS_BANK);
+  document.getElementById('areaChips').innerHTML = areaBank.map(a =>
+    `<button type="button" class="chip-toggle${areas.includes(a)?' on':''}" onclick="toggleChip(this,areas,'${a}')">${a}</button>`).join('');
+  document.getElementById('skillChips').innerHTML = SKILLS.map(s =>
+    `<button type="button" class="chip-toggle${skills.includes(s)?' on':''}" onclick="toggleChip(this,skills,'${s}')">${s}</button>`).join('');
+}
+function toggleChip(el, list, val){
+  const i = list.indexOf(val);
+  if (i === -1) list.push(val); else list.splice(i,1);
+  el.classList.toggle('on');
+}
+
+function commit(){
+  document.getElementById('dots').innerHTML = [0,1,2].map(() => `<span class="step-dot"></span>`).join('');
+  S.save({
+    name: document.getElementById('f_name').value.trim() || st0.name || st0.account.name,
+    headline: document.getElementById('f_headline').value.trim(),
+    org: document.getElementById('f_org').value.trim(),
+    region: document.getElementById('f_region').value,
+    intents: picked, primary: primary || (picked[0] || 'home'),
+    mentorInterest: document.getElementById('mentorInterest').checked,
+    interests: areas, skills, onboarded: true
+  });
+}
+function finish(){ commit(); goLand(); }
+function skipAll(){ picked = []; primary = null; commit(); goLand(); }
+function goLand(){
+  const st = S.read();
+  const next = new URLSearchParams(location.search).get('next');
+  if (next){ location.href = next; return; }
+  location.href = 'app.html?view=' + (picked.length ? landingKey(st) : 'home');
+}
+
+document.getElementById('f_name').value = st0.name || (st0.account || {}).name || '';
+renderIntentGrid(); renderRegions(); renderChips();
+document.getElementById('dots').innerHTML = [0,1,2].map(i => `<span class="step-dot${i===0?' on':''}"></span>`).join('');
+</script>
+</body>
+</html>

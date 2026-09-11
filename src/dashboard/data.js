@@ -552,6 +552,23 @@ export function unreadFor(st, who) {
   return notesFor(st, who).filter(n => !n.read).length
 }
 
+/* ---- saved / recently viewed initiatives (dashboard sidebar utility group) ---- */
+export const savedList = st => (st || {}).saved || []
+export const isSaved = (id, st) => savedList(st).includes(id)
+export function toggleSaved(sv, st, id) {
+  const l = savedList(st).slice()
+  const i = l.indexOf(id)
+  if (i === -1) l.unshift(id); else l.splice(i, 1)
+  sv({ saved: l })
+  return i === -1
+}
+export const recentViews = st => (st || {}).recentViews || []
+export function logRecentView(sv, st, id) {
+  const l = recentViews(st).filter(x => x !== id)
+  l.unshift(id)
+  sv({ recentViews: l.slice(0, 12) })
+}
+
 export function mentorNext(st) {
   const areas = ((st.mentorApp || {}).areas) || []
   const rows = assignmentsFor(approvedChallenges(st), areas).filter(q => !((st.scores || {})[q.key]))

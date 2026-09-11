@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mentor console — Hack2skill</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell mode-mentor" id="shell">
+  <div id="sidebarMount"></div>
+  <div class="shell-col">
+    <div id="topbarMount"></div>
+    <div class="shell-body" style="max-width:1000px">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="page-head" id="head"></div>
+      <div class="journey" id="journey"></div>
+      <div id="body"></div>
+      <div class="pager" id="pager"></div>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script src="journey.js"></script>
+<script src="shell.js"></script>
+<script>
+let st = S.read();
+const o = byId(new URLSearchParams(location.search).get('id'));
+if (!st.onboarded){ location.href = 'auth.html?mode=login&next=' + encodeURIComponent(location.href); throw 'redirect'; }
+if (!o){ location.href = 'app.html?view=mentor'; throw 'not found'; }
+
+/* you only get a console for a challenge an Enabler approved you onto */
+const mapStatus = mentorChallenges(st)[o.id];
+const el = id => document.getElementById(id);
+const esc = x => String(x == null ? '' : x)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const mApp = () => S.read().mentorApp || {};
+const roles = () => mApp().roles || [];
+
+document.getElementById('shell').className = 'shell mode-mentor';
+document.getElementById('sidebarMount').innerHTML = Sidebar({ mode:'mentor', active:'mentor', persona:'mentor', st });
+document.getElementById('topbarMount').innerHTML = Topbar({ st });
+mountBell('mentor');
+
+/* ================================================================
+   WHO IS LOOKING, AND WHAT THEY GET TO SEE — steps are the grant,
+   ported verbatim from prototype_v1 (see the comment there): an
+   evaluator-only person has no mentoring steps, a mentor-only person
+   has no Evaluate. See mentor.html in prototype_v1 for the rationale.
+   ================================================================ */
+const hasRole = r => roles().includes(r);
+const HAS_M = () => hasRole('mentor');
+const HAS_E = () => hasRole('evaluator');
+const BOTH  = () => HAS_M() && HAS_E();
+
+function stepDefs(){
+  const out = [{ k:'assign', label:'Assignment', hat:null }];
+  if (HAS_M()){
+    if (mentoringOn(o)) out.push({ k:'avail', label:'Availability', hat:'m' }, { k:'sessions', label:'Sessions', hat:'m' });
+    else                out.push({ k:'teams', label:'Mentor teams', hat:'m' });
+  }
+  if (HAS_E()) out.push({ k:'evaluate', label:'Evaluate', hat:'e' });
+  out.push({ k:'impact', label:'Impact', hat:null });
+  return out;
+}
+function consoleName(){
+  return BOTH() ? 'Mentor & evaluator console' : HAS_E() ? 'Evaluator console' : HAS_M() ? 'Mentor console' : 'Your console';
+}
+
+let DEFS = stepDefs();
+
+let step = (() => {
+  const qp = new URLSearchParams(location.search);
+  const byKey = DEFS.findIndex(d => d.k === qp.get('t'));
+  if (byKey > -1) return byKey;
+  const n = Number(qp.get('step'));
+  if (!isNaN(n) && qp.get('step') !== null) return Math.max(0, Math.min(n, DEFS.length - 1));
+  return mapStatus === 'approved' ? Math.min(1, DEFS.length - 1) : 0;
+})();
+
+function go(n){
+  if (n < 0 || n > DEFS.length - 1) return;
+  step = n;
+  history.replaceState({}, '', `mentor.html?id=${o.id}&t=${DEFS[n].k}`);
+  render();
+}
+const stepKey = () => (DEFS[step] || {}).k;
+document.title = o.name + ' — ' + consoleName();
+
+/* ---------- the queue for THIS challenge ---------- */
+function queue(){
+  const rows = assignmentsFor([o.id], mApp().areas).map(q => ({
+    key: q.key, team: q.team, brief: q.brief, art: submissionArtifact(q.key, q.team, o), self:false
+  }));
+  const own = ((S.read().submission || {})[o.id]) || null;
+  if (own){
+    const t = (S.read().teams || {})[o.id];
+    rows.unshift({ key: SELF_KEY(o.id), team: t ? t.name : (S.read().name || 'You') + ' (solo)',
+                   brief: 'Submitted on the platform', art: own, self:true });
+  }
+  return rows;
+}
+
+/* ---------- chrome ---------- */
+function chrome(){
+  el('crumbs').innerHTML = `
+    <a href="app.html">My Dashboard</a><span class="sep">›</span>
+    <a href="app.html?view=mentor">${BOTH() ? 'Mentor & evaluator' : HAS_E() ? 'Evaluator' : 'Mentor'}</a>
+    <span class="sep">›</span><span class="here">${esc(o.name)}</span>`;
+
+  el('head').innerHTML = `
+    <div class="row between gap16 wrap">
+      <div>
+        <h2 class="row gap8">${Icon(HAS_E() && !HAS_M() ? 'ClipboardCheck' : 'Compass',{size:19})} ${esc(o.name)}</h2>
+        <p class="muted">${esc(o.org)} · ${o.areas.join(' · ')} · ${deadlineText(o)}</p>
+      </div>
+      <div class="row gap8 wrap">
+        ${mapStatus === 'approved' ? `<span class="pill ${BOTH() ? 'pill-hat' : 'pill-ok'}">${
+          BOTH() ? 'Mentor · Evaluator' : HAS_E() ? 'Evaluator' : 'Mentor'}</span>` : ''}
+        <a class="btn btn-ghost btn-sm" href="initiative.html?id=${o.id}">Event details</a>
+      </div>
+    </div>`;
+
+  const reach = mapStatus === 'approved' ? DEFS.length - 1 : 0;
+  const two = BOTH();
+  el('journey').innerHTML = DEFS.map((d,i) => {
+    const locked = i > reach;
+    return `<div class="jstep ${i === step ? 'now' : locked ? 'locked' : 'done'}"
+      ${locked ? '' : `onclick="go(${i})"`}
+      title="${d.hat === 'm' ? 'Mentor' : d.hat === 'e' ? 'Evaluator' : 'Both roles'}">
+      <span class="jn">${i < step && !locked ? Icon('Check',{size:11}) : i+1}</span>
+      <span class="jl">${two && d.hat ? (d.hat === 'm' ? 'Mentor · ' : 'Evaluator · ') : ''}${d.label}</span></div>`;
+  }).join('');
+
+  const prev = step > 0 ? `<button class="btn btn-ghost" onclick="go(${step-1})">${Icon('ArrowLeft',{size:14})} ${DEFS[step-1].label}</button>` : '<span></span>';
+  el('pager').innerHTML = prev + (step < DEFS.length - 1 && mapStatus === 'approved'
+    ? `<button class="btn btn-primary" onclick="go(${step+1})">${DEFS[step+1].label} ${Icon('ArrowRight',{size:14})}</button>`
+    : `<a class="btn btn-ghost" href="app.html?view=mentor">Back to all challenges</a>`);
+}
+
+/* ---------- steps ---------- */
+function assignment(){
+  const pill = { approved:['Approved','pill-ok'], requested:['Awaiting your Enabler','pill-warn'],
+                 declined:['Not approved','pill'] }[mapStatus] || ['Not requested','pill'];
+  if (mapStatus !== 'approved') return `
+    <div class="locked">
+      <span class="icon-chip lg slate" style="margin:0 auto">${Icon(mapStatus === 'requested' ? 'Clock' : 'Lock',{size:24})}</span>
+      <h3 class="mt16">${mapStatus === 'requested' ? 'Mapping awaiting approval' : 'You are not mapped to this challenge'}</h3>
+      <p class="muted small mt8" style="max-width:460px;margin:8px auto 0">
+        ${mapStatus === 'requested'
+          ? 'An Enabler confirms every mapping before submissions are routed to you. Nothing to do until then.'
+          : 'Request it from your Mentor view, and an Enabler will confirm.'}</p>
+      <a class="btn btn-ghost mt24" href="app.html?view=mentor">Back to all challenges</a>
+    </div>`;
+
+  return `
+    <div class="grid g2 mb16">
+      ${card('Your assignment', `
+        <div class="kv"><span>Status</span><strong><span class="pill ${pill[1]}">${pill[0]}</span></strong></div>
+        <div class="kv"><span>Acting as</span><strong>${mentorRoleLabel(st)}</strong></div>
+        <div class="kv"><span>This grants you</span><strong style="text-align:right">${
+          DEFS.filter(d => d.hat).map(d => d.label).join(', ') || 'nothing beyond this page'}</strong></div>
+        <div class="kv"><span>Matched on</span><strong style="text-align:right">${
+          (mApp().areas || []).filter(a => o.areas.includes(a)).join(', ') || '—'}</strong></div>
+        <div class="kv"><span>Submissions routed</span><strong>${queue().length}</strong></div>`)}
+      ${card('Deadlines', `
+        <div class="kv"><span>Submissions close</span><strong>${o.deadline}</strong></div>
+        <div class="kv"><span>Your scores due</span><strong style="color:var(--warn)">${o.deadline}</strong></div>
+        <div class="kv"><span>Results announced</span><strong>after jury review</strong></div>`)}
+    </div>
+    ${BOTH() ? `<div class="card card-soft card-pad mb16">
+      <span class="tag">You hold both roles</span>
+      <p class="small mt8">Most people here hold one. You have both, so this console shows both —
+        mentor and evaluator steps are marked in the rail above.</p>
+      <p class="xs muted mt8">They are kept apart on purpose. What a team tells you in a mentor
+        session never reaches your scoring, and nothing you write as an evaluator is shown to a
+        team you mentor. If you end up scoring a team you coached, declare a conflict — the
+        button is on every submission.</p>
+    </div>` : ''}
+    ${card('Ground rules', `
+      <div class="col gap8 mt8">
+        ${(HAS_E() ? ['Score against the round\'s published criteria, not personal preference.',
+                      'Declare a conflict of interest instead of scoring anyone you know.'] : [])
+          .concat(HAS_M() ? ['Session notes go to the team and to Hack2skill — never to the jury.'] : [])
+          .concat(['Everything you see here is confidential to the evaluation.'])
+          .map(t => `<div class="check"><span class="box done">${Icon('Check',{size:10})}</span><span class="ctext small">${t}</span></div>`).join('')}
+      </div>`)}`;
+}
+
+function myRound(){
+  const rs = roundsFor(o);
+  for (let i = 0; i < rs.length; i++){
+    const ev = roundEval(rs[i]);
+    if (!ev.human) continue;
+    if (!roundState(o, i, S.read()).complete) return { i, r:rs[i], ev };
+  }
+  const last = rs.length - 1;
+  return { i:last, r:rs[last], ev:roundEval(rs[last]), done:true };
+}
+function evaluate(){
+  if (mapStatus !== 'approved') return assignment();
+
+  const R = myRound();
+  if (R.ev.engine !== 'none'){
+    autoQueueRound(o, R.i, S.read());
+    st = S.read();
+    if (ensureAiScores(o, R.i, st)) st = S.read();
+    clearTimeout(evalTick);
+    if (Object.values(aiAll(st)).some(r2 => !aiDone(r2))) evalTick = setTimeout(render, 900);
+  }
+  const crit = (R.r.criteria || []).length ? R.r.criteria.map(c => c.label) : RUBRIC;
+  const rows = roundEntries(o, R.i, S.read()).map(e => {
+    const q = queue().find(x => x.key === e.key);
+    return q || { key:e.key, team:e.team, brief:e.brief || '', self:!!e.self, art: submissionArtifact(e.key, e.team, o) };
+  });
+  const done = rows.filter(q => scoreFor(q.key) && (R.ev.engine === 'none' || !scoreFor(q.key).ai || scoreFor(q.key).reviewed));
+  const engineOnly = roundsFor(o).every(r2 => !roundEval(r2).human);
+
+  if (engineOnly) return `<div class="locked">
+    <span class="icon-chip lg slate" style="margin:0 auto">${Icon('Cpu',{size:24})}</span>
+    <h3 class="mt16">Every round here is scored by an engine</h3>
+    <p class="muted small mt8">${esc(o.org)} designed this program with no human in the scoring loop. Nothing is routed to you on this challenge.</p>
+  </div>`;
+
+  return `
+    <div class="card card-soft card-pad mb16">
+      <div class="row between wrap gap12">
+        <div><span class="tag">You are scoring</span>
+          <p class="small mt8"><strong>Round ${R.i + 1} · ${esc(R.r.name || 'Evaluation')}</strong> — ${esc(roundEvalLabel(R.r))}</p></div>
+        <span class="pill ${R.done ? 'pill-ok' : 'pill-warn'}">${R.done ? 'Round complete' : R.r.jury + ' score' + (+R.r.jury === 1 ? '' : 's') + ' per entry'}</span>
+      </div>
+      <p class="xs muted mt16">${R.i === 0 ? 'Everyone who submitted is in this round.' : 'Only what round ' + R.i + ' shortlisted is in this round.'}${
+        R.ev.engine !== 'none' ? ' The ' + esc(AI_TIERS[R.ev.engine].label.toLowerCase()) + ' has already read each entry — '
+          + (R.ev.aiWeight ? 'its score is ' + R.ev.aiWeight + '% of this round, and your job is to confirm it or overrule it.' : 'its report is advisory; your score is the round score.') : ''}</p>
+      <p class="xs faint mt8">Scored against ${crit.map(c => esc(c)).join(' · ')} — the criteria ${esc(o.org)} signed off, not a platform default.</p>
+    </div>
+    <div class="row between gap12 wrap mb16">
+      <h3>Submissions</h3><span class="small muted">${done.length} of ${rows.length} ${R.ev.engine !== 'none' ? 'reviewed' : 'scored'}</span>
+    </div>
+    <div class="meter mb24"><i style="width:${rows.length ? done.length/rows.length*100 : 0}%"></i></div>
+    ${rows.map(q => {
+      const s = scoreFor(q.key);
+      const open = S.read().openEval === q.key;
+      return `<div class="card card-pad mb16" style="${open ? 'border-color:var(--primary)' : ''}">
+        <div class="row between gap16 wrap">
+          <div style="min-width:240px">
+            <div class="row gap8 wrap mb8">
+              <strong>${q.team}</strong>
+              ${q.self ? '<span class="pill pill-hat">Submitted on platform</span>' : ''}
+              ${s ? (s.conflict ? '<span class="pill pill-warn">Conflict declared</span>' : `<span class="pill pill-ok">Scored ${scoreAvg(s)} / 5</span>`) : ''}
+            </div>
+            <p class="small muted">${q.art.title}</p><p class="xs faint">${q.brief}</p>
+          </div>
+          <button class="btn ${s ? 'btn-outline' : 'btn-primary'} btn-sm" onclick="toggleEval('${q.key}')">${open ? 'Close' : s ? 'Review' : 'Open'}</button>
+        </div>
+        ${open ? evalPanel(q, s) : ''}
+      </div>`;
+    }).join('') || `<div class="empty">
+      <p class="small">${R.i === 0 ? 'Nothing routed yet — submissions appear here as teams hand them in.' : 'Round ' + R.i + ' has not shortlisted anybody yet, so this round is empty.'}</p>
+      ${R.i > 0 ? `<p class="xs muted mt8">Round ${R.i} is ${esc(roundEvalLabel(roundsFor(o)[R.i - 1]))}. Until it advances, there is nothing here for you to score.</p>` : ''}
+    </div>`}`;
+}
+
+function evalPanel(q, s){
+  const R = myRound();
+  const crit = (R.r.criteria || []).length ? R.r.criteria : RUBRIC.map(c => ({ label:c, weight:null }));
+  const d = draft[q.key] || (s && s.rubric) || {};
+  const run = R.ev.engine !== 'none' ? aiRun(S.read(), aiKey(q.key, R.ev.engine)) : null;
+  const res = run && aiDone(run) ? aiResult(o, q.key, R.ev.engine) : null;
+  return `
+    <hr class="sep">
+    <span class="tag">The submission</span>
+    <div class="card card-soft card-pad mt8 mb16">
+      <div class="kv"><span>Repository</span><strong><a href="#" onclick="event.preventDefault()" style="color:var(--primary)">${q.art.repo}</a></strong></div>
+      ${q.art.demo ? `<div class="kv"><span>Demo</span><strong><a href="#" onclick="event.preventDefault()" style="color:var(--primary)">${q.art.demo}</a></strong></div>` : ''}
+      <p class="small muted mt16">${q.art.notes}</p>
+    </div>
+    ${res ? `<div class="card card-soft card-pad mb16" style="border-color:var(--primary)">
+      <div class="row between wrap gap12 mb8">
+        <span class="tag" style="color:var(--primary)">${esc(AI_TIERS[R.ev.engine].label)} read this already</span>
+        <span class="mono-sm xs muted">confidence ${Math.round(res.confidence * 100)}%</span>
+      </div>
+      ${res.cats.map(c2 => `<div class="row between gap12" style="padding:7px 0;border-bottom:1px solid var(--line-soft)">
+        <div style="min-width:0"><strong class="small">${esc(AI_CATS[c2].label)}</strong>
+          <p class="xs muted" style="margin-top:2px">${esc(res.notes[AI_CATS[c2].label])}</p></div>
+        <span class="mono-lg" style="font-size:14px">${res.rubric[AI_CATS[c2].label]}</span>
+      </div>`).join('')}
+      ${res.flags.length ? `<p class="xs mt8" style="color:var(--warn)">Flags: ${res.flags.map(f2 => esc(f2)).join(' · ')}</p>` : ''}
+      <p class="xs faint mt8">A read, not a verdict. Score it yourself below — if you disagree with the engine, your score is the one that stands.</p>
+    </div>` : ''}
+    ${s && s.conflict
+      ? '<div class="nudge"><strong class="small">You declared a conflict of interest.</strong><p class="xs muted mt8">Reassigned to another evaluator.</p></div>'
+      : `<span class="tag">${esc(R.r.name || 'Round')} rubric</span>
+        ${crit.map(cx => { const c = cx.label; return `
+          <div class="row between gap16 wrap" style="padding:9px 0;border-bottom:1px solid var(--line-soft)">
+            <span class="small">${esc(c)}${cx.weight != null ? ` <span class="xs faint">weight ${cx.weight}%</span>` : ''}</span>
+            <div class="row gap4">
+              ${[1,2,3,4,5].map(nn => `<span class="chip ${d[c] === nn ? 'on' : ''}" style="padding:5px 11px"
+                onclick="pick('${q.key}','${esc(c)}',${nn},this)">${nn}</span>`).join('')}
+            </div>
+          </div>`; }).join('')}
+        <div class="field mt16"><label>Feedback to the team</label>
+          <textarea class="input" rows="3" id="fb_${q.key}" placeholder="What worked, what to fix before the next round…">${s ? s.note || '' : ''}</textarea></div>
+        <div class="row gap8 wrap">
+          <button class="btn btn-primary btn-sm" id="save_${q.key}" onclick="commit('${q.key}')">${s ? 'Update score' : 'Submit score'}</button>
+          <button class="btn btn-quiet btn-sm" onclick="conflict('${q.key}')">Declare conflict of interest</button>
+          <span class="small faint" id="msg_${q.key}"></span>
+        </div>`}`;
+}
+
+let draft = {};
+let evalTick = null;
+function toggleEval(key){
+  S.save({ openEval: S.read().openEval === key ? null : key });
+  const s = scoreFor(key);
+  if (s && s.rubric) draft[key] = Object.assign({}, s.rubric);
+  render();
+}
+function pick(key, crit, n, node){
+  draft[key] = draft[key] || {};
+  draft[key][crit] = n;
+  [...node.parentNode.children].forEach(c => c.classList.remove('on'));
+  node.classList.add('on');
+  gate(key);
+}
+const roundCrit = () => { const R = myRound(); return (R.r.criteria || []).length ? R.r.criteria.map(c => c.label) : RUBRIC; };
+function gate(key){
+  const b = el('save_' + key); if (!b) return;
+  const missing = roundCrit().filter(c => !(draft[key] || {})[c]);
+  b.disabled = missing.length > 0;
+  el('msg_' + key).textContent = missing.length ? `${missing.length} left` : '';
+}
+function commit(key){
+  const d = draft[key] || {};
+  const R = myRound();
+  if (roundCrit().some(c => !d[c])) return;
+  putScore(key, { rubric:Object.assign({}, d), note:(el('fb_' + key) || {}).value || '',
+                  conflict:false, ai:false, round:R.i,
+                  reviewed: R.ev.engine !== 'none' ? true : undefined,
+                  overrode: R.ev.engine !== 'none' ? true : undefined,
+                  reviewedBy: R.ev.engine !== 'none' ? (S.read().name || 'Evaluator') : undefined,
+                  reviewedAt: R.ev.engine !== 'none' ? TODAY() : undefined,
+                  by:S.read().name || 'Evaluator', at:new Date().toISOString().slice(0,10) });
+  if (key === SELF_KEY(o.id))
+    notify('innovator', { title:'Your submission was scored',
+      body:`${o.name} — ${scoreAvg(scoreFor(key))} / 5, with written feedback.`,
+      link:'workspace.html?id=' + o.id + '&step=4' });
+  logActivity('You scored a submission — ' + o.name);
+  S.save({ openEval:null }); st = S.read(); render();
+}
+function conflict(key){
+  putScore(key, { rubric:{}, note:'', conflict:true, by:S.read().name || 'Mentor', at:new Date().toISOString().slice(0,10) });
+  S.save({ openEval:null }); st = S.read(); render();
+}
+
+/* ================= AVAILABILITY ================= */
+function availability(){
+  if (mapStatus !== 'approved') return assignment();
+  const cfg = mentoringOf(o), av = mentorAvail(o, st);
+  const mine = myMentorCats(o, st);
+  const seats = myMentorSeats(o, st);
+  const slots = seats.flatMap(m => mentorSlots(o, m, st));
+  const taken = slots.filter(sl => bookingsAll(st)[sl.key]).length;
+  const outside = (av.from && cfg.from && av.from < cfg.from) || (av.to && cfg.to && av.to > cfg.to);
+
+  return `
+  <div class="card card-pad mb16">
+    <div class="row between wrap gap12 mb16">
+      <span class="tag">What you cover here</span><span class="xs muted">${cfg.sessionMins}-minute sessions</span>
+    </div>
+    <p class="xs muted mb16">${esc(o.org)} groups mentors by category so a team can take one session of each kind. Pick what you can genuinely hold a session on.</p>
+    <div class="row gap8 wrap">
+      ${(cfg.cats || []).map(id => `<button class="btn ${mine.includes(id) ? 'btn-primary' : 'btn-ghost'} btn-sm" type="button" onclick="toggleMyCat('${id}')">${esc(mentorCatName(id))}</button>`).join('')}
+    </div>
+    ${!mine.length ? `<p class="xs mt16" style="color:var(--warn)">Nothing picked, so you are not in the list and nobody can book you.</p>`
+      : `<p class="xs mt16" style="color:var(--ok)">You are covering the ${mine.map(x => esc(mentorCatName(x))).join(' and ')} seat${mine.length === 1 ? '' : 's'} on this program.</p>`}
+  </div>
+  ${!mine.length ? '' : `
+  <div class="card card-pad mb16" style="${av.paused ? 'border-color:var(--warn)' : ''}">
+    <div class="switchrow mb16">
+      <span class="tag">Your hours</span><span class="grow"></span>
+      <span class="xs muted">${av.paused ? 'Paused' : 'Bookable'}</span>
+      <button class="switch ${!av.paused ? 'on' : ''}" type="button" role="switch" aria-checked="${!av.paused}" onclick="setAvail('paused',${!av.paused})"></button>
+    </div>
+    ${av.paused ? `<p class="small" style="color:var(--warn)">Paused. Your remaining slots are hidden from teams. Sessions already booked stand.</p>` : `
+    <p class="xs muted mb16">Program mentor hours run ${esc(cfg.from || '—')} → ${esc(cfg.to || '—')}. Narrow that to the days and times you can actually make.</p>
+    <div class="g2f">
+      <div class="field"><label>Available from</label><input class="input" type="date" value="${esc(av.from)}" onchange="setAvail('from',this.value)"></div>
+      <div class="field"><label>Available until</label><input class="input" type="date" value="${esc(av.to)}" onchange="setAvail('to',this.value)"></div>
+    </div>
+    ${outside ? `<p class="xs mb16" style="color:var(--warn)">Part of your window falls outside the program's mentor hours.</p>` : ''}
+    <span class="tag">Days</span>
+    <div class="row gap8 wrap mt8 mb16">
+      ${[1,2,3,4,5,6,0].map(d => `<button class="btn ${av.days.includes(d) ? 'btn-primary' : 'btn-ghost'} btn-sm" type="button" onclick="toggleDay(${d})" style="min-width:52px">${DOW[d]}</button>`).join('')}
+    </div>
+    <span class="tag">Times</span>
+    <div class="row gap8 wrap mt8">
+      ${SLOT_TIMES.map(t => `<button class="btn ${av.times.includes(t) ? 'btn-primary' : 'btn-ghost'} btn-sm" type="button" onclick="toggleTime('${t}')" style="min-width:66px">${t}</button>`).join('')}
+    </div>
+    ${!av.days.length || !av.times.length ? `<p class="xs mt16" style="color:var(--warn)">Pick at least one day and one time, or you are listed with nothing to book.</p>` : ''}`}
+  </div>
+  <div class="card card-soft card-pad">
+    <div class="row between wrap gap12">
+      <div><span class="tag">What teams see</span>
+        <p class="small mt8"><strong>${slots.length - taken}</strong> open ${slots.length - taken === 1 ? 'slot' : 'slots'}${taken ? `, ${taken} already booked` : ''} across ${mine.length} categor${mine.length === 1 ? 'y' : 'ies'}.</p></div>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="go(${DEFS.findIndex(d => d.k === 'sessions')})">Your sessions →</button>
+    </div>
+    ${slots.length ? `<p class="xs muted mt16">Next open:
+      ${(() => { const nx = slots.filter(sl => !bookingsAll(st)[sl.key] && sl.day >= TODAY())[0];
+        return nx ? esc(new Date(nx.day).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})) + ' at ' + esc(nx.time) : 'nothing left in your window'; })()}</p>`
+      : `<p class="xs mt16" style="color:var(--warn)">No slots at all — teams see you in the list with nothing to book.</p>`}
+  </div>`}`;
+}
+function setAvail(k, v){ putMentorAvail(o, { [k]:v }); st = S.read(); render(); }
+function toggleDay(d){ const av = mentorAvail(o, st); putMentorAvail(o, { days: av.days.includes(d) ? av.days.filter(x => x !== d) : av.days.concat([d]).sort() }); st = S.read(); render(); }
+function toggleTime(t){ const av = mentorAvail(o, st); putMentorAvail(o, { times: av.times.includes(t) ? av.times.filter(x => x !== t) : av.times.concat([t]).sort() }); st = S.read(); render(); }
+
+/* ================= SESSIONS ================= */
+function sessions(){
+  if (mapStatus !== 'approved') return assignment();
+  const cfg = mentoringOf(o);
+  const all = mySessions(o, st);
+  const seats = myMentorSeats(o, st);
+  if (!seats.length) return `<div class="locked">
+    <span class="icon-chip lg slate" style="margin:0 auto">${Icon('Compass',{size:24})}</span>
+    <h3 class="mt16">You have not picked a category yet</h3>
+    <p class="muted small mt8">Teams book by category, so until you pick one there is nothing for anybody to book.</p>
+    <button class="btn btn-primary mt24" type="button" onclick="go(${DEFS.findIndex(d => d.k === 'avail')})">Set your availability</button>
+  </div>`;
+
+  const today = all.filter(b => b.today);
+  const soon  = all.filter(b => !b.past && !b.today);
+  const past  = all.filter(b => b.past);
+  const mins  = all.reduce((n,b) => n + (+b.mins || 0), 0);
+  const noNote = past.filter(b => !(b.note || '').trim()).length;
+
+  const group = (label, rows, tone) => !rows.length ? '' : `
+    <div class="row between wrap gap12 mb8" style="margin-top:18px">
+      <span class="tag" ${tone ? `style="color:${tone}"` : ''}>${label}</span><span class="xs muted">${rows.length}</span>
+    </div>${rows.map(sessionRow).join('')}`;
+
+  return `
+  <div class="grid g4 mb24">
+    ${statBox(today.length,'Today')}${statBox(soon.length,'Upcoming')}${statBox(past.length,'Held')}${statBox(Math.round(mins/60*10)/10,'Hours committed')}
+  </div>
+  ${noNote ? `<div class="nudge mb16"><strong class="small">${noNote} session${noNote === 1 ? '' : 's'} without a note</strong>
+    <p class="small muted mt8">A note is what the team takes away — never to the jury, never near a score.</p></div>` : ''}
+  ${all.length ? group('Today', today, 'var(--warn)') + group('Upcoming', soon) + group('Held', past) : `
+    <div class="empty"><p class="small">Nothing booked yet.</p>
+      <p class="xs muted mt8">You are listed under ${myMentorCats(o, st).map(x => esc(mentorCatName(x))).join(', ')} with
+        ${seats.flatMap(m => mentorSlots(o, m, st)).filter(sl => !bookingsAll(st)[sl.key]).length} open slots.</p></div>`}
+  <p class="xs faint mt24">Mentor hours close ${esc(cfg.to || '—')}. Bookings outside your current availability still stand.</p>`;
+}
+const statBox = (n, l) => `<div class="card stat"><div class="n">${n}</div><div class="small muted">${l}</div></div>`;
+function sessionRow(b){
+  const when = new Date(b.day + 'T00:00:00Z');
+  return `<div class="card card-pad mb8" style="${b.today ? 'border-color:var(--warn)' : ''}">
+    <div class="row between wrap gap12">
+      <div class="grow" style="min-width:220px">
+        <div class="row gap8 wrap" style="align-items:center">
+          <strong class="small">${esc(b.team || b.by || 'A participant')}</strong>
+          <span class="pill pill-outline">${esc(mentorCatName(b.cat))}</span>
+          ${b.orphaned ? '<span class="pill pill-warn" title="Outside the hours you now offer">Outside your hours</span>' : ''}
+        </div>
+        <p class="xs muted mt8">${DOW[when.getUTCDay()]} ${when.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} at ${esc(b.time)}
+          · ${b.mins} min${b.ps ? ' · working on ' + esc(b.ps) : ''}${b.by && b.by !== b.team ? ' · booked by ' + esc(b.by) : ''}</p>
+      </div>
+      <div class="row gap8 wrap">
+        ${b.past ? '<span class="pill pill-ok">Held</span>'
+          : `<button class="btn btn-ghost btn-sm" type="button" onclick="joinNote()">Join link</button>
+             <button class="btn btn-quiet btn-sm" type="button" onclick="dropSession('${b.key}')">Cancel</button>`}
+      </div>
+    </div>
+    ${b.past ? `<div class="field mt16" style="margin-bottom:0">
+      <label>Session note — goes to the team, never to the jury</label>
+      <textarea class="input" rows="2" onchange="saveBkNote('${b.key}',this.value)" placeholder="What we agreed they would fix before the deadline.">${esc(b.note || '')}</textarea>
+    </div>` : (b.ask ? `<p class="xs mt16"><strong>They asked about:</strong> ${esc(b.ask)}</p>` : '')}
+  </div>`;
+}
+function joinNote(){ toast('Video links are out of scope for this prototype — this is where the room would open.'); }
+function dropSession(key){
+  const b = (S.read().bookings || {})[key]; if (!b) return;
+  putBooking(key, null);
+  notify('innovator', { title:'A mentor session was cancelled', body:esc(b.day) + ' at ' + esc(b.time) + ' — rebook from your Mentoring step.', link:'workspace.html?id=' + o.id });
+  st = S.read(); render();
+}
+
+/* ================= MENTOR TEAMS ================= */
+function mentoring(){
+  if (mapStatus !== 'approved') return assignment();
+  if (!roles().includes('mentor')) return `<div class="locked">
+    <span class="icon-chip lg slate" style="margin:0 auto">${Icon('FileText',{size:24})}</span>
+    <h3 class="mt16">You applied as an evaluator only</h3>
+    <p class="muted small mt8">Add the mentor role to run office hours and guide teams.</p></div>`;
+
+  if (!mentoringOn(o)){
+    const open = (S.read().mentorSlots || {})[o.id];
+    const teams = openTeams(o.id);
+    return `
+      <div class="card card-soft card-pad mb16">
+        <span class="tag">Mentor Connect is off for this program</span>
+        <p class="small mt8">${o.org} has not enabled booking here, so teams cannot reserve time with you. You can still open informal office hours.</p>
+      </div>
+      ${card('Office hours', `
+        <div class="row between gap12 wrap mt8">
+          <div><strong class="small">${open ? 'Thursday, 6–7pm IST' : 'No slot open'}</strong>
+            <p class="xs muted mt8">${open ? `${1 + hashStr(o.id) % 5} teams booked` : 'Teams cannot book time with you yet'}</p></div>
+          <button class="btn ${open ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="toggleSlot()">${open ? 'Close slot' : 'Open a slot'}</button>
+        </div>`)}
+      <div class="mt16">${card('Teams on this challenge', teams.map(t => `
+        <div class="row between gap12 wrap" style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
+          <div><strong class="small">${t.name}</strong><p class="xs muted mt8">${t.members.length}/${t.cap} · looking for ${t.wants}</p></div>
+          <button class="btn btn-ghost btn-sm" ${open ? '' : 'disabled'}>${open ? 'Message' : 'Open a slot first'}</button>
+        </div>`).join(''))}</div>`;
+  }
+
+  const cfg = mentoringOf(o);
+  const mine = (S.read().mentorCatMap || {})[o.id] || [];
+  const books = bookingsFor(o, S.read());
+  const cov = coverageFor(o, S.read());
+  const roster = programMentors(o);
+
+  return `
+  <div class="card card-pad mb16">
+    <div class="row between wrap gap12 mb16"><span class="tag">Your categories on this program</span><span class="xs muted">${cfg.sessionMins}-minute sessions</span></div>
+    <p class="xs muted mb16">${o.org} groups mentors so a team can take one session from each kind.</p>
+    <div class="row gap8 wrap">${(cfg.cats || []).map(id => `<button class="btn ${mine.includes(id) ? 'btn-primary' : 'btn-ghost'} btn-sm" type="button" onclick="toggleMyCat('${id}')">${esc(mentorCatName(id))}</button>`).join('')}</div>
+    ${!mine.length ? `<p class="xs mt16" style="color:var(--warn)">Pick at least one, or you will not appear to the teams looking for a mentor.</p>` : ''}
+    <p class="xs faint mt16">Mentor hours run ${esc(cfg.from || '—')} → ${esc(cfg.to || '—')}.</p>
+  </div>
+  <div class="card card-pad mb16">
+    <div class="row between wrap gap12 mb16"><span class="tag">Sessions booked</span><span class="mono-sm xs muted">${books.length} on this program</span></div>
+    ${books.length ? books.map(bk => { const m = roster.find(x => x.id === bk.mentor) || { name:'—' }; const past = bk.day < TODAY(); return `
+      <div style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
+        <div class="row between wrap gap12">
+          <div><strong class="small">${esc(bk.day)} at ${esc(bk.time)} · ${esc(mentorCatName(bk.cat))}</strong>
+            <p class="xs muted mt8">${esc(m.name)} · ${bk.mins} min · booked ${timeAgo(bk.at || new Date().toISOString())}</p></div>
+          <span class="pill ${past ? 'pill-ok' : 'pill-warn'}">${past ? 'Held' : 'Upcoming'}</span>
+        </div>
+        ${past ? `<div class="field mt16" style="margin-bottom:0"><label>Session note — for the team, not the jury</label>
+          <textarea class="input" rows="2" onchange="saveBkNote('${bk.key}',this.value)" placeholder="What we agreed they would fix before the deadline.">${esc(bk.note || '')}</textarea></div>` : ''}
+      </div>`; }).join('') : `<p class="small muted">Nothing booked yet.</p>`}
+  </div>
+  <div class="card card-soft card-pad">
+    <span class="tag">Coverage across this program</span>
+    <div class="mt8">${cov.cats.map(cc => `<div class="kv"><span>${esc(cc.name)}</span><strong style="color:${cc.met ? 'var(--ok)' : 'var(--faint)'}">${cc.booked} booked</strong></div>`).join('')}</div>
+    <p class="xs muted mt16">${cov.required ? 'This sponsor made one session per category a condition of submitting.' : 'Booking is encouraged here, not required.'}</p>
+  </div>`;
+}
+function toggleMyCat(id){
+  const m = S.read().mentorCatMap || {}; const cur = m[o.id] || [];
+  m[o.id] = cur.includes(id) ? cur.filter(x => x !== id) : cur.concat([id]);
+  S.save({ mentorCatMap:m }); st = S.read(); render();
+}
+function saveBkNote(key, v){
+  const all = S.read().bookings || {}; if (!all[key]) return;
+  all[key] = Object.assign({}, all[key], { note:v }); S.save({ bookings:all });
+  notify('innovator', { title:'Your mentor left a note', body:v.slice(0,90), link:'workspace.html?id=' + o.id });
+}
+function toggleSlot(){ const m = S.read().mentorSlots || {}; m[o.id] = !m[o.id]; S.save({ mentorSlots:m }); st = S.read(); render(); }
+
+function impact(){
+  if (mapStatus !== 'approved') return assignment();
+  const rows = queue();
+  const scored = rows.filter(q => { const s = scoreFor(q.key); return s && !s.conflict; });
+  const conflicts = rows.filter(q => (scoreFor(q.key) || {}).conflict);
+  const pending = rows.filter(q => !scoreFor(q.key));
+  const avg = scored.length ? (scored.reduce((t,q) => t + Number(scoreAvg(scoreFor(q.key))), 0) / scored.length).toFixed(1) : '—';
+  return `
+    <div class="grid g4 mb24">
+      ${statBox(scored.length,'Submissions scored')}
+      ${statBox(pending.length,'Still open' + (conflicts.length ? ` · ${conflicts.length} reassigned` : ''))}
+      ${statBox(avg,'Your average score')}
+      ${mentoringOn(o) && HAS_M() ? statBox(mySessions(o, st).length,'Sessions held or booked') : statBox((S.read().mentorSlots || {})[o.id] ? 1 : 0,'Office hour slots')}
+    </div>
+    ${card('What you wrote', scored.length
+      ? scored.map(q => `<div style="padding:12px 0;border-bottom:1px solid var(--line-soft)">
+          <div class="row between gap12 wrap mb8"><strong class="small">${q.team}</strong><span class="pill pill-ok">${scoreAvg(scoreFor(q.key))} / 5</span></div>
+          <p class="small muted">${scoreFor(q.key).note || '<span class="faint">No written feedback</span>'}</p></div>`).join('')
+      : '<p class="small faint mt8">Nothing scored yet.</p>')}
+    ${rows.length && !pending.length ? `<div class="nudge mt16"><strong class="small">Queue clear</strong>
+       <p class="small muted mt8">Every submission routed to you has a score. The jury takes it from here.</p></div>` : ''}`;
+}
+
+const card = (t, b) => `<div class="card card-pad"><h3>${t}</h3>${b}</div>`;
+const SURFACE = { assign:assignment, avail:availability, sessions:sessions, teams:mentoring, evaluate:evaluate, impact:impact };
+
+function render(){
+  st = S.read();
+  chrome();
+  DEFS = stepDefs();
+  if (step > DEFS.length - 1) step = DEFS.length - 1;
+  el('body').innerHTML = (SURFACE[stepKey()] || assignment)();
+  const openKey = S.read().openEval;
+  if (openKey) gate(openKey);
+}
+render();
+</script>
+</body>
+</html>
