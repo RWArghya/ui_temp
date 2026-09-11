@@ -14,6 +14,8 @@ export const MOCK_PROFILE = {
   about: 'Final-year Computer Science student at IIT Delhi with a strong interest in Machine Learning, Generative AI, and distributed systems. Passionate about participating in hackathons and building practical open-source projects.',
   org: 'IIT Delhi',
   region: 'India — North',
+  joinedDate: 'January 2026',
+  createdAt: '2026-01-15',
   avatar: null,           // null = initials; base64 dataURL when set
   isPublic: false,        // privacy toggle — false = locked profile (like FB)
   links: 'github.com/aarav-sharma',

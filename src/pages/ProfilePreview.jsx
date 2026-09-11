@@ -23,6 +23,7 @@ import Pill from '../components/profile/Pill.jsx'
 import KVRow from '../components/profile/KVRow.jsx'
 import Modal from '../components/profile/Modal.jsx'
 import TimelineItem from '../components/profile/TimelineItem.jsx'
+import { buildPlatformJourney } from '../utils/journeyBuilder.js'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // Tab config matching /profile
@@ -83,7 +84,16 @@ export default function ProfilePreview() {
   // Filter public items
   const publicProjects = (profile.projects || []).filter(p => p.shared)
   const publicAchievements = (profile.achievements || []).filter(a => a.shared)
-  const publicSelfCerts = (profile.selfCerts || []).filter(c => c.shared)
+  const publicSelfCerts = (profile.selfCerts || [])
+    .filter(c => c.shared)
+    .sort((a, b) => {
+      const parseDate = item => {
+        if (!item) return 0
+        const d = item.issueDate || item.date || ''
+        return new Date(d.length === 4 ? `${d}-01-01` : d).getTime() || 0
+      }
+      return parseDate(b) - parseDate(a)
+    })
   const publicPubs = (profile.publications || []).filter(p => p.shared)
   const publicLinks = (profile.connectedProfiles || []).filter(l => l.shared !== false)
   const verifiedCerts = initiatives?.completed || []
@@ -181,23 +191,35 @@ export default function ProfilePreview() {
     </div>
   )
 
-  // 2. JOURNEY
+  // 2. JOURNEY (Platform journey from profile creation to ongoing: most recent on top)
+  const journeyTimeline = buildPlatformJourney(profile, initiatives, 'recent')
   const JourneyTab = (
     <div className="space-y-4">
-      <SectionCard title="Journey & Milestones">
-        {publicAchievements.length > 0 ? (
-          <div className="mt-4 pl-6 border-l-2 border-paper-line space-y-1">
-            {publicAchievements.map((ach, idx) => (
+      <SectionCard
+        title="Your Platform Journey"
+        action={
+          <span className="text-[11px] font-mono text-graphite-dim font-medium bg-paper border border-paper-line px-2 py-0.5 rounded-[2px] inline-flex items-center gap-1">
+            <span>⚡</span> Most recent on top
+          </span>
+        }
+      >
+        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
+          Verified platform journey — ordered with most recent milestones and active initiatives at the top, down to profile creation at the bottom.
+        </p>
+        {journeyTimeline.length > 0 ? (
+          <div className="relative pl-6 before:content-[''] before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-paper-line space-y-1">
+            {journeyTimeline.map(item => (
               <TimelineItem
-                key={ach.id}
-                variant={idx === 0 ? 'now' : 'done'}
-                title={ach.title}
-                subtitle={ach.description}
+                key={item.id}
+                variant={item.variant}
+                title={item.title}
+                subtitle={item.subtitle}
+                date={item.date}
               />
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No public milestones shared yet.</p>
+          <p className="text-[13px] text-graphite-dim mt-3 py-3">No platform journey milestones recorded yet.</p>
         )}
       </SectionCard>
     </div>
