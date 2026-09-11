@@ -35,7 +35,7 @@ export default function Avatar({ src, name, size = 'md', onUpload, className = '
 
   if (onUpload) {
     return (
-      <div className="relative inline-block">
+      <div className="relative inline-block z-10">
         <label
           className={`${base} relative cursor-pointer group overflow-hidden block`}
           title={src ? 'Change photo' : 'Add photo'}
@@ -60,7 +60,7 @@ export default function Avatar({ src, name, size = 'md', onUpload, className = '
         {/* Small '+' badge at the bottom-right corner to intuitively invite clicking */}
         <label
           htmlFor="avatar-file-input"
-          className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-signal hover:bg-signal-dark text-white text-[13px] font-bold flex items-center justify-center shadow-md border-2 border-white cursor-pointer transition-transform hover:scale-110 active:scale-95"
+          className="absolute bottom-0 right-0 z-20 w-6 h-6 rounded-full bg-signal hover:bg-signal-dark text-white text-[13px] font-bold flex items-center justify-center shadow-md border-2 border-white cursor-pointer transition-transform hover:scale-110 active:scale-95"
           title={src ? 'Change photo' : 'Add photo'}
         >
           +
@@ -69,5 +69,9 @@ export default function Avatar({ src, name, size = 'md', onUpload, className = '
     )
   }
 
-  return <div className={base}>{inner}</div>
+  return (
+    <div className="relative inline-block z-10">
+      <div className={base}>{inner}</div>
+    </div>
+  )
 }

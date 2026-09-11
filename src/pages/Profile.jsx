@@ -1238,17 +1238,17 @@ export default function Profile() {
         </span>
       </div>
 
-      {/* Full H2S Verified Credentials list */}
+      {/* Full H2S Verified Certificates list */}
       <SectionCard
         title={
           <span className="flex items-center gap-2 flex-wrap">
-            H2S Verified Credentials
+            H2S Verified Certificates
             <span className="font-normal text-[13px] text-ink-900">({totalEarned})</span>
           </span>
         }
       >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Issued automatically the moment an initiative closes — read-only, verifiable credentials.
+          Issued automatically the moment an initiative closes — read-only, verifiable certificates.
         </p>
         {earnedCerts.length > 0 ? (
           earnedCerts.map(o => (
@@ -1625,6 +1625,9 @@ export default function Profile() {
                 {profile.headline || 'Add a headline'}
                 {profile.org ? <> · {profile.org}</> : null}
               </p>
+              {profile.region && (
+                <p className="text-[12px] text-graphite-dim mt-1">📍 {profile.region}</p>
+              )}
             </div>
 
             {/* Share panel */}

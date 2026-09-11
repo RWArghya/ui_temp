@@ -10,7 +10,7 @@ export const MOCK_PROFILE = {
   id: 'usr-aarav-001',
   name: 'Aarav Sharma',
   email: 'aarav.sharma@iitd.ac.in',
-  headline: 'Final-year CSE · ML enthusiast',
+  headline: 'Software developer',
   about: 'Final-year Computer Science student at IIT Delhi with a strong interest in Machine Learning, Generative AI, and distributed systems. Passionate about participating in hackathons and building practical open-source projects.',
   org: 'IIT Delhi',
   region: 'India — North',
