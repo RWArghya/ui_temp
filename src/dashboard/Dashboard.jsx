@@ -37,78 +37,95 @@ const PERSONAS = [
   { k: 'enabler',   ico: Settings, label: 'Enabler',   sub: 'H2S success team — not in this prototype' },
 ]
 
+/* Reusable component for an individual persona/role item inside the ribbon */
+function PersonaPill({ persona, active, onSwitch, onSponsor, dark }) {
+  const light = !dark
+  const on = persona.k === active
+  const disabled = persona.k === 'enabler'
+  const PIco = persona.ico
+
+  if (disabled) {
+    return (
+      <span
+        title={persona.sub}
+        className={`flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-medium ${
+          light ? 'text-dash-faint' : 'text-white/25'
+        }`}
+      >
+        <PIco className="h-3.5 w-3.5 shrink-0" />
+        <span>{persona.label}</span>
+      </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      title={persona.sub}
+      onClick={() => (persona.k === 'sponsor' ? onSponsor() : onSwitch(persona.k))}
+      className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-medium transition-colors ${
+        on
+          ? (light ? 'bg-ink-900 font-bold text-white shadow-sm' : 'bg-white font-bold text-ink-900 shadow-sm')
+          : (light ? 'text-dash-muted hover:bg-dash-line-soft hover:text-dash-ink' : 'text-white/70 hover:bg-white/10 hover:text-white')
+      }`}
+    >
+      <PIco className="h-3.5 w-3.5 shrink-0" />
+      <span>{persona.label}</span>
+    </button>
+  )
+}
+
 /* ─────────────────────────────────────────────────────────────
    SidePersonaPill — hover-activated "View as" pill.
-   A single compact button shows the active persona. Hovering (or
-   focusing) the button opens the role ribbon upward so the user
-   can switch; moving the pointer away collapses it. This replaces
-   the fixed bottom PersonaBar so the role switcher lives in the
-   sidebar where it belongs. */
+   A single compact button shows the active persona. Hovering opens
+   a horizontal role ribbon outward to the right so the user can switch
+   roles side-by-side (Innovator, Sponsor, Mentor, Enabler). */
 function SidePersonaPill({ active, onSwitch, onSponsor, dark }) {
-  const [open, setOpen] = useState(false)
   const current = PERSONAS.find(p => p.k === active) || PERSONAS[0]
   const Ico = current.ico
   const light = !dark
+
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false) }}
-    >
-      {/* The collapsed pill */}
+    <div className="group relative">
+      {/* Trigger pill */}
       <button
+        type="button"
         className={`flex w-full items-center gap-2 rounded-btn px-3 py-[9px] text-sm transition-colors ${
           light
             ? 'border border-dash-line bg-dash-bg text-dash-ink hover:border-signal/40 hover:bg-signal-soft hover:text-signal-dark'
             : 'border border-white/10 bg-white/[0.06] text-white hover:bg-white/10'
         }`}
-        aria-haspopup="true"
-        aria-expanded={open}
       >
         <Ico className="h-[14px] w-[14px] shrink-0" />
         <span className="min-w-0 flex-1 truncate text-left">
           <span className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${light ? 'text-dash-muted' : 'text-white/50'}`}>View as</span>
           <span className={`ml-1.5 text-[13px] font-semibold ${light ? 'text-dash-ink' : 'text-white'}`}>{current.label}</span>
         </span>
-        <span className={`text-[10px] transition-transform duration-150 ${open ? 'rotate-180' : ''} ${light ? 'text-dash-muted' : 'text-white/40'}`}>▲</span>
+        <span className={`text-[11px] font-mono tracking-tighter ${light ? 'text-dash-muted' : 'text-white/40'}`}>››</span>
       </button>
 
-      {/* Expanded menu — floats above the pill */}
-      {open ? (
-        <div className={`absolute bottom-[calc(100%+6px)] left-0 right-0 overflow-hidden rounded-card border shadow-dash-lg ${
-          light ? 'border-dash-line bg-white' : 'border-white/10 bg-ink-900'
+      {/* Flyout horizontal ribbon — opens to the right on group-hover.
+          Continuous hover hit-box with -ml-1 pl-3 py-2.5 so there is no
+          gap glitch when moving cursor between trigger and ribbon. */}
+      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 z-50 -ml-1 pl-3 py-2.5 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+        <div className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 shadow-dash-lg backdrop-blur-md ${
+          light ? 'border-dash-line bg-white/95 text-dash-ink' : 'border-white/10 bg-ink-900/95 text-white'
         }`}>
-          <div className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
-            light ? 'text-dash-muted border-b border-dash-line-soft' : 'text-white/40 border-b border-white/10'
-          }`}>Switch role</div>
-          {PERSONAS.map(p => {
-            const PIco = p.ico
-            const isOn = p.k === active
-            const isDisabled = p.k === 'enabler'
-            return (
-              <button
-                key={p.k}
-                title={p.sub}
-                disabled={isDisabled}
-                onClick={() => { setOpen(false); p.k === 'sponsor' ? onSponsor() : onSwitch(p.k) }}
-                className={`flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors ${
-                  isDisabled
-                    ? (light ? 'cursor-not-allowed text-dash-faint' : 'cursor-not-allowed text-white/20')
-                    : isOn
-                      ? (light ? 'bg-signal-soft font-semibold text-signal-dark' : 'bg-white/10 font-semibold text-white')
-                      : (light ? 'text-dash-ink hover:bg-dash-bg-soft' : 'text-white/80 hover:bg-white/[0.07]')
-                }`}
-              >
-                <PIco className="h-[14px] w-[14px] shrink-0" />
-                <span className="flex-1 truncate">{p.label}</span>
-                {isOn ? <span className="text-[10px]">✓</span> : null}
-              </button>
-            )
-          })}
+          <span className={`px-1 font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] ${
+            light ? 'text-dash-muted' : 'text-white/40'
+          }`}>View as</span>
+          {PERSONAS.map(p => (
+            <PersonaPill
+              key={p.k}
+              persona={p}
+              active={active}
+              onSwitch={onSwitch}
+              onSponsor={onSponsor}
+              dark={dark}
+            />
+          ))}
         </div>
-      ) : null}
+      </div>
     </div>
   )
 }
@@ -305,8 +322,8 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
       />
       {navOpen ? <div className="fixed inset-0 z-30 bg-ink-950/40 lg:hidden" onClick={() => setNavOpen(false)} /> : null}
       <div className={`relative grid min-h-[calc(100vh-66px)] grid-cols-1 lg:grid-cols-[264px_minmax(0,1fr)] ${hasRail ? 'xl:grid-cols-[264px_minmax(0,1fr)_320px]' : ''}`}>
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-dash-line-soft transition-transform duration-200 lg:sticky lg:top-[66px] lg:z-auto lg:h-[calc(100vh-66px)] lg:w-auto lg:translate-x-0 ${msup ? 'bg-ink-900 lg:border-ink-line' : 'bg-dash-bg-soft'} ${navOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <nav className="flex h-full flex-col overflow-y-auto px-3.5 py-5">
+        <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-dash-line-soft transition-transform duration-200 lg:sticky lg:top-[66px] lg:z-30 lg:h-[calc(100vh-66px)] lg:w-auto lg:translate-x-0 ${msup ? 'bg-ink-900 lg:border-ink-line' : 'bg-dash-bg-soft'} ${navOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <nav className="flex h-full flex-col px-3.5 py-5">
             {msup
               ? <MentorSidebar st={st} view={view} mentorTab={mentorTab} setMentorTab={setMentorTab} show={goNav} onSwitch={switchPersona} onSponsor={onSponsor} onSignOut={out} />
               : <InnovatorSidebar st={st} view={view} mode={mode} show={goNav} onLoadSample={loadSample} onReset={doReset} onSignOut={out} onSwitch={switchPersona} onSponsor={onSponsor} />}
@@ -397,20 +414,20 @@ function SideFoot({ role, dark, active, onLoadSample, onReset, onSignOut, onSwit
             </button>
             {settingsOpen ? (
               <div className="absolute bottom-[calc(100%+4px)] left-0 right-0 overflow-hidden rounded-card border border-dash-line bg-white shadow-dash-lg">
-                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-dash-muted border-b border-dash-line-soft">Prototype utilities</div>
+                <div className="border-b border-dash-line-soft px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-dash-muted">Prototype</div>
                 <button
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-dash-ink hover:bg-dash-bg-soft"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-dash-ink hover:bg-dash-bg-soft"
                   onClick={() => { setSettingsOpen(false); onLoadSample() }}
                 >
-                  <Sparkles className="h-[14px] w-[14px] text-signal" />
-                  Load sample activity
+                  <Sparkles className="h-[14px] w-[14px] shrink-0 text-signal" />
+                  <span>Load sample</span>
                 </button>
                 <button
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-dash-warn hover:bg-dash-bg-soft"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-dash-warn hover:bg-dash-bg-soft"
                   onClick={() => { setSettingsOpen(false); onReset() }}
                 >
-                  <LogOut className="h-[14px] w-[14px]" />
-                  Reset prototype data
+                  <LogOut className="h-[14px] w-[14px] shrink-0" />
+                  <span>Reset data</span>
                 </button>
               </div>
             ) : null}
@@ -431,10 +448,9 @@ function SideFoot({ role, dark, active, onLoadSample, onReset, onSignOut, onSwit
 
 const VIEW_ICO = { learning: BookOpen, competing: Trophy, learncompete: Wrench }
 function InnovatorSidebar({ st, view, show, mode, onLoadSample, onReset, onSignOut, onSwitch, onSponsor }) {
-  const navigate = useNavigate()
   return (
     <>
-      <ul className="w-full flex-1 space-y-0.5">
+      <ul className="w-full flex-1 space-y-0.5 overflow-y-auto">
         <SideItem ico={HomeIcon} label="Dashboard" active={view === 'home' || view === 'continuing' || view === 'recommended'} onClick={() => show('home')} />
         {Object.keys(VIEWS).map(k => (
           <SideItem key={k} ico={VIEW_ICO[k]} label={VIEWS[k].label} active={view === k} onClick={() => show(k)} />
@@ -443,8 +459,6 @@ function InnovatorSidebar({ st, view, show, mode, onLoadSample, onReset, onSignO
         <div className="my-2.5 border-t border-dash-line-soft" />
         <SideItem ico={Bookmark} label="Saved" count={savedList(st).length || null} active={view === 'saved'} onClick={() => show('saved')} />
         <SideItem ico={Clock} label="Recent" count={recentViews(st).length || null} active={view === 'recent'} onClick={() => show('recent')} />
-        <GroupTag>Tools</GroupTag>
-        <SideItem ico={Sparkles} label="AI Evaluation" onClick={() => navigate('/dashboard/evaluate')} />
       </ul>
       <SideFoot active={mode} onSwitch={onSwitch} onSponsor={onSponsor} onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
     </>
@@ -466,7 +480,7 @@ function MentorSidebar({ st, view, mentorTab, setMentorTab, show, onSwitch, onSp
   )
   return (
     <>
-      <ul className="w-full flex-1 space-y-0.5">
+      <ul className="w-full flex-1 space-y-0.5 overflow-y-auto">
         {ms !== 'approved' ? (
           <>
             {item('queue', '🧭', 'Your mentor path')}
