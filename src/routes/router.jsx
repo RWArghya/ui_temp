@@ -40,6 +40,10 @@ const router = createBrowserRouter([
     element: <Dashboard />,
   },
   {
+    path: "/dashboard/*",
+    element: <Dashboard />,
+  },
+  {
     // Profile rendered inside the Dashboard shell (sidebar + appbar stay visible)
     path: "/profile",
     element: <Dashboard defaultView="profile" />,

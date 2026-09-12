@@ -117,10 +117,12 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
   // 5. Active / Ongoing Programs on Hack2skill
   active.forEach(a => {
     const deadlineDate = a.deadline ? new Date(a.deadline).getTime() : new Date('2026-09-01').getTime()
-    const displayDate = a.deadline ? new Date(a.deadline).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Ongoing'
+    const isHackathon = a.purpose === 'competing'
     const progressText = a.progress
-      ? `${a.progress.done} of ${a.progress.total} modules completed (${Math.round((a.progress.done / a.progress.total) * 100)}% progress)`
-      : 'Active participant'
+      ? `${a.progress.done} of ${a.progress.total} ${isHackathon ? 'milestones' : 'modules'} completed (${Math.round((a.progress.done / a.progress.total) * 100)}% progress)`
+      : isHackathon
+        ? 'Live hackathon — active build & sprint phase'
+        : 'Active participant'
 
     items.push({
       id: `active-${a.id}`,

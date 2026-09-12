@@ -13,8 +13,31 @@ const H2S_KEY = 'h2s'
 let listeners = new Set()
 let cache = null
 
+const DEFAULT_DEMO_REGISTERED = [
+  'icc-global',
+  'genai-academy',
+  'npci-upi',
+  'agentic-bootcamp',
+  'police-hack',
+  'isro-bhuvan',
+]
+
 function rawRead() {
-  try { return JSON.parse(localStorage.getItem(H2S_KEY) || '{}') } catch { return {} }
+  try {
+    const raw = JSON.parse(localStorage.getItem(H2S_KEY) || '{}')
+    if (!raw.registered || raw.registered.length === 0) {
+      raw.registered = [...DEFAULT_DEMO_REGISTERED, 'inspire-26']
+      raw.submissions = raw.submissions || ['inspire-26']
+      raw.intents = raw.intents || ['competing', 'learning', 'learncompete']
+    }
+    return raw
+  } catch {
+    return {
+      registered: [...DEFAULT_DEMO_REGISTERED, 'inspire-26'],
+      submissions: ['inspire-26'],
+      intents: ['competing', 'learning', 'learncompete'],
+    }
+  }
 }
 function read() {
   if (cache) return cache
@@ -45,18 +68,10 @@ function identity() {
   return Object.assign({}, base, a.primary ? { primary: a.primary } : {})
 }
 
-/* A fresh account stays genuinely empty — no auto-injected registrations,
-   submissions or completed profile. app.html never fabricates activity on
-   load; the only way to get a populated demo is the sidebar's explicit
-   "load sample activity" link (seedDemoPatch below), matching the reference
-   exactly. An auto-seeded dashboard is why "Getting started" showed as
-   already complete and the stats never matched a real first visit.
-
-   The reference's seedDemo(): "fills a plausible history so the numbers
-   have something to count." Only invoked from the sidebar's opt-in link. */
+/* Plausible populated history so ongoing initiatives and numbers have content. */
 export function seedDemoPatch(st) {
   return {
-    registered: ['icc-global', 'genai-academy', 'npci-upi', 'inspire-26'],
+    registered: [...DEFAULT_DEMO_REGISTERED, 'inspire-26'],
     submissions: ['inspire-26'],
     intents: [...new Set([...(st.intents || []), 'competing', 'learning', 'learncompete'])],
   }
