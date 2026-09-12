@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   Home as HomeIcon, BookOpen, Trophy, Wrench, Gamepad2, Bookmark, Clock, Sparkles,
-  Settings, Bell, ArrowRight, Check, Compass, Users,
+  Settings, LogOut, Bell, ArrowRight, Check, Compass, Users,
 } from 'lucide-react'
 import { useH2S, seedDemoPatch } from './store'
 import { authStore } from '../store/auth'
@@ -330,38 +330,43 @@ function GroupTag({ children }) {
   return <li className="px-3 pb-2 pt-[22px] font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dash-muted first:pt-0">{children}</li>
 }
 
-/* Account block, pinned to the bottom of the sidebar column. Just a name and
-   one door to the profile — matches app.html's acctHTML() note that a role
-   switcher here would duplicate the persona bar and Profile → Roles. */
-function SideFoot({ st, role, onProfile, dark, active, onLoadSample, onReset, onSignOut }) {
-  const name = st.profile?.name || st.name || 'Your account'
+/* Sidebar footer — utility controls only.
+   The avatar in the AppBar (top-right) is the single entry point to profile;
+   duplicating it here in the sidebar is removed to match prototype_v2's
+   side-foot which shows Persona / Settings / Log out, not an account pill. */
+function SideFoot({ role, dark, onLoadSample, onReset, onSignOut }) {
   return (
     <div className={`mt-auto pt-3 ${dark ? '' : 'pb-[52px]'}`}>
-      <hr className={`mb-3.5 border-t ${dark ? 'border-white/10' : 'border-dash-line-soft'}`} />
-      <button
-        className={`flex w-full items-center gap-2.5 rounded-btn border px-3 py-[11px] transition-colors ${
-          active
-            ? (dark ? 'border-white bg-white/[0.15] text-white' : 'border-signal bg-signal text-white font-bold shadow-dash')
-            : (dark ? 'border-white/10 bg-white/[0.06] hover:bg-white text-white' : 'border-dash-line bg-[#edeff5] hover:border-dash-line hover:bg-white hover:shadow-dash text-dash-ink')
-        }`}
-        onClick={onProfile}
-      >
-        <strong className={`min-w-0 flex-1 truncate text-left text-[13.5px] font-semibold ${active ? 'text-white' : (dark ? 'text-white' : 'text-dash-ink')}`}>{name}</strong>
-        <span className={active ? 'text-white' : (dark ? 'text-white/50' : 'text-dash-faint')}>›</span>
-      </button>
+      <hr className={`mb-2 border-t ${dark ? 'border-white/10' : 'border-dash-line-soft'}`} />
       {role ? (
-        <p className="mt-2 px-2 text-xs font-medium text-brand-violet">{role}</p>
+        <p className="mb-2 px-3 text-xs font-medium text-brand-violet">{role}</p>
       ) : null}
       {!dark ? (
-        <p className="mt-3 px-2.5 text-xs leading-[2] text-dash-faint">
-          Prototype ·{' '}
-          <button className="text-signal hover:underline" onClick={onLoadSample}>load sample activity</button>
-          <br />
-          <button className="text-signal hover:underline" onClick={onSignOut}>sign out</button>
-          {' · '}
-          <button className="text-signal hover:underline" onClick={onReset}>reset</button>
-        </p>
-      ) : null}
+        <>
+          <button
+            className="flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm text-dash-muted hover:bg-white hover:text-dash-ink"
+            onClick={onLoadSample}
+          >
+            <Settings className="h-[15px] w-[15px] shrink-0" />
+            <span className="min-w-0 flex-1 truncate text-left">Load sample activity</span>
+          </button>
+          <button
+            className="flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm text-dash-muted hover:bg-white hover:text-dash-ink"
+            onClick={onSignOut}
+          >
+            <LogOut className="h-[15px] w-[15px] shrink-0" />
+            <span className="min-w-0 flex-1 truncate text-left">Sign out</span>
+          </button>
+        </>
+      ) : (
+        <button
+          className="flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm text-white/70 hover:bg-white/[0.07] hover:text-white"
+          onClick={onSignOut}
+        >
+          <LogOut className="h-[15px] w-[15px] shrink-0" />
+          <span>Sign out</span>
+        </button>
+      )}
     </div>
   )
 }
@@ -383,7 +388,7 @@ function InnovatorSidebar({ st, view, show, onLoadSample, onReset, onSignOut }) 
         <GroupTag>Tools</GroupTag>
         <SideItem ico={Sparkles} label="AI Evaluation" onClick={() => navigate('/dashboard/evaluate')} />
       </ul>
-      <SideFoot st={st} active={view === 'profile'} onProfile={() => show('profile')} onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
+      <SideFoot onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
     </>
   )
 }
@@ -431,7 +436,7 @@ function MentorSidebar({ st, view, mentorTab, setMentorTab, show }) {
           </>
         )}
       </ul>
-      <SideFoot st={st} role={ms !== 'none' ? mentorRoleLabel(st) : null} active={view === 'profile'} onProfile={() => show('profile')} dark />
+      <SideFoot role={ms !== 'none' ? mentorRoleLabel(st) : null} dark onSignOut={() => { authStore.clear(); }} />
     </>
   )
 }
