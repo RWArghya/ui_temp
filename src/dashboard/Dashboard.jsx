@@ -27,45 +27,92 @@ const VIEW_COMPONENTS = {
   arena: Arena, profile: ProfilePage, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
 }
 
-/* Prototype-only "view as" switcher — mirrors app.js's PERSONAS. Innovator and
-   Mentor are real modes of this dashboard; Sponsor points at the marketing
-   site's sponsor placeholder (no sponsor workspace exists yet); Enabler is
-   H2S's internal staff tool and has no page in this app at all, so it's shown
-   inert rather than linked somewhere fake. */
+/* Prototype-only "view as" personas. Innovator and Mentor are real modes;
+   Sponsor points to the marketing sponsor placeholder; Enabler is H2S's
+   internal staff tool and has no page in this app — shown inert. */
 const PERSONAS = [
   { k: 'innovator', ico: HomeIcon, label: 'Innovator', sub: 'learns and competes' },
-  { k: 'sponsor', ico: Users, label: 'Sponsor', sub: 'pays, runs challenges' },
-  { k: 'mentor', ico: Compass, label: 'Mentor', sub: 'guides and evaluates' },
-  { k: 'enabler', ico: Settings, label: 'Enabler', sub: 'H2S success team — not in this prototype' },
+  { k: 'sponsor',   ico: Users,    label: 'Sponsor',   sub: 'pays, runs challenges' },
+  { k: 'mentor',    ico: Compass,  label: 'Mentor',    sub: 'guides and evaluates' },
+  { k: 'enabler',   ico: Settings, label: 'Enabler',   sub: 'H2S success team — not in this prototype' },
 ]
-function PersonaBar({ active, onSwitch, onSponsor }) {
+
+/* ─────────────────────────────────────────────────────────────
+   SidePersonaPill — hover-activated "View as" pill.
+   A single compact button shows the active persona. Hovering (or
+   focusing) the button opens the role ribbon upward so the user
+   can switch; moving the pointer away collapses it. This replaces
+   the fixed bottom PersonaBar so the role switcher lives in the
+   sidebar where it belongs. */
+function SidePersonaPill({ active, onSwitch, onSponsor, dark }) {
+  const [open, setOpen] = useState(false)
+  const current = PERSONAS.find(p => p.k === active) || PERSONAS[0]
+  const Ico = current.ico
+  const light = !dark
   return (
-    <div className="fixed bottom-4 left-4 z-40 hidden max-w-[calc(100vw-32px)] flex-wrap items-center gap-1.5 rounded-full border border-dash-line bg-white/95 px-3 py-[7px] shadow-dash-lg backdrop-blur-md md:flex">
-      <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dash-muted">View as</span>
-      {PERSONAS.map(p => {
-        const disabled = p.k === 'enabler'
-        const on = p.k === active
-        if (disabled) {
-          return (
-            <span key={p.k} title={p.sub} className="flex cursor-not-allowed items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium text-dash-faint">
-              <p.ico className="h-3.5 w-3.5" /> {p.label}
-            </span>
-          )
-        }
-        return (
-          <button
-            key={p.k}
-            title={p.sub}
-            onClick={() => (p.k === 'sponsor' ? onSponsor() : onSwitch(p.k))}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[12.5px] font-medium ${on ? 'bg-ink-900 font-bold text-white' : 'text-dash-muted hover:bg-dash-line-soft hover:text-dash-ink'}`}
-          >
-            <p.ico className="h-3.5 w-3.5" /> {p.label}
-          </button>
-        )
-      })}
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false) }}
+    >
+      {/* The collapsed pill */}
+      <button
+        className={`flex w-full items-center gap-2 rounded-btn px-3 py-[9px] text-sm transition-colors ${
+          light
+            ? 'border border-dash-line bg-dash-bg text-dash-ink hover:border-signal/40 hover:bg-signal-soft hover:text-signal-dark'
+            : 'border border-white/10 bg-white/[0.06] text-white hover:bg-white/10'
+        }`}
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        <Ico className="h-[14px] w-[14px] shrink-0" />
+        <span className="min-w-0 flex-1 truncate text-left">
+          <span className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${light ? 'text-dash-muted' : 'text-white/50'}`}>View as</span>
+          <span className={`ml-1.5 text-[13px] font-semibold ${light ? 'text-dash-ink' : 'text-white'}`}>{current.label}</span>
+        </span>
+        <span className={`text-[10px] transition-transform duration-150 ${open ? 'rotate-180' : ''} ${light ? 'text-dash-muted' : 'text-white/40'}`}>▲</span>
+      </button>
+
+      {/* Expanded menu — floats above the pill */}
+      {open ? (
+        <div className={`absolute bottom-[calc(100%+6px)] left-0 right-0 overflow-hidden rounded-card border shadow-dash-lg ${
+          light ? 'border-dash-line bg-white' : 'border-white/10 bg-ink-900'
+        }`}>
+          <div className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+            light ? 'text-dash-muted border-b border-dash-line-soft' : 'text-white/40 border-b border-white/10'
+          }`}>Switch role</div>
+          {PERSONAS.map(p => {
+            const PIco = p.ico
+            const isOn = p.k === active
+            const isDisabled = p.k === 'enabler'
+            return (
+              <button
+                key={p.k}
+                title={p.sub}
+                disabled={isDisabled}
+                onClick={() => { setOpen(false); p.k === 'sponsor' ? onSponsor() : onSwitch(p.k) }}
+                className={`flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors ${
+                  isDisabled
+                    ? (light ? 'cursor-not-allowed text-dash-faint' : 'cursor-not-allowed text-white/20')
+                    : isOn
+                      ? (light ? 'bg-signal-soft font-semibold text-signal-dark' : 'bg-white/10 font-semibold text-white')
+                      : (light ? 'text-dash-ink hover:bg-dash-bg-soft' : 'text-white/80 hover:bg-white/[0.07]')
+                }`}
+              >
+                <PIco className="h-[14px] w-[14px] shrink-0" />
+                <span className="flex-1 truncate">{p.label}</span>
+                {isOn ? <span className="text-[10px]">✓</span> : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
     </div>
   )
 }
+
 
 /* Notification bell — reads st.notes the same shape app.js's notify()/S.save writes.
    No producer is wired yet in this prototype (no Enabler/approval pipeline), so a
@@ -223,7 +270,6 @@ function SubShell({ st, sv, go, children }) {
     <div className="dash-root min-h-screen bg-dash-bg text-dash-ink">
       <AppBar st={st} sv={sv} mode="innovator" onLogo={() => go('home')} onProfile={() => go('profile')} />
       <div className="mx-auto w-full max-w-[1080px] px-4 py-6 sm:px-6 lg:py-8">{children}</div>
-      <PersonaBar active="innovator" onSwitch={(p) => go(p === 'mentor' ? 'mentor' : 'home')} onSponsor={() => navigate('/sponsor')} />
       <ResetLink sv={sv} out={out} />
       <SupportBot st={st} sv={sv} />
     </div>
@@ -244,17 +290,12 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const navigate = useNavigate()
   const [navOpen, setNavOpen] = useState(false)
   const msup = mode === 'mentor'
-  /* The prototype never keeps an empty rail column — below 100% profile
-     completion (or in mentor mode) it's a 3-column grid, otherwise the main
-     column reflows to use the freed width (styles.css's
-     `.shell:not(.has-rail) .grid.g3` rule). profile.html's own shell markup
-     never has a rail at all (no `#rail` mount, unlike app.html) — the
-     profile page is always a plain 2-column shell. */
   const hasRail = view !== 'profile' && (msup || profileScore(st).pct < 100)
   const goNav = (v) => { show(v); setNavOpen(false) }
   const out = () => { reset(); authStore.clear(); navigate('/auth') }
   const loadSample = () => sv(seedDemoPatch(st))
   const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
+  const onSponsor = () => navigate('/sponsor')
   return (
     <div className="dash-root min-h-screen bg-dash-bg text-dash-ink">
       <AppBar st={st} sv={sv} mode={mode} view={view}
@@ -267,8 +308,8 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
         <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-dash-line-soft transition-transform duration-200 lg:sticky lg:top-[66px] lg:z-auto lg:h-[calc(100vh-66px)] lg:w-auto lg:translate-x-0 ${msup ? 'bg-ink-900 lg:border-ink-line' : 'bg-dash-bg-soft'} ${navOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <nav className="flex h-full flex-col overflow-y-auto px-3.5 py-5">
             {msup
-              ? <MentorSidebar st={st} view={view} mentorTab={mentorTab} setMentorTab={setMentorTab} show={goNav} />
-              : <InnovatorSidebar st={st} view={view} show={goNav} onLoadSample={loadSample} onReset={doReset} onSignOut={out} />}
+              ? <MentorSidebar st={st} view={view} mentorTab={mentorTab} setMentorTab={setMentorTab} show={goNav} onSwitch={switchPersona} onSponsor={onSponsor} onSignOut={out} />
+              : <InnovatorSidebar st={st} view={view} mode={mode} show={goNav} onLoadSample={loadSample} onReset={doReset} onSignOut={out} onSwitch={switchPersona} onSponsor={onSponsor} />}
           </nav>
         </aside>
 
@@ -281,10 +322,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
           </div>
         </main>
 
-        {/* The prototype never hides the rail — below 1240px it drops under the
-            main content (grid-column 2) instead of disappearing, and only stops
-            being sticky there. `hidden xl:block` removed it entirely on any
-            window under 1280px, which is why it looked missing. */}
         {hasRail ? (
           <aside className="lg:col-start-2 xl:col-start-3 xl:row-start-1">
             <div className="max-w-[1080px] space-y-4 px-4 pb-[60px] sm:px-6 lg:px-9 xl:sticky xl:top-[66px] xl:max-h-[calc(100vh-66px)] xl:overflow-y-auto xl:px-7 xl:py-8">
@@ -293,7 +330,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
           </aside>
         ) : null}
       </div>
-      <PersonaBar active={mode} onSwitch={switchPersona} onSponsor={() => navigate('/sponsor')} />
       <SupportBot st={st} sv={sv} mode={mode} />
     </div>
   )
@@ -330,49 +366,71 @@ function GroupTag({ children }) {
   return <li className="px-3 pb-2 pt-[22px] font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dash-muted first:pt-0">{children}</li>
 }
 
-/* Sidebar footer — utility controls only.
-   The avatar in the AppBar (top-right) is the single entry point to profile;
-   duplicating it here in the sidebar is removed to match prototype_v2's
-   side-foot which shows Persona / Settings / Log out, not an account pill. */
-function SideFoot({ role, dark, onLoadSample, onReset, onSignOut }) {
+/* Sidebar footer — Settings dropdown, persona switcher pill, sign out.
+   No profile link — the AppBar avatar is the only profile entry point. */
+function SideFoot({ role, dark, active, onLoadSample, onReset, onSignOut, onSwitch, onSponsor }) {
+  const [settingsOpen, setSettingsOpen] = useState(false)
   return (
-    <div className={`mt-auto pt-3 ${dark ? '' : 'pb-[52px]'}`}>
+    <div className={`mt-auto pt-3 ${dark ? '' : 'pb-3'}`}>
       <hr className={`mb-2 border-t ${dark ? 'border-white/10' : 'border-dash-line-soft'}`} />
       {role ? (
         <p className="mb-2 px-3 text-xs font-medium text-brand-violet">{role}</p>
       ) : null}
-      {!dark ? (
-        <>
-          <button
-            className="flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm text-dash-muted hover:bg-white hover:text-dash-ink"
-            onClick={onLoadSample}
-          >
-            <Settings className="h-[15px] w-[15px] shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-left">Load sample activity</span>
-          </button>
-          <button
-            className="flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm text-dash-muted hover:bg-white hover:text-dash-ink"
-            onClick={onSignOut}
-          >
-            <LogOut className="h-[15px] w-[15px] shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-left">Sign out</span>
-          </button>
-        </>
-      ) : (
+
+      {/* Persona / role switcher */}
+      {onSwitch ? (
+        <div className="mb-1">
+          <SidePersonaPill active={active} onSwitch={onSwitch} onSponsor={onSponsor} dark={dark} />
+        </div>
+      ) : null}
+
+      {/* Settings + sign out row */}
+      <div className={`flex items-center gap-1 ${dark ? '' : ''}`}>
+        {!dark ? (
+          <div className="relative flex-1">
+            <button
+              className="flex w-full items-center gap-2 rounded-btn px-3 py-[9px] text-sm text-dash-muted hover:bg-white hover:text-dash-ink"
+              onClick={() => setSettingsOpen(o => !o)}
+            >
+              <Settings className="h-[15px] w-[15px] shrink-0" />
+              <span className="flex-1 truncate text-left">Settings</span>
+            </button>
+            {settingsOpen ? (
+              <div className="absolute bottom-[calc(100%+4px)] left-0 right-0 overflow-hidden rounded-card border border-dash-line bg-white shadow-dash-lg">
+                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-dash-muted border-b border-dash-line-soft">Prototype utilities</div>
+                <button
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-dash-ink hover:bg-dash-bg-soft"
+                  onClick={() => { setSettingsOpen(false); onLoadSample() }}
+                >
+                  <Sparkles className="h-[14px] w-[14px] text-signal" />
+                  Load sample activity
+                </button>
+                <button
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-dash-warn hover:bg-dash-bg-soft"
+                  onClick={() => { setSettingsOpen(false); onReset() }}
+                >
+                  <LogOut className="h-[14px] w-[14px]" />
+                  Reset prototype data
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <button
-          className="flex w-full items-center gap-2.5 rounded-btn px-3 py-[9px] text-sm text-white/70 hover:bg-white/[0.07] hover:text-white"
+          className={`flex items-center gap-2 rounded-btn px-3 py-[9px] text-sm ${dark ? 'text-white/60 hover:bg-white/[0.07] hover:text-white' : 'text-dash-muted hover:bg-white hover:text-dash-ink'} ${!dark ? 'flex-1' : 'w-full'}`}
           onClick={onSignOut}
         >
           <LogOut className="h-[15px] w-[15px] shrink-0" />
-          <span>Sign out</span>
+          <span className="truncate text-left">Sign out</span>
         </button>
-      )}
+      </div>
     </div>
   )
 }
 
+
 const VIEW_ICO = { learning: BookOpen, competing: Trophy, learncompete: Wrench }
-function InnovatorSidebar({ st, view, show, onLoadSample, onReset, onSignOut }) {
+function InnovatorSidebar({ st, view, show, mode, onLoadSample, onReset, onSignOut, onSwitch, onSponsor }) {
   const navigate = useNavigate()
   return (
     <>
@@ -388,7 +446,7 @@ function InnovatorSidebar({ st, view, show, onLoadSample, onReset, onSignOut }) 
         <GroupTag>Tools</GroupTag>
         <SideItem ico={Sparkles} label="AI Evaluation" onClick={() => navigate('/dashboard/evaluate')} />
       </ul>
-      <SideFoot onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
+      <SideFoot active={mode} onSwitch={onSwitch} onSponsor={onSponsor} onLoadSample={onLoadSample} onReset={onReset} onSignOut={onSignOut} />
     </>
   )
 }
@@ -397,7 +455,7 @@ function InnovatorSidebar({ st, view, show, onLoadSample, onReset, onSignOut }) 
    there's just the application status and matching challenges; approved-but-
    unmapped nudges "My challenges" as the one live door; approved-and-mapped
    surfaces the real work queues plus Impact. */
-function MentorSidebar({ st, view, mentorTab, setMentorTab, show }) {
+function MentorSidebar({ st, view, mentorTab, setMentorTab, show, onSwitch, onSponsor, onSignOut }) {
   const ms = mentorStatus(st)
   const mapped = approvedChallenges(st).length
   const queue = ms === 'approved' ? mentorQueueCount(st) : 0
@@ -436,7 +494,7 @@ function MentorSidebar({ st, view, mentorTab, setMentorTab, show }) {
           </>
         )}
       </ul>
-      <SideFoot role={ms !== 'none' ? mentorRoleLabel(st) : null} dark onSignOut={() => { authStore.clear(); }} />
+      <SideFoot role={ms !== 'none' ? mentorRoleLabel(st) : null} dark active="mentor" onSwitch={onSwitch} onSponsor={onSponsor} onSignOut={onSignOut} />
     </>
   )
 }
