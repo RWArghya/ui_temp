@@ -6,12 +6,46 @@ import {
   byId, modules, openTeams, problemStatements, submissionArtifact, journeyFor,
   reachedFor, nextStepFor, bagFor, creditsFor, selfCerts, daysLeft, deadlineText, SELF_KEY,
   mentoringOn, toScreenStep, recordRecentPatch,
+  moduleSectionsDone, moduleQuizState, moduleReady,
 } from './data'
 
 const stepFor = (o, st) => toScreenStep(o, reachedFor(o, st))
 
 function Steps({ o, st }) {
   return <StepStrip steps={journeyFor(o)} cur={stepFor(o, st)} />
+}
+
+/* Learn-only visual: same steps/cur as StepStrip (journeyFor/stepFor,
+   untouched), just chevron-shaped instead of pills. Kept out of ui.jsx's
+   shared StepStrip so Compete/Build's stepper — same component, other
+   purposes — isn't touched at all. */
+function ChevronSteps({ steps, cur }) {
+  const clip = (i) => {
+    const notch = 'polygon(0% 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 0% 100%, 14px 50%)'
+    const first = 'polygon(0% 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 0% 100%)'
+    const last = 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 14px 50%)'
+    if (i === 0) return first
+    if (i === steps.length - 1) return last
+    return notch
+  }
+  return (
+    <div className="flex flex-wrap">
+      {steps.map((s, i) => {
+        const done = i < cur, active = i === cur
+        return (
+          <div
+            key={s}
+            className={`flex items-center gap-1.5 whitespace-nowrap px-4 py-2 text-xs font-semibold ${i > 0 ? '-ml-3.5' : ''} ${
+              done ? 'bg-dash-ok text-white' : active ? 'bg-signal text-white' : 'bg-dash-line-soft text-dash-muted'
+            }`}
+            style={{ clipPath: clip(i) }}
+          >
+            {done ? '✓' : i + 1}. {s}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 /* ---- certificate claim (learning capstone end) ---- */
@@ -27,103 +61,371 @@ function ClaimCert({ o, st, sv }) {
   )
 }
 
-/* A module row used to be a label and a "Done" checkbox with nothing to
-   actually open — you were asked to self-report finishing a video you had
-   no way to reach. Clicking the row now expands a content panel keyed by
-   `kind` so there's something to look at before marking it done. This is a
-   prototype, so "Video"/"Lab" don't stream real files — the panel says so
-   outright rather than pretending a player is doing something it isn't. */
-function ModuleContent({ m }) {
-  if (m.kind === 'Video' || m.kind === 'Live session') {
+/* ---- Learn module detail — opening a module used to just expand a static
+   "watch it elsewhere" note with a Done button. Now: pick a section, work
+   through it, optionally pass a quiz, and only then can the module be
+   marked complete — completion happens here, not from the list row. */
+function statusFor(m, st, o, done) {
+  if (done.includes(m.i)) return 'completed'
+  const unlocked = m.i === 0 || done.includes(m.i - 1)
+  if (!unlocked) return 'locked'
+  return moduleSectionsDone(st, o, m).length > 0 ? 'in-progress' : 'available'
+}
+const STATUS_LABEL = { completed: 'Completed', 'in-progress': 'In progress', available: 'Available', locked: 'Locked' }
+
+/* Realistic-enough body copy per section, keyed off the module's title/kind
+   so it reads as populated rather than a lorem placeholder, without
+   hand-writing unique prose for every generated module. */
+/* proto.css resets ul{list-style:none} (ported from the prototype, which
+   never uses native list markers either) — it's scoped to .dash-root
+   with higher specificity than Tailwind's .list-disc, so that utility
+   silently loses. Rendering the bullet as content sidesteps the fight
+   and matches how every list elsewhere in this shell already works. */
+function Bullets({ items }) {
+  return <div className="flex flex-col gap-1.5">{items.map(c => <div key={c} className="flex gap-2"><span className="text-dash-faint">•</span><span>{c}</span></div>)}</div>
+}
+function SectionBody({ m, s }) {
+  if (s.title === 'Key concepts') {
+    return <Bullets items={m.concepts} />
+  }
+  if (s.title === 'Applied example' && m.kind === 'Lab') {
     return (
-      <div className="mt-3">
-        <div className="flex aspect-video max-w-md items-center justify-center rounded-lg bg-dash-ink/90">
-          <span className="grid h-12 w-12 place-items-center rounded-full bg-white/15 text-2xl text-white">▶</span>
-        </div>
-        <p className="mt-2 text-xs text-dash-faint">
-          {m.kind === 'Live session'
-            ? 'Live sessions are scheduled per cohort — this prototype has no real calendar behind it yet.'
-            : "Prototype only — no video is actually hosted here. Watch elsewhere if you have the material, then mark it done."}
-        </p>
-      </div>
+      <>
+        <p>Wire the concept into a minimal working example:</p>
+        <pre className="mt-2 overflow-x-auto rounded-lg bg-dash-ink p-3 text-xs text-white"><code>{`const context = retrieve(query);\n\nconst response = generate({\n  query,\n  context,\n});`}</code></pre>
+      </>
     )
   }
-  if (m.kind === 'Lab') {
-    return (
-      <div className="mt-3 rounded-lg border border-dash-line-soft bg-dash-bg-soft p-3">
-        <p className="text-sm text-dash-ink">Hands-on lab — work through it in your own environment, then mark it done.</p>
-        <p className="mt-1 text-xs text-dash-faint">Prototype only — no real lab environment is provisioned here yet.</p>
-      </div>
-    )
+  if (s.title === 'Applied example') {
+    return <p>Suppose an assistant is asked a question outside its training data — {m.title.toLowerCase()} is what keeps the answer honest instead of confidently wrong.</p>
   }
+  if (s.title === 'Recap') {
+    return <Bullets items={[...m.concepts, 'Move on once this feels solid — the next module builds on it directly.']} />
+  }
+  return <p>{m.title} covers what the rest of this course assumes you already know. This section sets up the vocabulary and mental model the later ones reuse.</p>
+}
+
+/* Mock video controls — no real file, but a real play/pause + ticking
+   clock so "video module" doesn't mean a static gray box. */
+function VideoPlayer({ mins }) {
+  const total = mins * 60
+  const [t, setT] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  useEffect(() => {
+    if (!playing) return
+    const id = setInterval(() => setT(x => Math.min(total, x + 1)), 1000)
+    return () => clearInterval(id)
+  }, [playing, total])
+  const fmt = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
   return (
-    <div className="mt-3 rounded-lg border border-dash-line-soft bg-dash-bg-soft p-3">
-      <p className="text-sm text-dash-ink">Capstone project — apply what the earlier modules covered, then mark it done to unlock your certificate.</p>
+    <div className="max-w-lg overflow-hidden rounded-lg border border-dash-line-soft">
+      <button className="flex aspect-video w-full items-center justify-center bg-dash-ink/90" onClick={() => setPlaying(p => !p)}>
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-white/15 text-2xl text-white">{playing ? '❚❚' : '▶'}</span>
+      </button>
+      <div className="flex items-center gap-2 bg-dash-ink px-3 py-2 text-xs text-white/80">
+        <span>{fmt(t)} / {fmt(total)}</span>
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/20">
+          <div className="h-full bg-signal" style={{ width: (t / total * 100) + '%' }} />
+        </div>
+      </div>
     </div>
   )
 }
+
+function Quiz({ m, st, o, sv, onDone }) {
+  const state = moduleQuizState(st, o, m)
+  const qi = state.answers.length
+  const [pick, setPick] = useState(null)
+  const [reveal, setReveal] = useState(false)
+
+  if (qi >= m.quiz.questions.length) {
+    const score = state.answers.filter(Boolean).length
+    return (
+      <div className="mt-3 rounded-lg border border-dash-line-soft p-4 text-center">
+        <strong className="text-dash-ink">Quiz completed</strong>
+        <p className="mt-1 text-sm text-dash-muted">{score} / {m.quiz.questions.length} correct</p>
+        <button className="btn btn-primary btn-sm mt-3 rounded-btn" onClick={onDone}>Continue</button>
+      </div>
+    )
+  }
+
+  const q = m.quiz.questions[qi]
+  const submit = () => {
+    if (pick === null) return
+    setReveal(true)
+  }
+  const next = () => {
+    sv({ moduleQuiz: Object.assign({}, st.moduleQuiz, { [o.id + '::' + m.i]: { answers: state.answers.concat(pick === q.correct) } }) })
+    setPick(null); setReveal(false)
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center justify-between text-xs text-dash-muted">
+        <span>Question {qi + 1} of {m.quiz.questions.length}</span>
+        {qi > 0 ? <span>Score: {state.answers.filter(Boolean).length} / {qi}</span> : null}
+      </div>
+      <p className="mt-1 text-sm font-medium text-dash-ink">{q.q}</p>
+      <div className="mt-2 flex flex-col gap-2">
+        {q.options.map((opt, i) => (
+          <label key={i} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${reveal && i === q.correct ? 'border-dash-ok bg-dash-ok-soft' : reveal && i === pick ? 'border-dash-live bg-dash-live-bg' : 'border-dash-line-soft'}`}>
+            <input type="radio" name={'quiz-' + o.id + m.i + qi} checked={pick === i} disabled={reveal} onChange={() => setPick(i)} />
+            {opt}
+          </label>
+        ))}
+      </div>
+      {!reveal ? (
+        <button className="btn btn-primary btn-sm mt-3 rounded-btn" disabled={pick === null} onClick={submit}>Submit</button>
+      ) : (
+        <div className="mt-3">
+          <p className={`text-sm font-medium ${pick === q.correct ? 'text-dash-ok' : 'text-dash-live'}`}>{pick === q.correct ? '✓ Correct' : '✗ Incorrect'}</p>
+          <button className="btn btn-primary btn-sm mt-2 rounded-btn" onClick={next}>{qi + 1 === m.quiz.questions.length ? 'See results' : 'Next question'}</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ModuleDetail({ o, m, st, sv, onBack, onNext, hasNext, nextTitle }) {
+  const secDone = moduleSectionsDone(st, o, m)
+  const firstIncomplete = m.sections.find(s => !secDone.includes(s.i)) || m.sections[m.sections.length - 1]
+  const [viewIdx, setViewIdx] = useState(firstIncomplete.i)
+  const view = m.sections[viewIdx]
+  const [tab, setTab] = useState('content')
+  const done = bagFor(st, 'lessons', o.id, []) || []
+  const alreadyComplete = done.includes(m.i)
+  const sectionsOk = secDone.length >= m.sections.length
+  const ready = moduleReady(st, o, m)
+
+  const completeSection = () => {
+    if (secDone.includes(view.i)) return
+    sv({ moduleSections: Object.assign({}, st.moduleSections, { [o.id + '::' + m.i]: secDone.concat(view.i) }) })
+    const nxt = m.sections[viewIdx + 1]
+    if (nxt) setViewIdx(nxt.i)
+  }
+  const markComplete = () => sv({ lessons: Object.assign({}, st.lessons || {}, { [o.id]: done.concat(m.i) }) })
+
+  const tabs = ['content', ...(m.resources.length ? ['resources'] : []), ...(m.quiz ? ['quiz'] : [])]
+  const tabLabel = { content: 'Content', resources: 'Resources', quiz: 'Quiz' }
+
+  return (
+    <Card className="mt-4">
+      <button className="btn btn-ghost btn-sm rounded-btn" onClick={onBack}>← Back to all modules</button>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="grid h-6 w-6 place-items-center rounded bg-signal text-xs font-bold text-white">{m.i + 1}</span>
+            <strong className="text-dash-ink">{m.title}</strong>
+          </div>
+          <p className="mt-1 text-sm text-dash-muted">{m.kind} · {m.mins} min</p>
+        </div>
+        <Pill ok={alreadyComplete} warn={!alreadyComplete}>{alreadyComplete ? 'Completed' : STATUS_LABEL[statusFor(m, st, o, done)]}</Pill>
+      </div>
+
+      {alreadyComplete ? (
+        <div className="mt-4 rounded-lg border border-dash-ok-soft bg-dash-ok-soft p-5 text-center">
+          <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-dash-ok text-lg text-white">✓</div>
+          <strong className="mt-2 block text-dash-ink">Module Completed!</strong>
+          <p className="mt-1 text-sm text-dash-muted">You've completed "{m.title}".</p>
+          <div className="mx-auto mt-3 inline-flex flex-col items-start gap-1 text-left text-sm text-dash-ink">
+            <span>✓ {m.sections.length} / {m.sections.length} sections completed</span>
+            {m.quiz ? <span>✓ Quiz passed</span> : null}
+          </div>
+          {hasNext ? <p className="mt-3 text-sm text-dash-muted">Next module unlocked — <strong className="text-dash-ink">{nextTitle}</strong></p> : null}
+        </div>
+      ) : null}
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_240px]">
+        <div className="min-w-0">
+          <div className="mb-2 flex items-center justify-between text-xs text-dash-muted">
+            <span>{secDone.length} / {m.sections.length} sections completed</span>
+            <span>{Math.round(secDone.length / m.sections.length * 100)}%</span>
+          </div>
+          <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-dash-line-soft">
+            <div className="h-full rounded-full bg-signal transition-[width]" style={{ width: (secDone.length / m.sections.length * 100) + '%' }} />
+          </div>
+
+          <div className="flex gap-1 border-b border-dash-line-soft">
+            {tabs.map(t => (
+              <button key={t} className={`rounded-t-btn px-3 py-2 text-sm font-medium ${tab === t ? 'border-b-2 border-signal text-dash-ink' : 'text-dash-muted'}`} onClick={() => setTab(t)}>
+                {tabLabel[t]}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'content' ? (
+            <div className="mt-3">
+              {m.kind === 'Video' || m.kind === 'Live session' ? <VideoPlayer mins={m.mins} /> : null}
+              {m.kind === 'Live session' ? <p className="mt-2 text-xs text-dash-faint">Live sessions are scheduled per cohort — no real calendar behind this yet.</p> : null}
+              {(m.kind === 'Video' || m.kind === 'Live session') ? null : m.kind === 'Lab' ? (
+                <p className="text-sm text-dash-muted">Objective: build a working, minimal version of what this module covers. Follow the section below, then mark it complete.</p>
+              ) : null}
+
+              <div className="mt-4">
+                <h4 className="font-display text-base font-bold text-dash-ink">{view.title}</h4>
+                <div className="mt-2 space-y-2 text-sm leading-relaxed text-dash-ink"><SectionBody m={m} s={view} /></div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <button className="btn btn-ghost btn-sm rounded-btn border border-dash-line-soft" disabled={viewIdx === 0} onClick={() => setViewIdx(m.sections[viewIdx - 1].i)}>← Previous</button>
+                {secDone.includes(view.i)
+                  ? <Pill ok>Section completed</Pill>
+                  : <button className="btn btn-primary btn-sm rounded-btn" onClick={completeSection}>Mark section complete →</button>}
+              </div>
+            </div>
+          ) : null}
+
+          {tab === 'resources' ? (
+            <div className="mt-3 flex flex-col gap-2">
+              {m.resources.map(r => (
+                <div key={r.name} className="flex items-center justify-between gap-3 rounded-lg border border-dash-line-soft p-3">
+                  <div>
+                    <strong className="text-sm text-dash-ink">{r.name}</strong>
+                    <p className="text-xs text-dash-muted">{r.type}{r.size ? ' · ' + r.size : ''} · {r.desc}</p>
+                  </div>
+                  {r.url
+                    ? <a className="btn btn-ghost btn-sm rounded-btn border border-dash-line-soft" href={r.url} target="_blank" rel="noopener">{r.type === 'GitHub' ? 'View' : 'Open'}</a>
+                    : <span className="btn btn-ghost btn-sm rounded-btn border border-dash-line-soft opacity-60">Download</span>}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {tab === 'quiz' && m.quiz ? <Quiz m={m} st={st} o={o} sv={sv} onDone={() => setTab('content')} /> : null}
+
+          {!alreadyComplete ? (
+            <div className="mt-5 border-t border-dash-line-soft pt-4">
+              {ready ? (
+                <button className="btn btn-primary rounded-btn" onClick={markComplete}>Complete module</button>
+              ) : !sectionsOk ? (
+                <p className="text-sm text-dash-muted">Finish every section to continue.</p>
+              ) : (
+                <p className="text-sm text-dash-muted">Complete the quiz to finish this module.</p>
+              )}
+            </div>
+          ) : hasNext ? (
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-dash-line-soft pt-4">
+              <button className="btn btn-primary rounded-btn" onClick={onNext}>Continue to next module{nextTitle ? ': ' + nextTitle : ''} →</button>
+              <button className="btn btn-ghost rounded-btn border border-dash-line-soft" onClick={onBack}>Back to all modules</button>
+            </div>
+          ) : null}
+        </div>
+
+        <aside>
+          <Tag>Module contents</Tag>
+          <div className="mt-2 flex flex-col gap-0.5">
+            {m.sections.map(s => (
+              <button
+                key={s.i}
+                className={`flex items-center justify-between gap-2 rounded-btn px-2.5 py-2 text-left ${viewIdx === s.i ? 'border border-signal bg-signal-soft' : ''}`}
+                onClick={() => setViewIdx(s.i)}
+              >
+                <span>
+                  <span className={`block text-sm ${secDone.includes(s.i) ? 'text-dash-muted' : 'text-dash-ink'}`}>{s.i + 1}. {s.title}</span>
+                  <span className="text-xs text-dash-faint">{s.mins} min</span>
+                </span>
+                {secDone.includes(s.i) ? <span className="shrink-0 text-dash-ok">✓</span> : null}
+              </button>
+            ))}
+          </div>
+        </aside>
+      </div>
+    </Card>
+  )
+}
+
 /* ---- learning workspace ---- */
 function LearningWS({ o, st, sv }) {
   const done = bagFor(st, 'lessons', o.id, []) || []
   const ms = modules(o)
   const [open, setOpen] = useState(null)
+  const [tab, setTab] = useState('all')
+  const openModule = ms.find(m => m.i === open)
+
+  if (openModule) {
+    const nextM = ms.find(m => m.i === open + 1)
+    return (
+      <ModuleDetail
+        o={o} m={openModule} st={st} sv={sv}
+        onBack={() => setOpen(null)}
+        onNext={() => setOpen(nextM ? nextM.i : null)}
+        hasNext={!!nextM}
+        nextTitle={nextM?.title}
+      />
+    )
+  }
+
+  const TABS = [['all', 'All modules'], ['inprogress', 'In progress'], ['completed', 'Completed'], ['locked', 'Locked']]
+  const rows = ms.filter(m => {
+    const s = statusFor(m, st, o, done)
+    if (tab === 'completed') return s === 'completed'
+    if (tab === 'inprogress') return s === 'in-progress'
+    if (tab === 'locked') return s === 'locked'
+    return true
+  })
+  const EMPTY_MSG = { completed: "You haven't completed a module yet.", inprogress: 'Nothing in progress right now.', locked: 'Nothing locked right now.', all: 'No learning modules available yet.' }
+
   return (
     <>
       {/* Steps is already rendered once by the Workspace coordinator above
          this component — it used to be rendered here too, doubling the
          step strip on every Learn/Build page. */}
-      <Card title="Modules" className="mt-4">
-        {ms.map(m => {
-          const isDone = done.includes(m.i)
+      <Card className="mt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-display text-[18px] font-bold text-dash-ink">Learning modules</h3>
+          <span className="text-xs text-dash-muted">{done.length}/{ms.length} completed</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-dash-line-soft">
+          <div className="h-full rounded-full bg-dash-ok transition-[width]" style={{ width: (ms.length ? done.length / ms.length * 100 : 0) + '%' }} />
+        </div>
+
+        <div className="mt-4 flex gap-1 border-b border-dash-line-soft">
+          {TABS.map(([k, label]) => (
+            <button key={k} className={`rounded-t-btn px-3 py-2 text-sm font-medium ${tab === k ? 'border-b-2 border-signal text-dash-ink' : 'text-dash-muted'}`} onClick={() => setTab(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {!rows.length ? (
+          <div className="pt-4"><Empty msg={EMPTY_MSG[tab]} /></div>
+        ) : rows.map(m => {
           /* Modules unlock in order, but module 0 has no "module -1" to
              follow — done.includes(m.i - 1) is done.includes(-1) for it,
              which is never true. That left the FIRST module permanently
-             without a "Done" button, which blocked every module after it
-             too, since each depends on the one before. `m.i === 0` opens
-             the chain at the start. */
-          const unlocked = m.i === 0 || done.includes(m.i - 1)
-          const isOpen = open === m.i
-          /* The row's own toggle and the Done/Undo action are two separate
-             clickable controls, not one nested inside the other — a
-             <button> inside a <button> is invalid HTML and browsers
-             silently reparent/break it (a documented gotcha from
-             prototype_v2/CLAUDE.md). The row is a div with its own
-             onClick; Done/Undo is a real sibling <button>. */
+             locked, which blocked every module after it too, since each
+             depends on the one before. `m.i === 0` opens the chain. */
+          const status = statusFor(m, st, o, done)
+          const clickable = status !== 'locked'
+          const pct = status === 'in-progress' ? Math.round((moduleSectionsDone(st, o, m).length / m.sections.length) * 100) : null
           return (
-            <div className="border-b border-dash-line-soft py-3 last:border-0" key={m.i}>
-              <div
-                className={`flex items-center gap-3 ${unlocked ? 'cursor-pointer' : ''}`}
-                onClick={() => unlocked && setOpen(isOpen ? null : m.i)}
-                role={unlocked ? 'button' : undefined}
-                tabIndex={unlocked ? 0 : undefined}
-              >
-                <span className={`grid h-6 w-6 shrink-0 place-items-center rounded text-xs font-bold text-white ${isDone ? 'bg-dash-ok-soft0' : unlocked ? 'bg-signal' : 'bg-dash-faint'}`}>
-                  {isDone ? '✓' : m.i + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <strong className={`block text-[13.5px] ${unlocked ? 'text-dash-ink' : 'text-dash-faint'}`}>{m.title}</strong>
-                  <div className="text-sm text-dash-muted">{m.kind} · {m.mins} min{!unlocked ? ' · locked until the module above is done' : ''}</div>
+            <div
+              key={m.i}
+              className={`flex items-center gap-3 border-b border-dash-line-soft py-3 last:border-0 ${clickable ? 'cursor-pointer' : ''}`}
+              onClick={() => clickable && setOpen(m.i)}
+              role={clickable ? 'button' : undefined}
+              tabIndex={clickable ? 0 : undefined}
+            >
+              <span className={`grid h-6 w-6 shrink-0 place-items-center rounded text-xs font-bold text-white ${status === 'completed' ? 'bg-dash-ok' : clickable ? 'bg-signal' : 'bg-dash-faint'}`}>
+                {status === 'completed' ? '✓' : status === 'locked' ? '🔒' : m.i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <strong className={`block text-[13.5px] ${clickable ? 'text-dash-ink' : 'text-dash-faint'}`}>{m.title}</strong>
+                <div className="text-sm text-dash-muted">
+                  {m.kind} · {m.mins} min
+                  {status === 'locked' && m.i > 0 ? ` · Complete module ${m.i} first` : ''}
+                  {status === 'in-progress' ? ` · ${pct}% complete` : ''}
                 </div>
-                {unlocked ? <span className="text-dash-faint">{isOpen ? '▴' : '▾'}</span> : null}
-                {!isDone && unlocked ? (
-                  <button
-                    className="btn btn-primary btn-sm rounded-btn"
-                    onClick={(e) => { e.stopPropagation(); sv({ lessons: Object.assign({}, st.lessons || {}, { [o.id]: done.concat(m.i) }) }) }}
-                  >Done</button>
-                ) : null}
-                {isDone ? (
-                  <button
-                    className="btn btn-ghost btn-sm rounded-btn border border-dash-line-soft"
-                    onClick={(e) => { e.stopPropagation(); sv({ lessons: Object.assign({}, st.lessons || {}, { [o.id]: done.filter(x => x !== m.i) }) }) }}
-                  >Undo</button>
-                ) : null}
               </div>
-              {isOpen ? <ModuleContent m={m} /> : null}
+              <Pill ok={status === 'completed'} warn={status === 'in-progress'}>{STATUS_LABEL[status]}</Pill>
+              {status === 'available' ? <button className="btn btn-primary btn-sm rounded-btn" onClick={(e) => { e.stopPropagation(); setOpen(m.i) }}>Start</button> : null}
+              {status === 'in-progress' ? <button className="btn btn-primary btn-sm rounded-btn" onClick={(e) => { e.stopPropagation(); setOpen(m.i) }}>Continue</button> : null}
+              {clickable ? <span className="text-dash-faint">›</span> : null}
             </div>
           )
         })}
       </Card>
-      {done.length === ms.length ? <div className="mt-4"><ClaimCert o={o} st={st} sv={sv} /></div> : null}
+      {done.length === ms.length && ms.length ? <div className="mt-4"><ClaimCert o={o} st={st} sv={sv} /></div> : null}
     </>
   )
 }
@@ -380,7 +682,7 @@ export default function Workspace({ st, sv, go }) {
         </div>
         <p className="text-sm text-dash-muted">{o.org} · {o.mode} · {o.prize}</p>
       </PageHead>
-      <Steps o={o} st={st} />
+      {o.purpose === 'learning' || o.purpose === 'learncompete' ? <ChevronSteps steps={journeyFor(o)} cur={cur} /> : <Steps o={o} st={st} />}
       {ns && cur < journeyFor(o).length ? (
         <Card className="mt-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
