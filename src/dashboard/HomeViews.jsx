@@ -71,10 +71,13 @@ export function Continuing({ st, sv, go }) {
       <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}><Icon name="ArrowLeft" size={14} /> Dashboard</a>
       <h1 className="mt12">Continue where you left off</h1>
       <p className="small muted mt6">{active.length} initiative{active.length === 1 ? '' : 's'} you're actively working on.</p>
-      <div className="grid g3 mt20">
-        {active.length ? active.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)
-          : <EmptyState ico="Compass" title="Nothing in progress yet" msg="Join an initiative or enrol in a course to see it here." />}
-      </div>
+      {active.length ? (
+        <div className="grid g3 mt20">
+          {active.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
+        </div>
+      ) : (
+        <EmptyState ico="Compass" title="Nothing in progress yet" msg="Join an initiative or enrol in a course to see it here." />
+      )}
     </>
   )
 }
@@ -87,10 +90,13 @@ export function Recommended({ st, sv, go }) {
       <p className="small muted mt6">
         {(st.interests || []).length || st.region ? 'Matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ') : 'Popular right now'}.
       </p>
-      <div className="grid g3 mt20">
-        {recs.length ? recs.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)
-          : <EmptyState ico="Sparkles" title="Nothing to recommend yet" msg="Check back soon for personalized recommendations." />}
-      </div>
+      {recs.length ? (
+        <div className="grid g3 mt20">
+          {recs.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}
+        </div>
+      ) : (
+        <EmptyState ico="Sparkles" title="Nothing to recommend yet" msg="Check back soon for personalized recommendations." />
+      )}
     </>
   )
 }
@@ -100,11 +106,14 @@ export function Saved({ st, sv, go }) {
     <>
       <h1>Saved initiatives</h1>
       <p className="small muted mt6">{list.length} saved</p>
-      <div className="grid g3 mt20">
-        {list.length ? list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)
-          : <EmptyState ico="Bookmark" title="Nothing saved yet" msg="Tap the bookmark on any initiative to keep it here."
-              cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Browse initiatives</a>} />}
-      </div>
+      {list.length ? (
+        <div className="grid g3 mt20">
+          {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)}
+        </div>
+      ) : (
+        <EmptyState ico="Bookmark" title="Nothing saved yet" msg="Tap the bookmark on any initiative to keep it here."
+          cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Browse initiatives</a>} />
+      )}
     </>
   )
 }
@@ -114,11 +123,14 @@ export function Recent({ st, sv, go }) {
     <>
       <h1>Recently viewed</h1>
       <p className="small muted mt6">{list.length} viewed recently</p>
-      <div className="grid g3 mt20">
-        {list.length ? list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)
-          : <EmptyState ico="Clock" title="Nothing viewed yet" msg="Initiatives you open will show up here."
-              cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Browse initiatives</a>} />}
-      </div>
+      {list.length ? (
+        <div className="grid g3 mt20">
+          {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)}
+        </div>
+      ) : (
+        <EmptyState ico="Clock" title="Nothing viewed yet" msg="Initiatives you open will show up here."
+          cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Browse initiatives</a>} />
+      )}
     </>
   )
 }
