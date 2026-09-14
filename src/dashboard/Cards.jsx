@@ -21,9 +21,9 @@ export function StatusPill({ status }) {
 }
 
 const PURPOSE_META = {
-  competing: { cover: 'c-competing', ico: 'Trophy', fg: '#3557d6' },
-  learning: { cover: 'c-learning', ico: 'BookOpen', fg: '#0f9c7a' },
-  learncompete: { cover: 'c-learncompete', ico: 'Wrench', fg: '#d9820a' },
+  competing: { label: 'Compete', fg: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  learning: { label: 'Learn', fg: '#0f9c7a', bg: '#ecfdf5', border: '#a7f3d0' },
+  learncompete: { label: 'Build', fg: '#d9820a', bg: '#fffbeb', border: '#fde68a' },
 }
 const purposeMeta = p => PURPOSE_META[p] || PURPOSE_META.competing
 
@@ -39,48 +39,88 @@ function daysLeftLabel(deadline) {
    left off" — continueCard (below) is a thin preset, not a separate
    component. Clicking anywhere opens the destination; the bookmark is the
    one other control and never navigates (stopPropagation). */
-export function InitiativeCard({ o, st, sv, dest, progress, cta, stepLabel }) {
+export function InitiativeCard({ o, st, sv, dest, progress, stepLabel }) {
   const navigate = useNavigate()
   const meta = purposeMeta(o.purpose)
   const saved = isSaved(o.id, st)
   const href = `/dashboard/${dest === 'workspace' ? 'workspace' : 'initiative'}?id=${o.id}`
   const showProgress = !!progress
   const pct = showProgress ? progressPctFor(o, st) : 0
-  const ctaLabel = cta || (dest === 'workspace' ? 'Continue' : (o.purpose === 'learning' ? 'Enrol' : 'View'))
+  const actionTitle = dest === 'workspace' ? 'Continue' : 'View'
 
   return (
-    <div className="init-card" onClick={() => navigate(href)}>
-      <div className={`init-cover ${meta.cover}`}>
-        <span className="icon-chip round" style={{ color: meta.fg }}><Icon name={meta.ico} size={17} /></span>
-      </div>
+    <div
+      className="init-card"
+      onClick={() => navigate(href)}
+      style={{ borderTop: `3px solid ${meta.fg}` }}
+    >
       <div className="init-body">
-        <div className="row between gap8">
-          <StatusPill status={showProgress && o.status !== 'past' ? 'inprogress' : o.status} />
-          <span className="xs faint">{o.mode || ''}</span>
+        {/* Main upper content — expands to fill space so bottom section aligns */}
+        <div className="init-main-content">
+          <div className="row between gap8">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <StatusPill status={showProgress && o.status !== 'past' ? 'inprogress' : o.status} />
+              <span
+                className="pill font-semibold"
+                style={{
+                  color: meta.fg,
+                  backgroundColor: meta.bg,
+                  borderColor: meta.border,
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                }}
+              >
+                {meta.label}
+              </span>
+            </div>
+            <span className="xs faint">{o.mode || ''}</span>
+          </div>
+
+          <div className="row gap8" style={{ alignItems: 'flex-start' }}>
+            <div className="init-name grow">{o.name}</div>
+            <button
+              className={`btn-icon btn-ghost save-btn${saved ? ' is-saved' : ''}`}
+              title={saved ? 'Saved' : 'Save for later'}
+              onClick={(e) => { e.stopPropagation(); sv(toggleSavedPatch(o.id, st)) }}
+            >
+              <Icon name="Bookmark" size={15} />
+            </button>
+          </div>
+
+          <div className="init-org">{o.org} · {o.region || ''}</div>
+
+          <div className="init-meta">
+            {(o.areas || []).slice(0, 3).map(a => <span key={a} className="pill pill-outline">{a}</span>)}
+          </div>
         </div>
-        <div className="row gap8" style={{ alignItems: 'flex-start' }}>
-          <div className="init-name grow">{o.name}</div>
-          <button
-            className={`btn-icon btn-ghost save-btn${saved ? ' is-saved' : ''}`}
-            title={saved ? 'Saved' : 'Save for later'}
-            onClick={(e) => { e.stopPropagation(); sv(toggleSavedPatch(o.id, st)) }}
-          >
-            <Icon name="Bookmark" size={15} />
-          </button>
-        </div>
-        <div className="init-org">{o.org} · {o.region || ''}</div>
-        <div className="init-meta">
-          {(o.areas || []).slice(0, 3).map(a => <span key={a} className="pill pill-outline">{a}</span>)}
-        </div>
-        {showProgress ? (
-          <>
-            <div className="pbar mt10"><i style={{ width: pct + '%' }} /></div>
-            <div className="row between gap4 mt6"><span className="xs faint">{stepLabel || ''}</span><span className="xs faint">{pct}%</span></div>
-          </>
-        ) : null}
-        <div className="init-foot">
-          <span className="xs muted">{o.prize ? o.prize + ' · ' : ''}{daysLeftLabel(o.deadline)}</span>
-          <Link className="btn btn-primary btn-sm" to={href} onClick={(e) => e.stopPropagation()}>{ctaLabel} <Icon name="ArrowRight" size={13} /></Link>
+
+        {/* Lower section pinned to the bottom: progress bar sits at the exact same level across cards */}
+        <div className="init-bottom-section">
+          {showProgress ? (
+            <div className="init-progress-block" style={{ marginBottom: '10px' }}>
+              <div className="pbar">
+                <i style={{ width: pct + '%', background: meta.fg }} />
+              </div>
+              <div className="row between gap4 mt4">
+                <span className="xs faint truncate">{stepLabel || ''}</span>
+                <span className="xs faint font-semibold shrink-0">{pct}%</span>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="init-foot">
+            <span className="xs muted">{o.prize ? o.prize + ' · ' : ''}{daysLeftLabel(o.deadline)}</span>
+            <Link
+              className="init-arrow-btn"
+              to={href}
+              onClick={(e) => e.stopPropagation()}
+              title={actionTitle}
+              aria-label={actionTitle}
+              style={{ background: meta.fg }}
+            >
+              <Icon name="ArrowRight" size={13} />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

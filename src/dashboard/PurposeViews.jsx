@@ -11,8 +11,6 @@ import { VIEWS, REGIONS, ofPurpose, purposeOpenList, purposeAreasList, purposeMo
    local `useState` here — the one thing a DOM-template port always changes.
    ============================================================================ */
 
-const CHIP_TONE = { competing: 'blue', learning: 'green', learncompete: 'amber' }
-const PURPOSE_ICO = { competing: 'Trophy', learning: 'BookOpen', learncompete: 'Wrench' }
 
 function FilterBar({ view, filters, setFilters }) {
   const areas = purposeAreasList(view)
@@ -65,7 +63,6 @@ function PurposePage({ view, st, sv }) {
           <h1>{meta.label}</h1>
           <p className="small muted mt6">{meta.blurb}</p>
         </div>
-        <span className={`icon-chip lg ${CHIP_TONE[view]}`}><Icon name={PURPOSE_ICO[view]} size={24} /></span>
       </div>
 
       {mine.length ? (
