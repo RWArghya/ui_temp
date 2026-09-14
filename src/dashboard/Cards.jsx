@@ -168,7 +168,7 @@ export function ProfileProgressCard({ st }) {
           <span className="xs muted">{PROFILE_STEPS.length - missing.length} of {PROFILE_STEPS.length} steps</span>
         </div>
       </div>
-      <Link className="btn btn-primary btn-block btn-sm" to="/profile">Complete profile <Icon name="ArrowRight" size={13} /></Link>
+      <Link className="btn btn-primary btn-block btn-sm" style={{ boxSizing: 'border-box' }} to="/profile">Complete profile <Icon name="ArrowRight" size={13} /></Link>
       <div className="mt16"><ProfileChecklist st={st} /></div>
     </div>
   )
