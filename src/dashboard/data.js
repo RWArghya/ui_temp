@@ -563,7 +563,7 @@ export const CREDIT_WEIGHTS = { certificate: 40, submission: 15, achievementShar
 export function creditsFor(st, certCount) {
   st = st || {}; certCount = certCount || 0
   return certCount * CREDIT_WEIGHTS.certificate + (st.submissions || []).length * CREDIT_WEIGHTS.submission
-    + achievements(st).filter(a => a.shared).length * CREDIT_WEIGHTS.achievementShared
+    + achievements(st).length * CREDIT_WEIGHTS.achievementShared
 }
 export const isProfilePublic = st => !!(st || {}).profilePublic
 

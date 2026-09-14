@@ -64,7 +64,7 @@ export function generateLatexResume(config, profile) {
 
   // Fallback for other connected profiles not covered above
   connectedProfiles.forEach(p => {
-    if (p !== githubItem && p !== linkedinItem && p !== portfolioItem && p.shared !== false) {
+    if (p !== githubItem && p !== linkedinItem && p !== portfolioItem) {
       const rawUrl = p.url.startsWith('http') ? p.url : `https://${p.url}`
       contactLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{${escapeLatex(p.platform)}}}`)
     }

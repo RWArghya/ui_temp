@@ -278,13 +278,6 @@ export default function Profile() {
     setProfile(p => ({ ...p, [field]: (p[field] || []).filter(x => x.id !== id) }))
   }
 
-  function toggleShare(field, id) {
-    setProfile(p => ({
-      ...p,
-      [field]: (p[field] || []).map(x => x.id === id ? { ...x, shared: !x.shared } : x),
-    }))
-  }
-
   function uid(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
   }
@@ -829,15 +822,6 @@ export default function Profile() {
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {p.title}
                       </h4>
-                      {p.shared ? (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                          ✓ Shared on public profile
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                          Private
-                        </span>
-                      )}
                     </div>
 
                     {p.description && (
@@ -959,15 +943,6 @@ export default function Profile() {
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {p.title}
                       </h4>
-                      {p.shared ? (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                          ✓ Shared
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                          Private
-                        </span>
-                      )}
                     </div>
 
                     {p.description && (
@@ -1040,7 +1015,7 @@ export default function Profile() {
         }
       >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Highlight hackathon wins, honors, or milestones. Toggle "Share on public profile" to show on your link.
+          Highlight hackathon wins, honors, or milestones.
         </p>
         {(profile.achievements ?? []).length > 0 ? (
           <div className="mt-4 divide-y divide-paper-line">
@@ -1053,15 +1028,6 @@ export default function Profile() {
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {a.title}
                       </h4>
-                      {a.shared ? (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                          ✓ Shared
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                          Private
-                        </span>
-                      )}
                     </div>
 
                     {a.description && (
@@ -1120,7 +1086,7 @@ export default function Profile() {
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Unverified — credentials earned elsewhere. Turn on "Share on public profile" to include on your public link.
+        Credentials and certificates earned from external organizations and learning platforms.
       </p>
       {(() => {
         const sortedSelfCerts = [...(profile.selfCerts ?? [])].sort((a, b) => {
@@ -1142,15 +1108,6 @@ export default function Profile() {
                     <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                       {c.title}
                     </h4>
-                    {c.shared ? (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                        ✓ Shared on public profile
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                        Private
-                      </span>
-                    )}
                   </div>
 
                   {(c.org || c.issueDate || c.date) && (
@@ -1251,8 +1208,6 @@ export default function Profile() {
               icon=""
               title={o.name}
               subtitle={`${o.org} · Verifiable ID ${o.verifiableId}`}
-              verified
-              verifiedId={o.verifiableId}
               onView={() => navigate(`/profile/certificate/${o.id}`, {
                 state: {
                   cert: o,
@@ -1295,7 +1250,7 @@ export default function Profile() {
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Connect your developer accounts, coding profiles, and online presence. Toggle "Share on public profile" to control public visibility.
+        Connect your developer accounts, coding profiles, and online presence.
       </p>
 
       {(profile.connectedProfiles ?? []).length > 0 ? (
@@ -1311,15 +1266,6 @@ export default function Profile() {
                     <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                       {item.platform}
                     </h4>
-                    {item.shared ? (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                        ✓ Shared
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                        Private
-                      </span>
-                    )}
                   </div>
                   <a
                     href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}

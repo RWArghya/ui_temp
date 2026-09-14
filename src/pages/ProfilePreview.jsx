@@ -81,11 +81,10 @@ export default function ProfilePreview() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Filter public items
-  const publicProjects = (profile.projects || []).filter(p => p.shared)
-  const publicAchievements = (profile.achievements || []).filter(a => a.shared)
-  const publicSelfCerts = (profile.selfCerts || [])
-    .filter(c => c.shared)
+  // Public items - all platform items are shared
+  const publicProjects = profile.projects || []
+  const publicAchievements = profile.achievements || []
+  const publicSelfCerts = [...(profile.selfCerts || [])]
     .sort((a, b) => {
       const parseDate = item => {
         if (!item) return 0
@@ -94,8 +93,8 @@ export default function ProfilePreview() {
       }
       return parseDate(b) - parseDate(a)
     })
-  const publicPubs = (profile.publications || []).filter(p => p.shared)
-  const publicLinks = (profile.connectedProfiles || []).filter(l => l.shared !== false)
+  const publicPubs = profile.publications || []
+  const publicLinks = profile.connectedProfiles || []
   const verifiedCerts = initiatives?.completed || []
 
   // Gamification metrics matching /profile
@@ -388,15 +387,12 @@ export default function ProfilePreview() {
                     <h3 className="text-[13.5px] font-semibold text-ink-900">
                       {c.name || c.title || 'Hack2skill Certificate'}
                     </h3>
-                    <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                      ✓ Verified
-                    </span>
                   </div>
                   <p className="text-[11.5px] text-graphite-dim mt-0.5">
                     {[c.org || c.issuer || 'Hack2skill', c.completedDate ? `Issued ${c.completedDate}` : '', c.verifiableId ? `ID: ${c.verifiableId}` : ''].filter(Boolean).join(' · ')}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => navigate(`/profile/certificate/${c.id}`, {
@@ -406,10 +402,14 @@ export default function ProfilePreview() {
                         returnTo: { path: '/profile/preview', state: { profile, avatar, initiatives } },
                       },
                     })}
-                    className="text-signal hover:underline text-[12px] font-medium inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
                     title="View certificate"
+                    aria-label="View certificate"
                   >
-                    <span>View ↗</span>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
                   </button>
                   <span className="text-xl">🏆</span>
                 </div>

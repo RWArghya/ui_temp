@@ -24,18 +24,15 @@ export default function EditLinkModal({
 
   const [platform, setPlatform] = useState('')
   const [url, setUrl] = useState('')
-  const [shared, setShared] = useState(true)
 
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
         setPlatform(initialData.platform || initialData.title || '')
         setUrl(initialData.url || initialData.link || '')
-        setShared(initialData.shared !== undefined ? Boolean(initialData.shared) : true)
       } else {
         setPlatform('')
         setUrl('')
-        setShared(true)
       }
     }
   }, [isOpen, initialData])
@@ -51,7 +48,6 @@ export default function EditLinkModal({
       ...(initialData || {}),
       platform: platform.trim(),
       url: cleanUrl,
-      shared,
     })
   }
 
@@ -112,23 +108,7 @@ export default function EditLinkModal({
           />
         </div>
 
-        {/* Share on Public Profile Toggle */}
-        <div className="pt-2 border-t border-paper-line">
-          <label className="flex items-center justify-between p-2.5 rounded-[2px] bg-paper border border-paper-line cursor-pointer">
-            <div>
-              <span className="text-[12.5px] font-bold text-ink-900 block">Share on public profile</span>
-              <span className="text-[11px] text-graphite-dim block">
-                Allow visitors with your public profile link to view this connected profile.
-              </span>
-            </div>
-            <input
-              type="checkbox"
-              checked={shared}
-              onChange={e => setShared(e.target.checked)}
-              className="w-4 h-4 rounded border-paper-line text-signal focus:ring-signal"
-            />
-          </label>
-        </div>
+
 
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-3 border-t border-paper-line">
