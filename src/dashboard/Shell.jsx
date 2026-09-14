@@ -143,9 +143,8 @@ function SidePersonaPill({ active, onSwitch, onSponsor, dark }) {
   )
 }
 
-/* ── SideFoot — sidebar footer (exact proto2 branch) ──
-   Role switcher pill + Settings (navigates to settings page) + Sign out */
-function SideFoot({ role, dark, active, onSignOut, onSwitch, onSponsor, show }) {
+/* ── SideFoot — sidebar footer (role switcher only) ── */
+function SideFoot({ role, dark, active, onSwitch, onSponsor }) {
   return (
     <div className={`mt-auto pt-3 ${dark ? '' : 'pb-3'}`}>
       <hr className={`mb-2 border-t ${dark ? 'border-white/10' : 'border-dash-line-soft'}`} />
@@ -159,34 +158,6 @@ function SideFoot({ role, dark, active, onSignOut, onSwitch, onSponsor, show }) 
           <SidePersonaPill active={active} onSwitch={onSwitch} onSponsor={onSponsor} dark={dark} />
         </div>
       ) : null}
-
-      {/* Settings + sign out row */}
-      <div className="flex items-center gap-1">
-        {!dark ? (
-          <div className="relative flex-1">
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-btn px-3 py-[9px] text-sm text-dash-muted hover:bg-white hover:text-dash-ink cursor-pointer"
-              onClick={() => show('settings')}
-            >
-              <Icon name="Settings" size={15} className="shrink-0" />
-              <span className="flex-1 truncate text-left">Settings</span>
-            </button>
-          </div>
-        ) : null}
-        <button
-          type="button"
-          className={`flex items-center gap-2 rounded-btn px-3 py-[9px] text-sm cursor-pointer ${
-            dark
-              ? 'text-white/60 hover:bg-white/[0.07] hover:text-white w-full'
-              : 'text-dash-muted hover:bg-white hover:text-dash-ink flex-1'
-          }`}
-          onClick={onSignOut}
-        >
-          <Icon name="LogOut" size={15} className="shrink-0" />
-          <span className="truncate text-left">Sign out</span>
-        </button>
-      </div>
     </div>
   )
 }
@@ -235,8 +206,6 @@ export function Sidebar({ mode = 'innovator', active = 'home', st, show, onSignO
         role={dark ? roleLabel : null}
         active={mode === 'mentor' ? 'mentor' : 'innovator'}
         dark={dark}
-        show={show}
-        onSignOut={onSignOut}
         onSwitch={(k) => {
           if (switchPersona) switchPersona(k)
           else show(k === 'mentor' ? 'mentor' : 'home')
@@ -294,15 +263,79 @@ export function NotificationBell({ st, sv, who }) {
   )
 }
 
-export function Topbar({ st, sv, who, onProfile }) {
+export function Topbar({ st, sv, who, onProfile, onSettings, onSignOut }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+  usePopoverClose(menuOpen, setMenuOpen, menuRef)
+
   return (
     <header className="app-topbar">
       <div className="grow" />
       <div className="topbar-actions">
         <NotificationBell st={st} sv={sv} who={who} />
-        <a className="avatar-link" onClick={onProfile} title="Profile">
-          <Avatar st={st} />
-        </a>
+
+        {/* Profile Avatar Trigger & Dropdown Menu */}
+        <div className="relative" ref={menuRef}>
+          <button
+            id="btn-topbar-profile"
+            type="button"
+            className="avatar-link cursor-pointer border-0 bg-transparent p-0 flex items-center justify-center focus:outline-none"
+            onClick={() => setMenuOpen(prev => !prev)}
+            aria-expanded={menuOpen}
+            aria-haspopup="true"
+            title="Profile menu"
+          >
+            <Avatar st={st} />
+          </button>
+
+          {menuOpen && (
+            <div
+              id="topbar-profile-dropdown"
+              className="absolute right-0 top-[calc(100%+8px)] w-48 rounded-[2px] border border-paper-line bg-white py-1 shadow-lg z-50 animate-in fade-in zoom-in-95 duration-100 font-sans"
+            >
+              <button
+                id="menu-item-my-profile"
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[12.5px] text-ink-900 hover:bg-paper font-medium cursor-pointer transition-colors text-left"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onProfile?.()
+                }}
+              >
+                <Icon name="User" size={15} className="text-graphite-dim shrink-0" />
+                <span>My Profile</span>
+              </button>
+
+              <button
+                id="menu-item-settings"
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[12.5px] text-ink-900 hover:bg-paper font-medium cursor-pointer transition-colors text-left"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onSettings?.()
+                }}
+              >
+                <Icon name="Settings" size={15} className="text-graphite-dim shrink-0" />
+                <span>Settings</span>
+              </button>
+
+              <div className="border-t border-paper-line my-1" />
+
+              <button
+                id="menu-item-logout"
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[12.5px] text-red-600 hover:bg-red-50 font-medium cursor-pointer transition-colors text-left"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onSignOut?.()
+                }}
+              >
+                <Icon name="LogOut" size={15} className="text-red-500 shrink-0" />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )

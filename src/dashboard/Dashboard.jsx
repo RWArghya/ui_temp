@@ -119,7 +119,14 @@ function SubShell({ st, sv, go, children }) {
           switchPersona={(p) => go(p === 'mentor' ? 'mentor' : 'home')}
         />
         <div className="shell-col">
-          <Topbar st={st} sv={sv} who="innovator" onProfile={() => go('profile')} />
+          <Topbar
+            st={st}
+            sv={sv}
+            who="innovator"
+            onProfile={() => go('profile')}
+            onSettings={() => go('settings')}
+            onSignOut={out}
+          />
           <div className="shell-body">{children}</div>
         </div>
       </div>
@@ -159,7 +166,15 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
           onLoadSample={loadSample} onReset={doReset} onSignOut={out} switchPersona={switchPersona}
         />
         <div className="shell-col">
-          <Topbar st={st} sv={sv} who={mode} view={view} onProfile={() => show('profile')} />
+          <Topbar
+            st={st}
+            sv={sv}
+            who={mode}
+            view={view}
+            onProfile={() => show('profile')}
+            onSettings={() => show('settings')}
+            onSignOut={out}
+          />
           <div className="shell-body">
             <div className="shell-main-wrap">
               <div id="main">
