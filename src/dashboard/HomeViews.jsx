@@ -37,11 +37,11 @@ export function Home({ st, sv, go }) {
       <div className="mt24">
         <div className="card-head">
           <h2>Continue where you left off</h2>
-          {active.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('continuing')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
+          {active.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('activity')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
         </div>
         {active.length ? (
           <div className="grid g3">
-            {active.slice(0, 3).map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
+            {active.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
           </div>
         ) : (
           <EmptyState ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
@@ -55,7 +55,7 @@ export function Home({ st, sv, go }) {
           {recs.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
         </div>
         {recs.length ? (
-          <div className="grid g3">{recs.slice(0, 3).map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}</div>
+          <div className="grid g3">{recs.slice(0, 6).map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}</div>
         ) : (
           <EmptyState ico="Sparkles" title="No recommendations available yet" msg="Check back soon for personalized recommendations based on your interests." />
         )}

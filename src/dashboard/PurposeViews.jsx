@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Icon from './Icon'
-import { ContinueCard, InitiativeCard } from './Cards'
-import { VIEWS, REGIONS, ofPurpose, purposeOpenList, purposeAreasList, purposeModesList, nextStepFor } from './data'
+import { InitiativeCard } from './Cards'
+import { VIEWS, REGIONS, purposeOpenList, purposeAreasList, purposeModesList } from './data'
 
 /* ============================================================================
    Ported from prototype_v2/app.html — purposeMain()/purposeFilterBar()/
@@ -10,7 +10,6 @@ import { VIEWS, REGIONS, ofPurpose, purposeOpenList, purposeAreasList, purposeMo
    the prototype. Filter state (`window.__purposeFilters` there) becomes
    local `useState` here — the one thing a DOM-template port always changes.
    ============================================================================ */
-
 
 function FilterBar({ view, filters, setFilters }) {
   const areas = purposeAreasList(view)
@@ -21,7 +20,7 @@ function FilterBar({ view, filters, setFilters }) {
       <div className="filter-search">
         <Icon name="Search" size={15} />
         <input
-          placeholder="Search by name or organiser…"
+          placeholder="Search by name"
           value={filters.q}
           onChange={(e) => set('q', e.target.value)}
         />
@@ -52,7 +51,6 @@ function FilterBar({ view, filters, setFilters }) {
 
 function PurposePage({ view, st, sv }) {
   const meta = VIEWS[view]
-  const mine = ofPurpose(st, view)
   const [filters, setFilters] = useState({ q: '', area: 'all', region: 'all', status: 'all', mode: 'all' })
   const list = purposeOpenList(view, st, filters)
 
@@ -65,17 +63,7 @@ function PurposePage({ view, st, sv }) {
         </div>
       </div>
 
-      {mine.length ? (
-        <div className="mt24">
-          <div className="card-head"><h2>In progress</h2></div>
-          <div className="grid g3">
-            {mine.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mt24">
-        <div className="card-head"><h2>Open for you</h2></div>
+      <div className="mt20">
         <FilterBar view={view} filters={filters} setFilters={setFilters} />
         <div className="grid g3 mt16">
           {list.length

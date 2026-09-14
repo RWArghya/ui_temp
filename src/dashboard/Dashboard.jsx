@@ -18,16 +18,17 @@ import { MentorGate } from './Mentor'
 import Workspace from './Workspace'
 import Evaluate from './Evaluate'
 import Settings from './Settings'
+import MyActivity from './ActivityView'
 
 const VIEW_COMPONENTS = {
   home: Home, continuing: Continuing, recommended: Recommended, saved: Saved, recent: Recent,
   competing: Competing, learning: Learning, learncompete: LearnCompete,
   arena: Arena, profile: ProfilePage, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
-  settings: Settings,
+  settings: Settings, activity: MyActivity,
 }
 /* "View all" destinations and the Home nav item together decide whether the
    sidebar's "Dashboard" row reads active — see app.html's `activeKey`. */
-const HOME_GROUP = new Set(['home', 'continuing', 'recommended'])
+const HOME_GROUP = new Set(['home', 'continuing', 'recommended', 'activity'])
 
 export default function Dashboard({ defaultView }) {
   const { st, sv, reset } = useH2S()
@@ -172,6 +173,7 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
             who={mode}
             view={view}
             onProfile={() => show('profile')}
+            onActivity={() => show('activity')}
             onSettings={() => show('settings')}
             onSignOut={out}
           />

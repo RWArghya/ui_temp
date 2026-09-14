@@ -263,7 +263,7 @@ export function NotificationBell({ st, sv, who }) {
   )
 }
 
-export function Topbar({ st, sv, who, onProfile, onSettings, onSignOut }) {
+export function Topbar({ st, sv, who, onProfile, onActivity, onSettings, onSignOut }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   usePopoverClose(menuOpen, setMenuOpen, menuRef)
@@ -304,6 +304,19 @@ export function Topbar({ st, sv, who, onProfile, onSettings, onSignOut }) {
               >
                 <Icon name="User" size={15} className="text-graphite-dim shrink-0" />
                 <span>My Profile</span>
+              </button>
+
+              <button
+                id="menu-item-my-activity"
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[12.5px] text-ink-900 hover:bg-paper font-medium cursor-pointer transition-colors text-left"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onActivity?.()
+                }}
+              >
+                <Icon name="Activity" size={15} className="text-graphite-dim shrink-0" />
+                <span>My Activity</span>
               </button>
 
               <button
