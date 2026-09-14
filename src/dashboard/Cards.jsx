@@ -105,7 +105,7 @@ export function ProfileChecklist({ st }) {
             <span className="check-list-label">{s.label}</span>
             {ok
               ? <span className="check-list-status" aria-label="Completed"><Icon name="Check" size={12} /></span>
-              : <Link className="btn btn-outline btn-sm" to={`/profile?focus=${s.key}`}>Next <Icon name="ArrowRight" size={12} /></Link>}
+              : <Link className="check-list-action" to={`/profile?focus=${s.key}`} aria-label={`Complete ${s.label}`} title={`Complete ${s.label}`}><Icon name="ArrowRight" size={12} /></Link>}
           </div>
         )
       })}
@@ -121,14 +121,14 @@ export function ProfileProgressCard({ st }) {
   return (
     <div className="card card-pad">
       <div className="row between"><h3>Your progress</h3></div>
-      <div className="row gap16 mt12">
+      <div className="row gap16" style={{ marginTop: '14px', marginBottom: '18px' }}>
         <div className="pring" style={{ '--pct': pct }}><div className="pring-inner">{pct}%</div></div>
         <div className="col">
           <span className="medium small">Profile completion</span>
           <span className="xs muted">{PROFILE_STEPS.length - missing.length} of {PROFILE_STEPS.length} steps</span>
         </div>
       </div>
-      <Link className="btn btn-primary btn-block btn-sm mt12" to="/profile">Complete profile <Icon name="ArrowRight" size={13} /></Link>
+      <Link className="btn btn-primary btn-block btn-sm" to="/profile">Complete profile <Icon name="ArrowRight" size={13} /></Link>
       <div className="mt16"><ProfileChecklist st={st} /></div>
     </div>
   )

@@ -508,7 +508,7 @@ export const PROFILE_STEPS = [
   { key: 'region', label: 'Set your region', w: 10 },
   { key: 'interests', label: 'Pick at least 3 interests', w: 20, test: v => (v || []).length >= 3 },
   { key: 'skills', label: 'Add your skills', w: 15, test: v => (v || []).length >= 1 },
-  { key: 'resume', label: 'Upload your resume', w: 10 },
+  { key: 'avatar', label: 'Add a profile photo', w: 10 },
   { key: 'links', label: 'Link GitHub or LinkedIn', w: 10 },
 ]
 export function profileScore(st) {
