@@ -6,6 +6,7 @@ export default function ResumeCustomizer({
   initiatives,
   config,
   onChangeConfig,
+  onSave,
   onGenerate,
   onBack,
 }) {
@@ -141,26 +142,14 @@ export default function ResumeCustomizer({
     <SectionCard
       title="Resume Structure & Preview"
       action={
-        <div className="flex items-center gap-2">
-          {onBack && (
-            <button
-              type="button"
-              id="btn-back-from-customizer"
-              onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-semibold text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
-            >
-              ← Back to Profile
-            </button>
-          )}
-          <button
-            type="button"
-            id="btn-generate-resume-top"
-            onClick={onGenerate}
-            className="px-4 py-1 text-[12px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors shadow-sm inline-flex items-center gap-1"
-          >
-            Generate Resume →
-          </button>
-        </div>
+        <button
+          type="button"
+          id="btn-save-customizer"
+          onClick={onSave || onGenerate || onBack}
+          className="px-4 py-1.5 text-[12px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors shadow-sm inline-flex items-center gap-1.5"
+        >
+          Save
+        </button>
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
@@ -445,21 +434,6 @@ export default function ResumeCustomizer({
             </div>
           )
         })}
-      </div>
-
-      {/* Footer Generate Action */}
-      <div className="mt-4 pt-3 border-t border-paper-line flex items-center justify-between gap-3">
-        <span className="text-[12px] text-graphite-dim">
-          Finished customizing your resume?
-        </span>
-        <button
-          type="button"
-          id="btn-generate-resume-bottom"
-          onClick={onGenerate}
-          className="px-4 py-1.5 text-[12.5px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors shadow-sm inline-flex items-center gap-1"
-        >
-          Generate Resume →
-        </button>
       </div>
     </SectionCard>
   )

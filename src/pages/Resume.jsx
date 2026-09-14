@@ -20,8 +20,8 @@ export default function Resume() {
   const navigate = useNavigate()
   const location = useLocation()
   const resumeRef = useRef(null)
+  const saveDropdownRef = useRef(null)
 
-  // Use passed state if available, else fetch via hook
   // Use passed state if available, else fetch via hook
   const { profile: fetchedProfile, initiatives } = useProfile()
   const profile = location.state?.profile || fetchedProfile
@@ -40,8 +40,25 @@ export default function Resume() {
     customItems: {},
   })
 
-  // View mode: default to 'preview'
+  // View mode: default to 'preview' (per user requirement)
   const [viewMode, setViewMode] = useState('preview')
+  // Dropdown state for Save button (PDF / LaTeX)
+  const [saveDropdownOpen, setSaveDropdownOpen] = useState(false)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (saveDropdownRef.current && !saveDropdownRef.current.contains(event.target)) {
+        setSaveDropdownOpen(false)
+      }
+    }
+    if (saveDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [saveDropdownOpen])
 
   // Initialize customItems if not provided in location.state
   useEffect(() => {
@@ -100,24 +117,26 @@ export default function Resume() {
     downloadLatexFile(`${sanitizedName}_Resume`, texCode)
   }
 
-  // If in customize mode, show the nested configuration and reorder card screen
+  // If in customize mode, show the configuration and reorder card screen
   if (viewMode === 'customize') {
     return (
       <div className="min-h-screen bg-paper pb-20">
-        <ResumeCustomizer
-          profile={profile}
-          initiatives={inits}
-          config={config}
-          onChangeConfig={setConfig}
-          onGenerate={() => setViewMode('preview')}
-          onBack={() => navigate('/profile')}
-        />
+        <div className="max-w-[800px] mx-auto px-3 sm:px-4 pt-6">
+          <ResumeCustomizer
+            profile={profile}
+            initiatives={inits}
+            config={config}
+            onChangeConfig={setConfig}
+            onSave={() => setViewMode('preview')}
+            onBack={() => setViewMode('preview')}
+          />
+        </div>
       </div>
     )
   }
 
   // -------------------------------------------------------------------------
-  //  COMPILED OVERLEAF LATEX RESUME SHEET VIEW
+  //  FAANG-GRADE RESUME SHEET PREVIEW
   // -------------------------------------------------------------------------
   const { sectionOrder, includedSections, customItems } = config
 
@@ -145,17 +164,26 @@ export default function Resume() {
     <div className="min-h-screen bg-[#525659] text-[#111] antialiased pb-20">
       {/* ── Print & Font Style Tag ── */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         @import url('https://fonts.cdnfonts.com/css/computer-modern');
 
-        .latex-doc {
-          font-family: 'Computer Modern Serif', 'Latin Modern Roman', 'CMU Serif', 'Times New Roman', serif;
-          color: #000000;
-          line-height: 1.32;
+        .resume-sheet {
+          font-family: 'Latin Modern Roman', 'Computer Modern Serif', 'Times New Roman', Cambria, Georgia, serif;
+          color: #111827;
+          line-height: 1.38;
         }
 
-        .latex-smallcaps {
-          font-variant: small-caps;
-          letter-spacing: 0.02em;
+        .resume-heading {
+          font-family: 'Latin Modern Roman', 'Computer Modern Serif', 'Times New Roman', Cambria, Georgia, serif;
+          font-size: 11.5px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #182a4d;
+          border-bottom: 1px solid #d1d5db;
+          padding-bottom: 2px;
+          margin-bottom: 6px;
+          line-height: 1.25;
         }
 
         @media print {
@@ -188,10 +216,10 @@ export default function Resume() {
             <button
               id="btn-edit-structure"
               type="button"
-              onClick={() => navigate('/profile', { state: { customizingResume: true, resumeConfig: config, profile, initiatives: inits } })}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium rounded-[3px] bg-[#424649] hover:bg-[#4f5357] text-gray-100 transition-colors cursor-pointer"
+              onClick={() => setViewMode('customize')}
+              className="inline-flex items-center gap-1 px-3.5 py-1.5 text-[12px] font-semibold rounded-[3px] bg-[#424649] hover:bg-[#4f5357] text-gray-100 transition-colors cursor-pointer"
             >
-              ← Edit / Reorder
+              Edit
             </button>
             <button
               id="btn-back-to-profile"
@@ -202,28 +230,63 @@ export default function Resume() {
               Profile
             </button>
             <span className="text-[11.5px] text-gray-400 hidden sm:inline ml-1">
-              LaTeX Standard 11pt Template
+              FAANG Standard 11pt Template
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          {/* ── Single Save Button with Dropdown ── */}
+          <div className="relative inline-block text-left" ref={saveDropdownRef}>
             <button
-              id="btn-export-latex"
+              id="btn-save-dropdown"
               type="button"
-              onClick={handleExportLatex}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-[3px] bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors shadow-sm cursor-pointer"
-              title="Download compilable .tex file"
+              onClick={() => setSaveDropdownOpen(prev => !prev)}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-semibold rounded-[3px] bg-signal hover:bg-signal-dark text-white transition-colors shadow-sm cursor-pointer"
             >
-              📥 Export LaTeX (.tex)
+              <span>Save</span>
+              <svg
+                className={`w-3.5 h-3.5 transition-transform duration-150 ${saveDropdownOpen ? 'rotate-180' : ''}`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
             </button>
-            <button
-              id="btn-print-resume"
-              type="button"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-semibold rounded-[3px] bg-signal hover:bg-signal-dark text-white transition-colors shadow-sm cursor-pointer"
-            >
-              🖨️ Print / Save as PDF
-            </button>
+
+            {saveDropdownOpen && (
+              <div className="absolute right-0 mt-1.5 w-44 rounded-[4px] bg-white shadow-xl border border-gray-200 py-1 z-50 text-ink-900 font-sans">
+                <button
+                  id="btn-save-pdf"
+                  type="button"
+                  onClick={() => {
+                    setSaveDropdownOpen(false)
+                    handlePrint()
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
+                >
+                  <span className="text-[14px]">📄</span>
+                  <div>
+                    <div className="font-semibold text-[12px] text-ink-900">PDF</div>
+                    <div className="text-[10px] text-graphite-dim">Save / Print as PDF</div>
+                  </div>
+                </button>
+                <div className="border-t border-paper-line my-0.5" />
+                <button
+                  id="btn-save-latex"
+                  type="button"
+                  onClick={() => {
+                    setSaveDropdownOpen(false)
+                    handleExportLatex()
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
+                >
+                  <span className="text-[14px]">📝</span>
+                  <div>
+                    <div className="font-semibold text-[12px] text-ink-900">LaTeX</div>
+                    <div className="text-[10px] text-graphite-dim">Download .tex code</div>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -232,25 +295,25 @@ export default function Resume() {
       <div className="max-w-[800px] mx-auto px-2 sm:px-4 pt-5">
         <div
           ref={resumeRef}
-          className="resume-sheet latex-doc bg-white mx-auto shadow-xl px-8 py-7 sm:px-10 sm:py-9 border border-gray-300 min-h-[1050px]"
+          className="resume-sheet bg-white mx-auto shadow-xl px-8 py-7 sm:px-10 sm:py-9 border border-gray-300 min-h-[1050px]"
         >
-          {/* 1. Header — LaTeX \Huge \scshape candidate name, left-aligned, pure text hyperlinks */}
+          {/* 1. Header — Candidate Name, Left-aligned, Crisp near-black authoritative */}
           <header className="mb-2">
-            <h1 className="latex-smallcaps text-[19px] font-medium text-[#284696] leading-none mb-1" style={{ fontWeight: 500 }}>
+            <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight leading-none mb-1.5" style={{ fontWeight: 600 }}>
               {profile.name || 'Candidate Name'}
             </h1>
 
-            {/* Contact details line — LaTeX \footnotesize, accent/link color, pure text hyperlinks */}
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] sm:text-[10.5px] text-[#222] leading-tight">
+            {/* Contact details line — pure text hyperlinks with clean bullet separators */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] sm:text-[10.5px] text-[#374151] leading-tight">
               {headerLinks.map((link, idx) => (
                 <span key={idx} className="inline-flex items-center">
-                  {idx > 0 && <span className="text-[#999] mr-2">•</span>}
+                  {idx > 0 && <span className="text-[#9ca3af] mr-2">•</span>}
                   {link.href ? (
                     <a
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#007acc] underline hover:text-[#284696] transition-colors"
+                      className="text-[#2563eb] underline hover:text-[#1d4ed8] transition-colors"
                     >
                       {link.label}
                     </a>
@@ -276,35 +339,32 @@ export default function Resume() {
 
                 return (
                   <section key={secKey} className="section-block">
-                    {/* LaTeX \large\bfseries\scshape heading with 0.4pt hairline rule */}
-                    <div className="border-b border-[#c8c8c8] pb-0.5 mb-1.5">
-                      <h2 className="latex-smallcaps text-[12px] font-semibold text-[#284696] leading-snug">
-                        Technical Skills
-                      </h2>
+                    <div className="resume-heading">
+                      Technical Skills
                     </div>
 
-                    <ul className="space-y-0.5 text-[10.5px] leading-[1.38] text-[#111]">
+                    <ul className="space-y-0.5 text-[10.5px] leading-[1.42] text-[#1f2937]">
                       {skills.length > 0 && (
                         <li className="flex items-start">
-                          <span className="text-[7px] leading-[15px] mr-1.5 select-none text-[#333]">●</span>
+                          <span className="text-[7px] leading-[15px] mr-2 select-none text-[#4b5563]">●</span>
                           <div>
-                            <span className="font-bold">Core Technologies & Languages:</span> {skills.join(', ')}
+                            <span className="font-semibold text-[#111827]">Core Technologies & Languages:</span> {skills.join(', ')}
                           </div>
                         </li>
                       )}
                       {domains.length > 0 && (
                         <li className="flex items-start">
-                          <span className="text-[7px] leading-[15px] mr-1.5 select-none text-[#333]">●</span>
+                          <span className="text-[7px] leading-[15px] mr-2 select-none text-[#4b5563]">●</span>
                           <div>
-                            <span className="font-bold">Specialized Domains:</span> {domains.join(', ')}
+                            <span className="font-semibold text-[#111827]">Specialized Domains:</span> {domains.join(', ')}
                           </div>
                         </li>
                       )}
                       {interests.length > 0 && (
                         <li className="flex items-start">
-                          <span className="text-[7px] leading-[15px] mr-1.5 select-none text-[#333]">●</span>
+                          <span className="text-[7px] leading-[15px] mr-2 select-none text-[#4b5563]">●</span>
                           <div>
-                            <span className="font-bold">Areas of Focus:</span> {interests.join(', ')}
+                            <span className="font-semibold text-[#111827]">Areas of Focus:</span> {interests.join(', ')}
                           </div>
                         </li>
                       )}
@@ -320,10 +380,8 @@ export default function Resume() {
 
                 return (
                   <section key={secKey} className="section-block">
-                    <div className="border-b border-[#c8c8c8] pb-0.5 mb-1.5">
-                      <h2 className="latex-smallcaps text-[12px] font-semibold text-[#284696] leading-snug">
-                        Technical Projects
-                      </h2>
+                    <div className="resume-heading">
+                      Technical Projects
                     </div>
 
                     <div className="space-y-2">
@@ -361,17 +419,17 @@ export default function Resume() {
 
                         return (
                           <div key={proj.id} className="project-item">
-                            {/* Project Title + Text Hyperlinks — FAAngPath style: medium weight */}
+                            {/* Project Title + Text Hyperlinks — FAANG style */}
                             <div className="flex items-baseline flex-wrap gap-x-1 text-[10.5px] leading-tight">
-                              <span className="font-semibold text-[#284696]">{proj.title}</span>
+                              <span className="font-semibold text-[#111827]">{proj.title}</span>
                               {links.map((link, lIdx) => (
-                                <span key={lIdx} className="text-[#555]">
+                                <span key={lIdx} className="text-[#6b7280]">
                                   {' | '}
                                   <a
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[#007acc] underline hover:text-[#284696]"
+                                    className="text-[#2563eb] underline hover:text-[#1d4ed8]"
                                   >
                                     {link.label}
                                   </a>
@@ -381,23 +439,23 @@ export default function Resume() {
 
                             {/* Tech stack subtitle — small italic */}
                             {techStackStr && (
-                              <div className="text-[9.5px] italic text-[#555] leading-tight mt-0.5">
+                              <div className="text-[9.5px] italic text-[#4b5563] leading-tight mt-0.5">
                                 {techStackStr}
                               </div>
                             )}
 
                             {/* Bullets */}
-                            <ul className="space-y-0.5 text-[10.5px] leading-[1.38] text-[#111] mt-0.5">
+                            <ul className="space-y-0.5 text-[10.5px] leading-[1.42] text-[#1f2937] mt-0.5">
                               {descBullets.length > 0 ? (
                                 descBullets.map((bullet, bIdx) => (
                                   <li key={bIdx} className="flex items-start">
-                                    <span className="text-[7px] leading-[15px] mr-1.5 select-none text-[#333]">●</span>
+                                    <span className="text-[7px] leading-[15px] mr-2 select-none text-[#4b5563]">●</span>
                                     <div>{bullet}</div>
                                   </li>
                                 ))
                               ) : (
                                 <li className="flex items-start">
-                                  <span className="text-[7px] leading-[15px] mr-1.5 select-none text-[#333]">●</span>
+                                  <span className="text-[7px] leading-[15px] mr-2 select-none text-[#4b5563]">●</span>
                                   <div>Implemented core features, architecture, and verification.</div>
                                 </li>
                               )}
@@ -417,10 +475,8 @@ export default function Resume() {
 
                 return (
                   <section key={secKey} className="section-block">
-                    <div className="border-b border-[#c8c8c8] pb-0.5 mb-1.5">
-                      <h2 className="latex-smallcaps text-[12px] font-semibold text-[#284696] leading-snug">
-                        Education
-                      </h2>
+                    <div className="resume-heading">
+                      Education
                     </div>
 
                     <div className="space-y-2">
@@ -431,19 +487,18 @@ export default function Resume() {
                           : (edu.startYear && edu.endYear ? `${edu.startYear} – ${edu.endYear}` : (edu.endYear || edu.startYear || ''))
                         
                         const degreePart = [edu.degree, edu.specialization].filter(Boolean).join(' in ') || edu.title || 'Degree'
-                        // Right side of line 2: location only (city/country), not university name
                         const locPart = edu.location || ''
 
                         return (
                           <div key={edu.id} className="education-item">
-                            {/* Line 1: Institution (Left, bold #284696) & Timeline (Right, bold #284696) */}
-                            <div className="flex justify-between items-baseline text-[10.5px] leading-tight font-semibold text-[#284696]">
-                              <span>{inst}</span>
-                              <span>{timeRange}</span>
+                            {/* Line 1: Institution (Left, bold #111827) & Timeline (Right, #4b5563) */}
+                            <div className="flex justify-between items-baseline text-[10.5px] leading-tight">
+                              <span className="font-semibold text-[#111827]">{inst}</span>
+                              <span className="font-medium text-[#4b5563]">{timeRange}</span>
                             </div>
 
                             {/* Line 2: Degree (Left, italic) & Location only (Right, italic) */}
-                            <div className="flex justify-between items-baseline text-[9.5px] italic text-[#555] leading-tight mt-0.5">
+                            <div className="flex justify-between items-baseline text-[9.5px] italic text-[#4b5563] leading-tight mt-0.5">
                               <span>{degreePart}</span>
                               {locPart && <span>{locPart}</span>}
                             </div>
@@ -462,10 +517,8 @@ export default function Resume() {
 
                 return (
                   <section key={secKey} className="section-block">
-                    <div className="border-b border-[#c8c8c8] pb-0.5 mb-1.5">
-                      <h2 className="latex-smallcaps text-[12px] font-semibold text-[#284696] leading-snug">
-                        Certifications
-                      </h2>
+                    <div className="resume-heading">
+                      Certifications
                     </div>
 
                     <div className="space-y-1.5">
@@ -477,30 +530,30 @@ export default function Resume() {
 
                         return (
                           <div key={c.id} className="cert-item">
-                            <div className="flex justify-between items-baseline text-[10.5px] leading-tight font-semibold text-[#284696]">
+                            <div className="flex justify-between items-baseline text-[10.5px] leading-tight">
                               <div className="flex items-baseline gap-1 flex-wrap">
-                                <span>{title}</span>
+                                <span className="font-semibold text-[#111827]">{title}</span>
                                 {certLink && (
-                                  <span className="font-normal text-[#555]">
+                                  <span className="font-normal text-[#6b7280]">
                                     {' | '}
                                     <a
                                       href={certLink.startsWith('http') ? certLink : `https://${certLink}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-[#007acc] underline hover:text-[#284696]"
+                                      className="text-[#2563eb] underline hover:text-[#1d4ed8]"
                                     >
                                       View Certificate
                                     </a>
                                   </span>
                                 )}
                               </div>
-                              <span className="font-medium text-[#555] flex-none ml-2">{date}</span>
+                              <span className="font-medium text-[#4b5563] flex-none ml-2">{date}</span>
                             </div>
-                            <div className="text-[9.5px] italic text-[#555] leading-tight mt-0.5">
+                            <div className="text-[9.5px] italic text-[#4b5563] leading-tight mt-0.5">
                               <span>{org}</span>
                               {c.verifiableId && (
                                 <>
-                                  {' '}· ID: <span className="not-italic font-mono text-[#444]">{c.verifiableId}</span>
+                                  {' '}· ID: <span className="not-italic font-mono text-[#374151]">{c.verifiableId}</span>
                                 </>
                               )}
                             </div>
@@ -519,18 +572,16 @@ export default function Resume() {
 
                 return (
                   <section key={secKey} className="section-block">
-                    <div className="border-b border-[#c8c8c8] pb-0.5 mb-1.5">
-                      <h2 className="latex-smallcaps text-[12px] font-semibold text-[#284696] leading-snug">
-                        Honors & Achievements
-                      </h2>
+                    <div className="resume-heading">
+                      Honors & Achievements
                     </div>
 
-                    <ul className="space-y-0.5 text-[10.5px] leading-[1.38] text-[#111]">
+                    <ul className="space-y-0.5 text-[10.5px] leading-[1.42] text-[#1f2937]">
                       {achievements.map((ach) => (
                         <li key={ach.id} className="flex items-start">
-                          <span className="text-[7px] leading-[15px] mr-1.5 select-none text-[#333]">●</span>
+                          <span className="text-[7px] leading-[15px] mr-2 select-none text-[#4b5563]">●</span>
                           <div>
-                            <span className="font-bold">{ach.title}</span>
+                            <span className="font-semibold text-[#111827]">{ach.title}</span>
                             {ach.description ? `: ${ach.description}` : ''}
                           </div>
                         </li>

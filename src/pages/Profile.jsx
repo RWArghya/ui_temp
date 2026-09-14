@@ -39,7 +39,6 @@ import EditItemModal from '../components/profile/EditItemModal.jsx'
 import EditCertModal from '../components/profile/EditCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
-import ResumeCustomizer from '../components/profile/ResumeCustomizer.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
@@ -175,8 +174,7 @@ export default function Profile() {
   const [editLinkModal, setEditLinkModal] = useState(null)
   // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
   const [viewingPhoto, setViewingPhoto] = useState(null)
-  // customizingResume: boolean — nested resume builder preview mode taking space of top card
-  const [customizingResume, setCustomizingResume] = useState(location.state?.customizingResume ?? false)
+  // resumeConfig: saved resume customization state
   const [resumeConfig, setResumeConfig] = useState(location.state?.resumeConfig ?? null)
 
   // ---- inline edit / add / delete state ----
@@ -357,7 +355,7 @@ export default function Profile() {
       })),
     ]
 
-    setResumeConfig(prev => prev || {
+    const initialConfig = resumeConfig || {
       sectionOrder: ['skills', 'projects', 'education', 'certifications', 'achievements'],
       includedSections: {
         skills: true,
@@ -374,8 +372,16 @@ export default function Profile() {
         achievements: (profile.achievements || []).map(a => ({ ...a, _included: true })),
         links: profile.connectedProfiles || [],
       },
+    }
+
+    navigate('/profile/resume', {
+      state: {
+        profile,
+        initiatives: inits,
+        avatar,
+        config: initialConfig,
+      },
     })
-    setCustomizingResume(true)
   }
 
   // ================================================================
@@ -1428,26 +1434,6 @@ export default function Profile() {
     <div className="w-full">
       <div className="w-full pb-12">
 
-        {customizingResume ? (
-          <ResumeCustomizer
-            profile={profile}
-            initiatives={inits}
-            config={resumeConfig}
-            onChangeConfig={setResumeConfig}
-            onBack={() => setCustomizingResume(false)}
-            onGenerate={() => {
-              navigate('/profile/resume', {
-                state: {
-                  profile,
-                  initiatives: inits,
-                  avatar,
-                  config: resumeConfig,
-                },
-              })
-            }}
-          />
-        ) : (
-          <>
             {/* ── Profile header card ── */}
             <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)] mb-6">
           <CoverBand
@@ -1579,8 +1565,6 @@ export default function Profile() {
         >
           {TAB_BODY[tab] ?? null}
         </div>
-      </>
-    )}
   </div>
 
       {/* Delete confirmation dialog */}
