@@ -173,8 +173,6 @@ export default function Profile() {
   const [editCertModal, setEditCertModal] = useState(null)
   // editLinkModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editLinkModal, setEditLinkModal] = useState(null)
-  // showAllCerts: boolean — toggle all certificates view inside nested profile block
-  const [showAllCerts, setShowAllCerts] = useState(false)
   // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
   const [viewingPhoto, setViewingPhoto] = useState(null)
   // customizingResume: boolean — nested resume builder preview mode taking space of top card
@@ -1090,13 +1088,8 @@ export default function Profile() {
   )
 
   // ---- CERTIFICATES ----
-  const earnedCerts  = inits?.completed ?? []
-  const pendingCerts = inits?.pending   ?? []
-  const totalEarned  = earnedCerts.length
-  const totalPending = pendingCerts.length
-  // Cap displayed certs to 2 in the tab — user can see all via "Show all"
-  const CERT_PREVIEW_LIMIT = 2
-  const displayedCerts = earnedCerts.slice(0, CERT_PREVIEW_LIMIT)
+  const earnedCerts = inits?.completed ?? []
+  const totalEarned = earnedCerts.length
 
   // Reusable Self-added certificates SectionCard for both preview and expanded views
   const SelfAddedCertsSection = (
@@ -1229,27 +1222,9 @@ export default function Profile() {
     </SectionCard>
   )
 
-  const CertificatesTab = showAllCerts ? (
+  const CertificatesTab = (
     <div className="space-y-4">
-      {/* Back button header inside nested block */}
-      <div className="flex items-center justify-between pb-1">
-        <button
-          type="button"
-          id="btn-back-to-certs-summary"
-          onClick={() => setShowAllCerts(false)}
-          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-signal hover:underline cursor-pointer"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span>Back to certificates summary</span>
-        </button>
-        <span className="text-[12px] font-semibold text-graphite-dim">
-          All Certificates ({totalEarned + totalPending})
-        </span>
-      </div>
-
-      {/* Full H2S Verified Certificates list */}
+      {/* H2S Verified Certificates */}
       <SectionCard
         title={
           <span className="flex items-center gap-2 flex-wrap">
@@ -1259,7 +1234,7 @@ export default function Profile() {
         }
       >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Issued automatically the moment an initiative closes — read-only, verifiable certificates.
+          Issued automatically the moment an initiative closes — read-only, never editable.
         </p>
         {earnedCerts.length > 0 ? (
           earnedCerts.map(o => (
@@ -1283,97 +1258,6 @@ export default function Profile() {
           <p className="text-[13px] text-graphite-dim py-4">
             Nothing yet — certificates appear automatically when an initiative closes.
           </p>
-        )}
-
-        {/* Pending certs — shown under the same section, dimmed */}
-        {pendingCerts.length > 0 && (
-          <div className="pt-4 mt-2 border-t border-paper-line">
-            <p className="text-[11px] font-mono font-semibold tracking-widest uppercase text-graphite-dim mb-1">
-              Pending ({pendingCerts.length})
-            </p>
-            <p className="text-[12px] text-graphite-dim mb-2">
-              These initiatives closed or are in review — your certificate will appear here once issued.
-            </p>
-            {pendingCerts.map(c => (
-              <div key={c.id} className="flex items-center gap-3 py-3 border-b border-paper-line last:border-0 opacity-60">
-                <span className="text-[20px]">⏳</span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13.5px] font-semibold text-ink-900">{c.name}</span>
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#fff8e7] text-[#b08000] rounded-[2px] uppercase">
-                      ⏳ Pending
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-graphite-dim mt-0.5">{c.org}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* Self-added certificates */}
-      {SelfAddedCertsSection}
-    </div>
-  ) : (
-    <div className="space-y-4">
-      {/* H2S Verified (preview of 2) */}
-      <SectionCard
-        title={
-          <span className="flex items-center gap-2 flex-wrap">
-            H2S Verified Certificates
-            <span className="font-normal text-[13px] text-ink-900">({totalEarned})</span>
-            {totalPending > 0 && (
-              <span className="font-normal text-[12px] text-graphite-dim/70">{totalPending} pending</span>
-            )}
-          </span>
-        }
-      >
-        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Issued automatically the moment an initiative closes — read-only, never editable.
-        </p>
-        {displayedCerts.length > 0 ? (
-          displayedCerts.map(o => (
-            <AchRow
-              key={o.id}
-              icon=""
-              title={o.name}
-              subtitle={`${o.org} · Verifiable ID ${o.verifiableId}`}
-              verified
-              verifiedId={o.verifiableId}
-              onView={() => navigate(`/profile/certificate/${o.id}`, {
-                state: {
-                  cert: o,
-                  userName: profile.name,
-                  returnTo: { path: '/profile', state: { tab: 'certificates' } },
-                },
-              })}
-            />
-          ))
-        ) : (
-          <p className="text-[13px] text-graphite-dim py-4">
-            Nothing yet — certificates appear automatically when an initiative closes.
-          </p>
-        )}
-
-        {/* LinkedIn-style full-width "Show all certificates" button opening in same nested block */}
-        {(totalEarned > 0 || totalPending > 0) && (
-          <button
-            id="btn-show-all-certs"
-            type="button"
-            onClick={() => setShowAllCerts(true)}
-            className={[
-              'w-full mt-4 py-3 text-[13.5px] font-semibold text-graphite-dim',
-              'border-t border-paper-line hover:bg-paper transition-colors cursor-pointer',
-              'flex items-center justify-center gap-1.5 rounded-b-card -mx-[1px] -mb-[1px]',
-            ].join(' ')}
-          >
-            Show all certificates
-            {totalEarned + totalPending > CERT_PREVIEW_LIMIT && (
-              <span className="text-[12px] text-graphite-dim/60">({totalEarned + totalPending})</span>
-            )}
-            <span className="text-[14px]">→</span>
-          </button>
         )}
       </SectionCard>
 
@@ -1685,7 +1569,7 @@ export default function Profile() {
         </div>
 
         {/* ── Tab bar ── */}
-        <TabBar tabs={TABS} active={tab} onSelect={(newTab) => { setTab(newTab); setShowAllCerts(false); }} />
+        <TabBar tabs={TABS} active={tab} onSelect={(newTab) => setTab(newTab)} />
 
         {/* ── Tab panel ── */}
         <div
