@@ -118,22 +118,7 @@ export default function ProfilePreview() {
         </SectionCard>
       )}
 
-      {/* Roles */}
-      {(profile.roles ?? []).length > 0 && (
-        <SectionCard title="Roles">
-          <div className="mt-3 space-y-0">
-            {profile.roles.map(r => (
-              <div key={r.key} className="flex items-center justify-between gap-4 py-2.5 border-b border-paper-line last:border-0">
-                <div className="flex items-center gap-2.5">
-                  <Pill variant={r.primary ? 'hat' : 'default'}>{r.label}</Pill>
-                  {r.primary && <span className="text-[11px] text-graphite-dim">Primary role</span>}
-                </div>
-                <span className="text-[11.5px] text-graphite-dim font-medium">Active Member</span>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      )}
+
 
       {/* Skills & Domains */}
       {((profile.skills && profile.skills.length > 0) || (profile.domains && profile.domains.length > 0)) && (

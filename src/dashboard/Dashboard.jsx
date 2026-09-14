@@ -62,7 +62,7 @@ function DashMain({ sp, st, sv, go, reset, defaultView }) {
   const isProfileRoute = location.pathname === '/profile'
   const requested = isProfileRoute ? 'profile' : sp.get('view') || defaultView
   const valid = requested && VIEW_COMPONENTS[requested] ? requested : null
-  const [view, setView] = useState(valid || (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home'))
+  const [view, setView] = useState(valid || (st.landingView && VIEW_COMPONENTS[st.landingView] ? st.landingView : (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home')))
   const [mode, setMode] = useState(view === 'mentor' ? 'mentor' : 'innovator')
   const [mentorTab, setMentorTabState] = useState(sp.get('tab') || 'queue')
 
@@ -72,9 +72,9 @@ function DashMain({ sp, st, sv, go, reset, defaultView }) {
     } else if (valid) {
       setView(valid)
     } else if (location.pathname === '/dashboard' && !sp.get('view')) {
-      setView(st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home')
+      setView(st.landingView && VIEW_COMPONENTS[st.landingView] ? st.landingView : (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home'))
     }
-  }, [location.pathname, valid, sp, st.primary])
+  }, [location.pathname, valid, sp, st.primary, st.landingView])
 
   const show = (v) => {
     if (v === 'profile') {
