@@ -1519,6 +1519,7 @@ export default function Profile() {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <span className="font-mono text-ink-900 break-all">{profileUrl}</span>
                   <button
+                    id="btn-copy-share-link"
                     type="button"
                     onClick={handleCopyLink}
                     className="px-3 py-1 text-[11px] font-semibold bg-signal text-white rounded-[2px] hover:bg-signal-dark transition-colors cursor-pointer whitespace-nowrap"
@@ -1526,18 +1527,6 @@ export default function Profile() {
                     {copyDone ? '✓ Copied!' : 'Copy link'}
                   </button>
                 </div>
-                <p className="text-[11px] text-graphite-dim mt-2 leading-relaxed">
-                  {profile.isPublic
-                    ? 'Public — shows badges, XP, verified certificates, and any item you\'ve marked "shared". Email is never shown.'
-                    : 'Private — a visitor sees only your banner, avatar and name. Nothing else, until you switch to Public.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/profile/preview', { state: { profile, avatar, initiatives: inits } })}
-                  className="mt-2 text-signal hover:underline text-[11.5px] font-medium inline-block cursor-pointer"
-                >
-                  👁 Preview what a visitor sees →
-                </button>
               </div>
             )}
 
