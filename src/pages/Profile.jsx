@@ -1541,7 +1541,7 @@ export default function Profile() {
   // ================================================================
   return (
     <div className="w-full">
-      <div className="max-w-[800px] mx-auto pb-12">
+      <div className="w-full pb-12">
 
         {customizingResume ? (
           <ResumeCustomizer
@@ -1931,7 +1931,7 @@ function SkeletonBox({ className = '' }) {
 function ProfileSkeleton() {
   return (
     <div className="min-h-screen bg-paper">
-      <div className="max-w-[780px] mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full px-4 sm:px-6 py-8">
         <div className="bg-white border border-paper-line rounded-card overflow-hidden mb-6">
           <SkeletonBox className="h-[110px] w-full rounded-none" />
           <div className="px-5 py-5 space-y-3">

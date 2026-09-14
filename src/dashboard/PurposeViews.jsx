@@ -19,27 +19,31 @@ function FilterBar({ view, filters, setFilters }) {
   const modes = purposeModesList(view)
   const set = (k, v) => setFilters(f => ({ ...f, [k]: v }))
   return (
-    <div className="card card-pad">
-      <div className="row gap12 wrap">
-        <div className="topbar-search grow" style={{ maxWidth: 'none' }}>
-          <Icon name="Search" size={16} />
-          <input placeholder="Search by name or organiser…" value={filters.q} onChange={(e) => set('q', e.target.value)} />
-        </div>
-        <select className="select" style={{ width: 'auto' }} value={filters.area} onChange={(e) => set('area', e.target.value)}>
+    <div className="filter-bar">
+      <div className="filter-search">
+        <Icon name="Search" size={15} />
+        <input
+          placeholder="Search by name or organiser…"
+          value={filters.q}
+          onChange={(e) => set('q', e.target.value)}
+        />
+      </div>
+      <div className="filter-selects">
+        <select className="filter-select" value={filters.area} onChange={(e) => set('area', e.target.value)}>
           <option value="all">All areas</option>
           {areas.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
-        <select className="select" style={{ width: 'auto' }} value={filters.region} onChange={(e) => set('region', e.target.value)}>
+        <select className="filter-select" value={filters.region} onChange={(e) => set('region', e.target.value)}>
           <option value="all">All regions</option>
           {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
-        <select className="select" style={{ width: 'auto' }} value={filters.status} onChange={(e) => set('status', e.target.value)}>
+        <select className="filter-select" value={filters.status} onChange={(e) => set('status', e.target.value)}>
           <option value="all">Any status</option>
           <option value="live">Live</option>
           <option value="upcoming">Upcoming</option>
           <option value="past">Completed</option>
         </select>
-        <select className="select" style={{ width: 'auto' }} value={filters.mode} onChange={(e) => set('mode', e.target.value)}>
+        <select className="filter-select" value={filters.mode} onChange={(e) => set('mode', e.target.value)}>
           <option value="all">Any format</option>
           {modes.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
@@ -79,7 +83,7 @@ function PurposePage({ view, st, sv }) {
         <div className="grid g3 mt16">
           {list.length
             ? list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)
-            : <div className="card empty-state" style={{ gridColumn: '1/-1' }}><p className="small muted">Nothing matches right now — check back soon.</p></div>}
+            : <div className="empty-state" style={{ gridColumn: '1/-1' }}><p className="small muted">Nothing matches right now — check back soon.</p></div>}
         </div>
       </div>
     </>

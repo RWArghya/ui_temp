@@ -9,9 +9,9 @@ import { activeList, recommendedList, nextStepFor, savedList, recentViews, byId 
    not a full route navigation with its own header.
    ============================================================================ */
 
-function EmptyCard({ ico, title, msg, cta }) {
+function EmptyState({ ico, title, msg, cta }) {
   return (
-    <div className="card empty-state">
+    <div className="empty-state">
       <span className="icon-chip lg blue"><Icon name={ico} size={24} /></span>
       {title ? <h3 className="mt8">{title}</h3> : null}
       <p className="small muted" style={{ maxWidth: 360 }}>{msg}</p>
@@ -44,7 +44,7 @@ export function Home({ st, sv, go }) {
             {active.slice(0, 3).map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
           </div>
         ) : (
-          <EmptyCard ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
+          <EmptyState ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
             cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Explore initiatives <Icon name="ArrowRight" size={14} /></a>} />
         )}
       </div>
@@ -57,7 +57,7 @@ export function Home({ st, sv, go }) {
         {recs.length ? (
           <div className="grid g3">{recs.slice(0, 3).map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}</div>
         ) : (
-          <EmptyCard ico="Sparkles" title="No recommendations available yet" msg="Check back soon for personalized recommendations based on your interests." />
+          <EmptyState ico="Sparkles" title="No recommendations available yet" msg="Check back soon for personalized recommendations based on your interests." />
         )}
       </div>
     </>
@@ -73,7 +73,7 @@ export function Continuing({ st, sv, go }) {
       <p className="small muted mt6">{active.length} initiative{active.length === 1 ? '' : 's'} you're actively working on.</p>
       <div className="grid g3 mt20">
         {active.length ? active.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)
-          : <div className="card empty-state" style={{ gridColumn: '1/-1' }}><p className="small muted">Nothing in progress yet.</p></div>}
+          : <EmptyState ico="Compass" title="Nothing in progress yet" msg="Join an initiative or enrol in a course to see it here." />}
       </div>
     </>
   )
@@ -89,7 +89,7 @@ export function Recommended({ st, sv, go }) {
       </p>
       <div className="grid g3 mt20">
         {recs.length ? recs.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)
-          : <div className="card empty-state" style={{ gridColumn: '1/-1' }}><p className="small muted">Nothing to recommend yet.</p></div>}
+          : <EmptyState ico="Sparkles" title="Nothing to recommend yet" msg="Check back soon for personalized recommendations." />}
       </div>
     </>
   )
@@ -102,7 +102,7 @@ export function Saved({ st, sv, go }) {
       <p className="small muted mt6">{list.length} saved</p>
       <div className="grid g3 mt20">
         {list.length ? list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)
-          : <EmptyCard ico="Bookmark" title="Nothing saved yet" msg="Tap the bookmark on any initiative to keep it here."
+          : <EmptyState ico="Bookmark" title="Nothing saved yet" msg="Tap the bookmark on any initiative to keep it here."
               cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Browse initiatives</a>} />}
       </div>
     </>
@@ -116,7 +116,7 @@ export function Recent({ st, sv, go }) {
       <p className="small muted mt6">{list.length} viewed recently</p>
       <div className="grid g3 mt20">
         {list.length ? list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)
-          : <EmptyCard ico="Clock" title="Nothing viewed yet" msg="Initiatives you open will show up here."
+          : <EmptyState ico="Clock" title="Nothing viewed yet" msg="Initiatives you open will show up here."
               cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Browse initiatives</a>} />}
       </div>
     </>

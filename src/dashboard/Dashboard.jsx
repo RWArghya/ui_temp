@@ -18,7 +18,6 @@ import { MentorGate } from './Mentor'
 import Workspace from './Workspace'
 import Evaluate from './Evaluate'
 import Settings from './Settings'
-import SupportBot from './SupportBot'
 
 const VIEW_COMPONENTS = {
   home: Home, continuing: Continuing, recommended: Recommended, saved: Saved, recent: Recent,
@@ -124,7 +123,6 @@ function SubShell({ st, sv, go, children }) {
           <div className="shell-body">{children}</div>
         </div>
       </div>
-      <SupportBot st={st} sv={sv} />
     </div>
   )
 }
@@ -161,7 +159,7 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
           onLoadSample={loadSample} onReset={doReset} onSignOut={out} switchPersona={switchPersona}
         />
         <div className="shell-col">
-          <Topbar st={st} sv={sv} who={mode} onProfile={() => show('profile')} />
+          <Topbar st={st} sv={sv} who={mode} view={view} onProfile={() => show('profile')} />
           <div className="shell-body">
             <div className="shell-main-wrap">
               <div id="main">
@@ -179,7 +177,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
           </div>
         </div>
       </div>
-      <SupportBot st={st} sv={sv} mode={mode} />
     </div>
   )
 }
