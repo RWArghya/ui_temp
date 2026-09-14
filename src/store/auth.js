@@ -55,4 +55,17 @@ function clear() {
   localStorage.removeItem(KEY);
 }
 
-export const authStore = { read, save, clear };
+/* Settings → Account & Security's "Change password" reads/writes the same
+   account.pw hash Auth.jsx's login screen checks against, so a changed
+   password actually takes effect on the next login — not a separate,
+   disconnected form. */
+function changePassword(currentPw, newPw) {
+  const st = read()
+  if (!st.account) return { ok: false, error: "No account found." }
+  if (weakHash(currentPw) !== st.account.pw) return { ok: false, error: "Current password is incorrect." }
+  if (!newPw || newPw.length < 8) return { ok: false, error: "New password must be at least 8 characters." }
+  save({ account: { ...st.account, pw: weakHash(newPw) } })
+  return { ok: true }
+}
+
+export const authStore = { read, save, clear, changePassword };

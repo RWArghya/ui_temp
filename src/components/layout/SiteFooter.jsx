@@ -5,6 +5,8 @@ const footerLinks = [
   { to: "/enterprise", label: "For enterprise" },
   { to: "/sponsor", label: "Become a sponsor" },
   { to: "/auth?mode=login", label: "Log in" },
+  { to: "/terms", label: "Terms" },
+  { to: "/privacy", label: "Privacy" },
 ]
 
 export default function SiteFooter() {

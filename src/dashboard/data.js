@@ -39,6 +39,13 @@ export const RUBRIC = ['Problem fit', 'Technical execution', 'Innovation', 'Pres
 export const REGIONS = ['India — North', 'India — South', 'India — West', 'India — East',
   'APAC', 'Middle East & Africa', 'Europe', 'Americas']
 
+/* Canonical interest/expertise areas — the same set Mentor's application
+   form and initiative tagging draw from, so Settings' interest picker can't
+   drift into offering areas nothing else on the platform recognizes. */
+export const AREAS = ['AI / GenAI', 'Agentic AI', 'Web3', 'Blockchain', 'AR / VR', 'Cloud',
+  'Cybersecurity', 'Data Science', 'IoT', 'Robotics', 'FinTech', 'HealthTech',
+  'Sustainability', 'Space', 'Product', 'UI/UX', 'Business / GTM']
+
 export const INITIATIVES = [
   { id: 'icc-global', name: 'ICC Global Cricket Hackathon', org: 'International Cricket Council',
     purpose: 'competing', status: 'live', region: 'India — West', mode: 'Hybrid',
@@ -99,6 +106,47 @@ export const INITIATIVES = [
 ]
 
 export function byId(id) { return INITIATIVES.find(x => x.id === id) }
+
+/* ---- saved / recently viewed (InitiativeCard's bookmark) ---- */
+export const savedList = st => (st || {}).saved || []
+export const isSaved = (id, st) => savedList(st).includes(id)
+export function toggleSavedPatch(id, st) {
+  const cur = savedList(st)
+  const on = cur.includes(id)
+  return { saved: on ? cur.filter(x => x !== id) : [...cur, id] }
+}
+export const recentViews = st => (st || {}).recent || []
+/* Nothing ever called this before — "Recently viewed" read st.recent but no
+   screen wrote to it, so the page was permanently empty no matter what a
+   user opened. Workspace.jsx now calls this once per initiative it renders
+   (covers both /initiative and /workspace, i.e. "View" and "Continue"),
+   most-recent-first, deduped, capped so it can't grow without bound. */
+export function recordRecentPatch(id, st) {
+  const cur = recentViews(st).filter(x => x !== id)
+  return { recent: [id, ...cur].slice(0, 12) }
+}
+
+/* ---- Home: "Continue where you left off" / "Recommended for you" — mirrors
+   prototype_v2's app.html activeList()/recommendedList() exactly, so the home
+   preview row and its "view all" page can never disagree about the list. */
+export function activeList(st) {
+  return (st.registered || []).map(byId).filter(o => o && o.status !== 'past')
+}
+export function recommendedList(st) {
+  const registeredIds = st.registered || []
+  const areas = st.interests || []
+  const region = st.region || ''
+  let list = INITIATIVES.filter(o => o.status !== 'past' && !registeredIds.includes(o.id) && !o.unlisted)
+  if (areas.length || region) {
+    const matched = list.filter(o => (o.areas || []).some(a => areas.includes(a)) || o.region === region)
+    if (matched.length) list = matched
+  }
+  return list.slice().sort((a, b) => {
+    const liveA = a.status === 'live', liveB = b.status === 'live'
+    if (liveA !== liveB) return liveA ? -1 : 1
+    return daysLeft(a.deadline) - daysLeft(b.deadline)
+  })
+}
 
 export function daysLeft(iso) {
   return Math.ceil((new Date(iso) - TODAY) / 86400000)
@@ -239,6 +287,29 @@ export function openNow(purpose, st) {
   return INITIATIVES.filter((o) => o.purpose === purpose && o.status !== 'past' && !reg.includes(o.id))
 }
 
+/* ---- Learn/Compete/Build (purposeMain in app.html) ---- */
+export function ofPurpose(st, purpose) {
+  return (st.registered || []).map(byId).filter(o => o && o.purpose === purpose)
+}
+export function purposeOpenList(view, st, filters) {
+  filters = filters || {}
+  const registeredIds = st.registered || []
+  let list = INITIATIVES.filter(o => o.purpose === view && !registeredIds.includes(o.id) && !o.unlisted)
+  if (filters.q) list = list.filter(o => (o.name + o.org).toLowerCase().includes(filters.q.toLowerCase()))
+  if (filters.area && filters.area !== 'all') list = list.filter(o => (o.areas || []).includes(filters.area))
+  if (filters.region && filters.region !== 'all') list = list.filter(o => o.region === filters.region)
+  if (filters.status && filters.status !== 'all') list = list.filter(o => o.status === filters.status)
+  else list = list.filter(o => o.status !== 'past')
+  if (filters.mode && filters.mode !== 'all') list = list.filter(o => o.mode === filters.mode)
+  return list
+}
+export function purposeAreasList(view) {
+  return Array.from(new Set(INITIATIVES.filter(o => o.purpose === view).flatMap(o => o.areas || []))).sort()
+}
+export function purposeModesList(view) {
+  return Array.from(new Set(INITIATIVES.filter(o => o.purpose === view).map(o => o.mode)))
+}
+
 export function bagFor(st, key, id, def) {
   return ((st || {})[key] || {})[id] !== undefined ? ((st || {})[key] || {})[id] : def
 }
@@ -272,6 +343,14 @@ export function progressFor(o, st) {
   const list = modules(o)
   const total = list.length
   return { done, total, pct: total ? Math.round((done / total) * 100) : 0, next: list[Math.min(done, total - 1)], finished: done >= total }
+}
+
+/* rough visual progress for InitiativeCard — reads the same reachedFor()/
+   journeyFor() the workspace stepper uses, so this % can never disagree with it */
+export function progressPctFor(o, st) {
+  const steps = journeyFor(o)
+  const reached = toScreenStep(o, reachedFor(o, st))
+  return steps.length ? Math.round((Math.min(reached, steps.length - 1) / (steps.length - 1)) * 100) : 0
 }
 
 export function nextStepFor(o, st) {
@@ -425,8 +504,8 @@ export function hats(st) {
 export const PROFILE_STEPS = [
   { key: 'name', label: 'Add your name', w: 15 },
   { key: 'headline', label: 'Add a headline', w: 10 },
-  { key: 'region', label: 'Set your region', w: 10 },
   { key: 'org', label: 'Add your college or company', w: 10 },
+  { key: 'region', label: 'Set your region', w: 10 },
   { key: 'interests', label: 'Pick at least 3 interests', w: 20, test: v => (v || []).length >= 3 },
   { key: 'skills', label: 'Add your skills', w: 15, test: v => (v || []).length >= 1 },
   { key: 'resume', label: 'Upload your resume', w: 10 },
@@ -487,6 +566,21 @@ export function creditsFor(st, certCount) {
     + achievements(st).filter(a => a.shared).length * CREDIT_WEIGHTS.achievementShared
 }
 export const isProfilePublic = st => !!(st || {}).profilePublic
+
+/* ---- Settings: notification/privacy prefs, merged over sane defaults so a
+   fresh account (no st.settings yet) still renders real toggle states
+   instead of undefined. Settings.jsx never reads st.settings directly. */
+export const NOTIFICATION_DEFAULTS = {
+  deadlines: true, applicationStatus: true, sessions: true, evaluations: true, programUpdates: true, channel: 'inapp',
+}
+export function settingsFor(st) {
+  const s = (st || {}).settings || {}
+  return {
+    notifications: { ...NOTIFICATION_DEFAULTS, ...(s.notifications || {}) },
+    discoverable: !!s.discoverable,
+    openToTeams: !!s.openToTeams,
+  }
+}
 
 /* ---- landing views ---- */
 export function landingViews(st) {

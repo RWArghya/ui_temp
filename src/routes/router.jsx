@@ -13,6 +13,9 @@ import ProfilePreview from "../pages/ProfilePreview"
 import Resume from "../pages/Resume"
 import AllCertificates from "../pages/AllCertificates"
 import CertificateView from "../pages/CertificateView"
+import Terms from "../pages/Terms"
+import Privacy from "../pages/Privacy"
+import NotFound from "../pages/NotFound"
 
 const router = createBrowserRouter([
   {
@@ -25,6 +28,8 @@ const router = createBrowserRouter([
       { path: "enterprise", element: <Enterprise /> },
       { path: "customer-register", element: <CustomerRegister /> },
       { path: "sponsor", element: <Sponsor /> },
+      { path: "terms", element: <Terms /> },
+      { path: "privacy", element: <Privacy /> },
     ],
   },
   {
@@ -36,7 +41,11 @@ const router = createBrowserRouter([
     element: <Onboarding />,
   },
   {
-    path: "/dashboard",
+    // wildcard: Dashboard.jsx's own `sub` logic handles /dashboard/workspace,
+    // /dashboard/initiative and /dashboard/evaluate — without the wildcard
+    // the router 404s on every "Continue"/"View" click before Dashboard
+    // ever sees the path.
+    path: "/dashboard/*",
     element: <Dashboard />,
   },
   {
@@ -60,6 +69,13 @@ const router = createBrowserRouter([
   {
     path: "/profile/certificate/:certId",
     element: <CertificateView />,
+  },
+  {
+    // catch-all: without this, any unmatched URL (typo, stale link, old
+    // bookmark) fell through to React Router's raw default error screen
+    // instead of a branded page.
+    path: "*",
+    element: <NotFound />,
   },
 ])
 
