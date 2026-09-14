@@ -29,8 +29,9 @@ export default function Resume() {
 
   // Resume configuration state (uses passed config or default)
   const [config, setConfig] = useState(location.state?.config || {
-    sectionOrder: ['skills', 'projects', 'education', 'certifications', 'achievements'],
+    sectionOrder: ['summary', 'skills', 'projects', 'education', 'certifications', 'achievements'],
     includedSections: {
+      summary: true,
       skills: true,
       projects: true,
       education: true,
@@ -85,6 +86,7 @@ export default function Resume() {
       setConfig(prev => ({
         ...prev,
         customItems: {
+          summary: profile.about || '',
           skills: profile.skills || [],
           projects: (profile.projects || []).map(p => ({ ...p, _included: true })),
           education: (profile.education || []).map(e => ({ ...e, _included: true })),
@@ -140,41 +142,37 @@ export default function Resume() {
   // -------------------------------------------------------------------------
   const { sectionOrder, includedSections, customItems } = config
 
-  // Build ordered header links: phone + email + location first, then profile links in customized order
-  const headerLinks = []
+  // Build ordered contact links: phone, email, followed by profile links (location is rendered separately)
+  const contactLinks = []
   if (profile.phone) {
-    headerLinks.push({ label: profile.phone, href: `tel:${profile.phone.replace(/[^0-9+]/g, '')}` })
+    contactLinks.push({ label: profile.phone, href: `tel:${profile.phone.replace(/[^0-9+]/g, '')}` })
   }
   if (profile.email) {
-    headerLinks.push({ label: profile.email, href: `mailto:${profile.email}` })
+    contactLinks.push({ label: profile.email, href: `mailto:${profile.email}` })
   }
-  if (profile.region) {
-    headerLinks.push({ label: profile.region, href: null })
-  }
-  // Connected profiles in their customized order, filtered to included only
   const connectedProfiles = (customItems.links || profile.connectedProfiles || [])
   connectedProfiles
     .filter(p => p._included !== false)
     .forEach(p => {
       const url = (p.url || '').startsWith('http') ? p.url : `https://${p.url}`
-      headerLinks.push({ label: p.platform, href: url })
+      contactLinks.push({ label: p.platform, href: url })
     })
 
   return (
     <div className="min-h-screen bg-[#525659] text-[#111] antialiased pb-20">
-      {/* ── Print & Font Style Tag ── */}
+      {/* ── Print & Font Style Tag (Times New Roman throughout) ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        @import url('https://fonts.cdnfonts.com/css/computer-modern');
-
         .resume-sheet {
-          font-family: 'Latin Modern Roman', 'Computer Modern Serif', 'Times New Roman', Cambria, Georgia, serif;
+          font-family: 'Times New Roman', Times, Cambria, Georgia, serif !important;
           color: #111827;
           line-height: 1.38;
         }
 
+        .resume-sheet * {
+          font-family: 'Times New Roman', Times, Cambria, Georgia, serif !important;
+        }
+
         .resume-heading {
-          font-family: 'Latin Modern Roman', 'Computer Modern Serif', 'Times New Roman', Cambria, Georgia, serif;
           font-size: 11.5px;
           font-weight: 600;
           letter-spacing: 0.06em;
@@ -253,7 +251,7 @@ export default function Resume() {
             </button>
 
             {saveDropdownOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 rounded-[4px] bg-white shadow-xl border border-gray-200 py-1 z-50 text-ink-900 font-sans">
+              <div className="absolute right-0 mt-1.5 w-44 rounded-[4px] bg-white shadow-xl border border-gray-200 py-1 z-50 text-ink-900 font-sans animate-in fade-in zoom-in-95 duration-100">
                 <button
                   id="btn-save-pdf"
                   type="button"
@@ -297,15 +295,23 @@ export default function Resume() {
           ref={resumeRef}
           className="resume-sheet bg-white mx-auto shadow-xl px-8 py-7 sm:px-10 sm:py-9 border border-gray-300 min-h-[1050px]"
         >
-          {/* 1. Header — Candidate Name, Left-aligned, Crisp near-black authoritative */}
-          <header className="mb-2">
-            <h1 className="text-[22px] font-semibold text-[#111827] tracking-tight leading-none mb-1.5" style={{ fontWeight: 600 }}>
+          {/* 1. Header — Name, Location, Mail/Phone/Links */}
+          <header className="mb-2.5">
+            {/* Line 1: Name in capital letters, normal weight (not bold), normal heading size */}
+            <h1 className="text-[18px] sm:text-[19px] font-normal uppercase tracking-wider text-[#111827] leading-tight mb-0.5" style={{ fontWeight: 400 }}>
               {profile.name || 'Candidate Name'}
             </h1>
 
-            {/* Contact details line — pure text hyperlinks with clean bullet separators */}
+            {/* Line 2: Location in a separate line */}
+            {profile.region && (
+              <div className="text-[11px] text-[#374151] leading-tight mb-1">
+                {profile.region}
+              </div>
+            )}
+
+            {/* Line 3: Mail, phone, links */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] sm:text-[10.5px] text-[#374151] leading-tight">
-              {headerLinks.map((link, idx) => (
+              {contactLinks.map((link, idx) => (
                 <span key={idx} className="inline-flex items-center">
                   {idx > 0 && <span className="text-[#9ca3af] mr-2">•</span>}
                   {link.href ? (
@@ -329,6 +335,23 @@ export default function Resume() {
           <div className="space-y-2.5">
             {sectionOrder.map((secKey) => {
               if (!includedSections[secKey]) return null
+
+              // ── PROFESSIONAL SUMMARY ──
+              if (secKey === 'summary') {
+                const summaryText = customItems.summary !== undefined ? customItems.summary : (profile.about || '')
+                if (!summaryText) return null
+
+                return (
+                  <section key={secKey} className="section-block">
+                    <div className="resume-heading">
+                      Professional Summary
+                    </div>
+                    <p className="text-[10.5px] leading-[1.42] text-[#1f2937] text-justify">
+                      {summaryText}
+                    </p>
+                  </section>
+                )
+              }
 
               // ── TECHNICAL SKILLS ──
               if (secKey === 'skills') {
@@ -526,23 +549,24 @@ export default function Resume() {
                         const org = c.org || c.issuer || 'Issuing Organization'
                         const date = c.date || c.issuedOn || ''
                         const title = c.title || c.name || 'Certificate'
-                        const certLink = c.credentialUrl || c.link || ''
+                        const isH2S = (c.org || '').toLowerCase().includes('hack2skill') || Boolean(c.verifiableId)
+                        const certUrl = c.credentialUrl || c.link || (c.id ? `/profile/certificate/${String(c.id).replace('init-', '')}` : null)
 
                         return (
                           <div key={c.id} className="cert-item">
                             <div className="flex justify-between items-baseline text-[10.5px] leading-tight">
-                              <div className="flex items-baseline gap-1 flex-wrap">
+                              <div className="flex items-baseline gap-1.5 flex-wrap">
                                 <span className="font-semibold text-[#111827]">{title}</span>
-                                {certLink && (
+                                {certUrl && (
                                   <span className="font-normal text-[#6b7280]">
                                     {' | '}
                                     <a
-                                      href={certLink.startsWith('http') ? certLink : `https://${certLink}`}
+                                      href={certUrl.startsWith('http') || certUrl.startsWith('/') ? certUrl : `https://${certUrl}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-[#2563eb] underline hover:text-[#1d4ed8]"
                                     >
-                                      View Certificate
+                                      {isH2S ? 'Hack2skill Certificate' : 'View Certificate'}
                                     </a>
                                   </span>
                                 )}
@@ -551,11 +575,6 @@ export default function Resume() {
                             </div>
                             <div className="text-[9.5px] italic text-[#4b5563] leading-tight mt-0.5">
                               <span>{org}</span>
-                              {c.verifiableId && (
-                                <>
-                                  {' '}· ID: <span className="not-italic font-mono text-[#374151]">{c.verifiableId}</span>
-                                </>
-                              )}
                             </div>
                           </div>
                         )
@@ -565,7 +584,7 @@ export default function Resume() {
                 )
               }
 
-              // ── HONORS & ACHIEVEMENTS ──
+              // ── ACHIEVEMENTS ──
               if (secKey === 'achievements') {
                 const achievements = (customItems.achievements || profile.achievements || []).filter(a => a._included !== false)
                 if (achievements.length === 0) return null
@@ -573,7 +592,7 @@ export default function Resume() {
                 return (
                   <section key={secKey} className="section-block">
                     <div className="resume-heading">
-                      Honors & Achievements
+                      Achievements
                     </div>
 
                     <ul className="space-y-0.5 text-[10.5px] leading-[1.42] text-[#1f2937]">

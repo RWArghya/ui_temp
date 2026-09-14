@@ -21,12 +21,12 @@ export function escapeLatex(str = '') {
 export function generateLatexResume(config, profile) {
   const {
     sections = [],
-    sectionOrder = ['skills', 'projects', 'education', 'certifications', 'achievements'],
+    sectionOrder = ['summary', 'skills', 'projects', 'education', 'certifications', 'achievements'],
     includedSections = {},
     customItems = {},
   } = config
 
-  const name = profile?.name || 'Aarav Sharma'
+  const name = (profile?.name || 'Aarav Sharma').toUpperCase()
   const email = profile?.email || ''
   const phone = profile?.phone || ''
   const location = profile?.region || profile?.location || ''
@@ -41,46 +41,54 @@ export function generateLatexResume(config, profile) {
     p.platform?.toLowerCase().includes('vercel')
   )
 
-  // Build header contacts without icons (pure text hyperlinks)
-  const headerLinks = []
+  // Build header contacts on line 3: phone, email, links (location is on line 2)
+  const contactLinks = []
   if (phone) {
-    headerLinks.push(`\\href{tel:${escapeLatex(phone.replace(/[^0-9+]/g, ''))}}{\\underline{${escapeLatex(phone)}}}`)
+    contactLinks.push(`\\href{tel:${escapeLatex(phone.replace(/[^0-9+]/g, ''))}}{\\underline{${escapeLatex(phone)}}}`)
   }
   if (email) {
-    headerLinks.push(`\\href{mailto:${escapeLatex(email)}}{\\underline{${escapeLatex(email)}}}`)
-  }
-  if (location) {
-    headerLinks.push(`\\underline{${escapeLatex(location)}}`)
+    contactLinks.push(`\\href{mailto:${escapeLatex(email)}}{\\underline{${escapeLatex(email)}}}`)
   }
   if (linkedinItem) {
     const rawUrl = linkedinItem.url.startsWith('http') ? linkedinItem.url : `https://${linkedinItem.url}`
-    headerLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{LinkedIn}}`)
+    contactLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{LinkedIn}}`)
   }
   if (githubItem) {
     const rawUrl = githubItem.url.startsWith('http') ? githubItem.url : `https://${githubItem.url}`
-    headerLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{GitHub}}`)
+    contactLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{GitHub}}`)
   }
   if (portfolioItem) {
     const rawUrl = portfolioItem.url.startsWith('http') ? portfolioItem.url : `https://${portfolioItem.url}`
-    headerLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{Portfolio}}`)
+    contactLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{Portfolio}}`)
   }
 
   // Fallback for other connected profiles not covered above
   connectedProfiles.forEach(p => {
     if (p !== githubItem && p !== linkedinItem && p !== portfolioItem && p.shared !== false) {
       const rawUrl = p.url.startsWith('http') ? p.url : `https://${p.url}`
-      headerLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{${escapeLatex(p.platform)}}}`)
+      contactLinks.push(`\\href{${escapeLatex(rawUrl)}}{\\underline{${escapeLatex(p.platform)}}}`)
     }
   })
 
-  // Format header line
-  const headerStr = headerLinks.join('\\hspace{0.8em}\n    ')
+  // Format contacts line
+  const contactsStr = contactLinks.join('\\hspace{0.8em}\n    ')
 
   // Generate Sections
   const sectionLatexBlocks = []
 
   sectionOrder.forEach(secKey => {
     if (!includedSections[secKey]) return
+
+    if (secKey === 'summary') {
+      const summaryText = customItems.summary !== undefined ? customItems.summary : (profile?.about || '')
+      if (summaryText) {
+        sectionLatexBlocks.push(`%-----------PROFESSIONAL SUMMARY-----------
+\\section{Professional Summary}
+\\vspace{-4pt}
+\\small{${escapeLatex(summaryText)}}
+\\vspace{2pt}`)
+      }
+    }
 
     if (secKey === 'skills') {
       const skills = customItems.skills || profile?.skills || []
@@ -191,12 +199,13 @@ ${eduItems}
           const org = c.org || c.issuer || 'Issuing Organization'
           const date = c.date || c.issuedOn || ''
           const title = c.title || c.name || 'Certificate'
+          const isH2S = (org || '').toLowerCase().includes('hack2skill') || Boolean(c.verifiableId)
+          const certLinkText = isH2S ? 'Hack2skill Certificate' : 'View Certificate'
+          const certUrl = c.credentialUrl || c.link || (c.id ? `https://hack2skill.com/profile/certificate/${String(c.id).replace('init-', '')}` : null)
+          
           const links = []
-          if (c.link) {
-            links.push(`\\href{${escapeLatex(c.link.startsWith('http') ? c.link : `https://${c.link}`)}}{\\textcolor{linkcolor}{Credential Link}}`)
-          }
-          if (c.verifiableId) {
-            links.push(`ID: ${escapeLatex(c.verifiableId)}`)
+          if (certUrl) {
+            links.push(`\\href{${escapeLatex(certUrl)}}{\\textcolor{linkcolor}{${escapeLatex(certLinkText)}}}`)
           }
 
           return `\\resumeSubheading
@@ -222,7 +231,7 @@ ${certItems}
         }).join('\n')
 
         sectionLatexBlocks.push(`%-----------ACHIEVEMENTS-----------
-\\section{Honors \\& Achievements}
+\\section{Achievements}
 \\resumeSubHeadingListStart
 \\vspace{-6pt}
 \\resumeItemListStart
@@ -236,6 +245,7 @@ ${achItems}
 
   return `%------------------------- % Resume in Latex %------------------------
 \\documentclass[letterpaper,11pt]{article}
+\\usepackage{times}
 \\usepackage{latexsym}
 \\usepackage[empty]{fullpage}
 \\usepackage{graphicx}
@@ -255,10 +265,9 @@ ${achItems}
 \\input{glyphtounicode}
 
 %----------COLOR DEFINITIONS----------
-\\definecolor{headingcolor}{RGB}{40, 70, 150}
-\\definecolor{linkcolor}{RGB}{0, 122, 204}
-\\definecolor{sectionrulecolor}{RGB}{200, 200, 200}
-\\definecolor{accent}{RGB}{220, 60, 60}
+\\definecolor{headingcolor}{RGB}{24, 42, 77}
+\\definecolor{linkcolor}{RGB}{37, 99, 235}
+\\definecolor{sectionrulecolor}{RGB}{209, 213, 219}
 
 \\pagestyle{fancy}
 \\fancyhf{} % clear all header and footer fields
@@ -277,7 +286,7 @@ ${achItems}
 \\raggedright
 \\setlength{\\tabcolsep}{0in}
 
-% Sections formatting
+% Sections formatting (Times New Roman, moderate weight, uppercase)
 \\titleformat{\\section}{
   \\color{headingcolor}\\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries
 }{}{0em}{}[\\color{sectionrulecolor}\\titlerule \\vspace{-5pt}]
@@ -287,12 +296,12 @@ ${achItems}
 \\newcommand{\\resumeItem}[1]{\\item\\small{{#1 \\vspace{-2pt}}}}
 \\newcommand{\\resumeSubheading}[4]{\\vspace{-1pt}\\item
 \\begin{tabular*}{1.0\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
-\\small\\textbf{\\textcolor{headingcolor}{#1}} & \\textbf{\\small \\textcolor{headingcolor}{#2}} \\\\
+\\small\\textbf{\\textcolor{headingcolor}{#1}} & {\\small #2} \\\\
 \\textit{\\small#3} & \\textit{\\small #4} \\\\
 \\end{tabular*}\\vspace{-4pt}}
 \\newcommand{\\resumeProjectHeading}[2]{\\vspace{-4pt}\\item
 \\begin{tabular*}{1.001\\textwidth}{l@{\\extracolsep{\\fill}}r}
-\\small\\textcolor{headingcolor}{\\textbf{#1}} & \\textbf{\\small \\textcolor{headingcolor}{#2}}\\\\
+\\small\\textcolor{headingcolor}{\\textbf{#1}} & {\\small #2}\\\\
 \\end{tabular*}\\vspace{-2pt}}
 \\newcommand{\\resumeSubItem}[1]{\\resumeItem{#1}\\vspace{-4pt}}
 \\renewcommand\\labelitemi{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}
@@ -306,14 +315,18 @@ ${achItems}
 \\begin{document}
 
 %-----------PERSONAL DETAILS-----------
+% Line 1: Name (uppercase, normal heading weight, not bold)
+% Line 2: Location
+% Line 3: Mail, phone, links
 \\vspace{-10pt}
 \\noindent
 \\begin{tabular*}{\\textwidth}{@{}l@{\\extracolsep{\\fill}}r@{}}
 \\begin{minipage}[c]{\\textwidth}
     \\vspace{0pt}
-    {\\Huge \\textcolor{headingcolor}{\\scshape ${escapeLatex(name)}}} \\\\[3pt]
+    {\\LARGE \\scshape ${escapeLatex(name)}} \\\\[2pt]
+    ${location ? `{\\small ${escapeLatex(location)}} \\\\[2pt]` : ''}
     \\footnotesize
-    ${headerStr}
+    ${contactsStr}
 \\end{minipage}
 \\end{tabular*}
 \\vspace{2pt}

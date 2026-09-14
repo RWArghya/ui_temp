@@ -11,8 +11,9 @@ export default function ResumeCustomizer({
   onBack,
 }) {
   const {
-    sectionOrder = ['skills', 'projects', 'education', 'certifications', 'achievements'],
+    sectionOrder = ['summary', 'skills', 'projects', 'education', 'certifications', 'achievements'],
     includedSections = {
+      summary: true,
       skills: true,
       projects: true,
       education: true,
@@ -25,6 +26,7 @@ export default function ResumeCustomizer({
   // Track which sections are expanded in the UI
   const [expandedSections, setExpandedSections] = useState({
     headerLinks: true,
+    summary: false,
     projects: true,
     education: true,
     skills: false,
@@ -101,6 +103,11 @@ export default function ResumeCustomizer({
 
   // Section metadata
   const SECTION_META = {
+    summary: {
+      title: 'Professional Summary',
+      desc: 'Concise executive summary from your profile about section',
+      getItems: () => [],
+    },
     skills: {
       title: 'Technical Skills',
       desc: 'Languages, frameworks, databases, and tools',
@@ -132,7 +139,7 @@ export default function ResumeCustomizer({
       ],
     },
     achievements: {
-      title: 'Honors & Achievements',
+      title: 'Achievements',
       desc: 'Milestones, awards, and recognitions',
       getItems: () => customItems.achievements || profile?.achievements || [],
     },
@@ -338,6 +345,28 @@ export default function ResumeCustomizer({
               </div>
 
               {/* Nested Items when expanded */}
+              {isExpanded && secKey === 'summary' && (
+                <div className="px-3 pb-3 pt-2 bg-paper/20 border-t border-paper-line">
+                  <label className="block text-[11px] font-semibold text-graphite-dim uppercase mb-1">
+                    Summary Text (derived from profile about)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={customItems.summary !== undefined ? customItems.summary : (profile?.about || '')}
+                    onChange={(e) => {
+                      onChangeConfig({
+                        ...config,
+                        customItems: {
+                          ...customItems,
+                          summary: e.target.value,
+                        },
+                      })
+                    }}
+                    className="w-full text-[12px] p-2 rounded-[2px] border border-paper-line bg-white text-ink-900 focus:border-signal focus:outline-none"
+                    placeholder="Enter professional summary..."
+                  />
+                </div>
+              )}
               {isExpanded && Array.isArray(items) && items.length > 0 && (
                 <div className="px-3 pb-3 pt-0.5 bg-paper/20 border-t border-paper-line">
                   <div className="space-y-1.5 mt-2">

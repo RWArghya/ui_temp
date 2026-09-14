@@ -355,9 +355,10 @@ export default function Profile() {
       })),
     ]
 
-    const initialConfig = resumeConfig || {
-      sectionOrder: ['skills', 'projects', 'education', 'certifications', 'achievements'],
+    const initialConfig = {
+      sectionOrder: ['summary', 'skills', 'projects', 'education', 'certifications', 'achievements'],
       includedSections: {
+        summary: true,
         skills: true,
         projects: true,
         education: true,
@@ -365,6 +366,7 @@ export default function Profile() {
         achievements: true,
       },
       customItems: {
+        summary: profile.about || '',
         skills: profile.skills || [],
         projects: (profile.projects || []).map(p => ({ ...p, _included: true })),
         education: (profile.education || []).map(e => ({ ...e, _included: true })),
