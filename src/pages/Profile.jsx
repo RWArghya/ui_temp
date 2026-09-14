@@ -40,6 +40,7 @@ import EditCertModal from '../components/profile/EditCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
 import ResumeCustomizer from '../components/profile/ResumeCustomizer.jsx'
+import { buildPlatformJourney } from '../utils/journeyBuilder.js'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
 // ---- helpers ----
@@ -659,29 +660,29 @@ export default function Profile() {
     </div>
   )
 
-  // ---- JOURNEY ----
-  const hasJourneyItems = (inits?.completed?.length || 0) + (profile.achievements?.length || 0) > 0
+  // ---- JOURNEY (Platform journey from profile creation to ongoing: most recent on top) ----
+  const journeyTimeline = buildPlatformJourney(profile, inits, 'recent')
   const JourneyTab = (
-    <SectionCard title="Your journey">
+    <SectionCard
+      title="Your journey"
+      action={
+        <span className="text-[11px] font-mono text-graphite-dim font-medium bg-paper border border-paper-line px-2 py-0.5 rounded-[2px] inline-flex items-center gap-1">
+          <span>⚡</span> Most recent on top
+        </span>
+      }
+    >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Verified certificates, submissions and self-added achievements, in one feed.
+        Your complete journey on Hack2skill — ordered with your latest milestones and active initiatives at the top, down to profile creation at the bottom.
       </p>
-      {hasJourneyItems ? (
-        <div className="relative pl-6 before:content-[''] before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-paper-line">
-          {(inits?.completed ?? []).map(o => (
+      {journeyTimeline.length > 0 ? (
+        <div className="relative pl-6 before:content-[''] before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-paper-line space-y-1">
+          {journeyTimeline.map(item => (
             <TimelineItem
-              key={o.id}
-              variant="done"
-              title={`✅ Completed — ${o.name}`}
-              subtitle={`${o.org} · H2S Verified Certificate`}
-            />
-          ))}
-          {(profile.achievements ?? []).map(a => (
-            <TimelineItem
-              key={a.id}
-              variant="default"
-              title={`🏅 ${a.title}`}
-              subtitle="Self-added"
+              key={item.id}
+              variant={item.variant}
+              title={item.title}
+              subtitle={item.subtitle}
+              date={item.date}
             />
           ))}
         </div>
@@ -1119,9 +1120,18 @@ export default function Profile() {
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
         Unverified — credentials earned elsewhere. Turn on "Share on public profile" to include on your public link.
       </p>
-      {(profile.selfCerts ?? []).length > 0 ? (
-        <div className="mt-4 divide-y divide-paper-line">
-          {(profile.selfCerts ?? []).map(c => (
+      {(() => {
+        const sortedSelfCerts = [...(profile.selfCerts ?? [])].sort((a, b) => {
+          const parseDate = item => {
+            if (!item) return 0
+            const d = item.issueDate || item.date || ''
+            return new Date(d.length === 4 ? `${d}-01-01` : d).getTime() || 0
+          }
+          return parseDate(b) - parseDate(a)
+        })
+        return sortedSelfCerts.length > 0 ? (
+          <div className="mt-4 divide-y divide-paper-line">
+            {sortedSelfCerts.map(c => (
             <div key={c.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
               <div className="flex items-start gap-3 min-w-0">
                 <span className="text-[20px] flex-none mt-0.5">📜</span>
@@ -1214,7 +1224,7 @@ export default function Profile() {
             + Add Certificate
           </button>
         </div>
-      )}
+      )})()}
     </SectionCard>
   )
 
@@ -1238,17 +1248,17 @@ export default function Profile() {
         </span>
       </div>
 
-      {/* Full H2S Verified Credentials list */}
+      {/* Full H2S Verified Certificates list */}
       <SectionCard
         title={
           <span className="flex items-center gap-2 flex-wrap">
-            H2S Verified Credentials
+            H2S Verified Certificates
             <span className="font-normal text-[13px] text-ink-900">({totalEarned})</span>
           </span>
         }
       >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Issued automatically the moment an initiative closes — read-only, verifiable credentials.
+          Issued automatically the moment an initiative closes — read-only, verifiable certificates.
         </p>
         {earnedCerts.length > 0 ? (
           earnedCerts.map(o => (
@@ -1625,6 +1635,9 @@ export default function Profile() {
                 {profile.headline || 'Add a headline'}
                 {profile.org ? <> · {profile.org}</> : null}
               </p>
+              {profile.region && (
+                <p className="text-[12px] text-graphite-dim mt-1">📍 {profile.region}</p>
+              )}
             </div>
 
             {/* Share panel */}
