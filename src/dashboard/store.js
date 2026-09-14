@@ -8,6 +8,7 @@
    ============================================================ */
 import { useCallback, useRef, useSyncExternalStore } from 'react'
 import { authStore } from '../store/auth'
+import { MOCK_PROFILE } from '../api/mock/profile'
 
 const H2S_KEY = 'h2s'
 let listeners = new Set()
@@ -41,6 +42,7 @@ function identity() {
   const base = {}
   if (a.name && !h.name) base.name = a.name
   if (a.email && !h.email) base.email = a.email
+  if (!h.profile) base.profile = MOCK_PROFILE
   if (Object.keys(base).length) { const cur = rawRead(); localStorage.setItem(H2S_KEY, JSON.stringify(Object.assign(cur, base))) }
   return Object.assign({}, base, a.primary ? { primary: a.primary } : {})
 }
@@ -67,7 +69,7 @@ export function seedDemoPatch(st) {
 export function useH2S() {
   const st = useSyncExternalStore(subscribe, getSnapshot)
   const ident = useRef(identity())
-  const combined = Object.assign({}, st, ident.current)
+  const combined = Object.assign({ profile: MOCK_PROFILE }, st, ident.current)
 
   const sv = useCallback((patch) => { S.save(patch) }, [])
   const reset = useCallback(() => S.reset(), [])

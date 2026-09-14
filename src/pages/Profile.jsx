@@ -441,6 +441,7 @@ export default function Profile() {
           <KVRow label="Headline"     value={profile.headline} />
           <KVRow label="Organisation" value={profile.org}    />
           <KVRow label="Region"       value={profile.region} />
+          {profile.phone && <KVRow label="Phone" value={profile.phone} />}
           <KVRow label="Email"        value={profile.email}  last />
         </div>
       </SectionCard>
