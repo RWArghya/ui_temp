@@ -173,7 +173,6 @@ function AchievementsTab({ st, sv }) {
       {list.length ? list.map((a, i) => (
         <div key={i} className="flex items-center justify-between gap-3 border-b border-dash-line-soft py-2 text-sm last:border-0">
           <span className="min-w-0">{a.ico} <strong className="text-dash-ink">{a.title}</strong>{a.org ? <span className="text-dash-muted"> · {a.org}</span> : null}</span>
-          <span>{a.shared ? <Pill ok>shared</Pill> : <Pill>private</Pill>}</span>
         </div>
       )) : <p className="text-sm text-dash-muted">Certificates appear here as you earn them. Add community achievements too.</p>}
     </Card>

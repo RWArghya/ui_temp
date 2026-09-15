@@ -15,7 +15,6 @@ export default function EditProjectModal({
   const [sourceLink, setSourceLink] = useState('')
   const [liveLink, setLiveLink] = useState('')
   const [docsLink, setDocsLink] = useState('')
-  const [shared, setShared] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -26,7 +25,6 @@ export default function EditProjectModal({
         setSourceLink(initialData.sourceLink || initialData.link || '')
         setLiveLink(initialData.liveLink || '')
         setDocsLink(initialData.docsLink || '')
-        setShared(Boolean(initialData.shared))
       } else {
         setTitle('')
         setDescription('')
@@ -34,7 +32,6 @@ export default function EditProjectModal({
         setSourceLink('')
         setLiveLink('')
         setDocsLink('')
-        setShared(false)
       }
       setTechInput('')
     }
@@ -71,7 +68,6 @@ export default function EditProjectModal({
       liveLink: liveLink.trim(),
       docsLink: docsLink.trim(),
       link: sourceLink.trim() || liveLink.trim(),
-      shared,
     })
   }
 
@@ -198,24 +194,6 @@ export default function EditProjectModal({
               className="w-full px-3.5 py-2 text-[13px] border border-paper-line rounded-[2px] focus:outline-none focus:border-signal text-ink-900 bg-white"
             />
           </div>
-        </div>
-
-        {/* Share on Public Profile Toggle */}
-        <div className="pt-2 border-t border-paper-line">
-          <label className="flex items-center justify-between p-2.5 rounded-[2px] bg-paper border border-paper-line cursor-pointer">
-            <div>
-              <span className="text-[12.5px] font-bold text-ink-900 block">Share on public profile</span>
-              <span className="text-[11px] text-graphite-dim block">
-                Allow visitors with your public profile link to view this project.
-              </span>
-            </div>
-            <input
-              type="checkbox"
-              checked={shared}
-              onChange={e => setShared(e.target.checked)}
-              className="w-4 h-4 rounded border-paper-line text-signal focus:ring-signal"
-            />
-          </label>
         </div>
 
         {/* Footer actions */}

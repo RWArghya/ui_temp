@@ -11,7 +11,6 @@ import Onboarding from "../pages/Onboarding"
 import Dashboard from "../dashboard/Dashboard"
 import ProfilePreview from "../pages/ProfilePreview"
 import Resume from "../pages/Resume"
-import AllCertificates from "../pages/AllCertificates"
 import CertificateView from "../pages/CertificateView"
 import Terms from "../pages/Terms"
 import Privacy from "../pages/Privacy"
@@ -61,10 +60,6 @@ const router = createBrowserRouter([
   {
     path: "/profile/resume",
     element: <Resume />,
-  },
-  {
-    path: "/profile/certificates",
-    element: <AllCertificates />,
   },
   {
     path: "/profile/certificate/:certId",

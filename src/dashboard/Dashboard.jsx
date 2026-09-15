@@ -5,7 +5,7 @@ import { authStore } from '../store/auth'
 import './proto.css'
 import {
   VIEWS, initials, mentorStatus, mentorRoleLabel,
-  approvedChallenges, notesFor, unreadFor, profileScore,
+  approvedChallenges, notesFor, unreadFor, profileScore, byId,
 } from './data'
 import { Sidebar, Topbar } from './Shell'
 import { ProfileProgressCard } from './Cards'
@@ -18,17 +18,17 @@ import { MentorGate } from './Mentor'
 import Workspace from './Workspace'
 import Evaluate from './Evaluate'
 import Settings from './Settings'
-import SupportBot from './SupportBot'
+import MyActivity from './ActivityView'
 
 const VIEW_COMPONENTS = {
   home: Home, continuing: Continuing, recommended: Recommended, saved: Saved, recent: Recent,
   competing: Competing, learning: Learning, learncompete: LearnCompete,
   arena: Arena, profile: ProfilePage, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
-  settings: Settings,
+  settings: Settings, activity: MyActivity,
 }
 /* "View all" destinations and the Home nav item together decide whether the
    sidebar's "Dashboard" row reads active — see app.html's `activeKey`. */
-const HOME_GROUP = new Set(['home', 'continuing', 'recommended'])
+const HOME_GROUP = new Set(['home', 'continuing', 'recommended', 'activity'])
 
 export default function Dashboard({ defaultView }) {
   const { st, sv, reset } = useH2S()
@@ -41,11 +41,12 @@ export default function Dashboard({ defaultView }) {
     if (!logged.onboarded) navigate('/onboarding', { replace: true })
   }, [logged.onboarded])
 
-  function go(view, id) {
-    if (id) { navigate('/dashboard/workspace?id=' + id); return }
+  function go(view, id, tab) {
+    if (id) { navigate('/dashboard/workspace?id=' + id + (view ? '&from=' + view : '')); return }
     if (view === 'profile') { navigate('/profile'); return }
     if (view === 'home') { navigate('/dashboard'); return }
-    navigate('/dashboard?view=' + view)
+    const tabParam = tab ? '&tab=' + tab : ''
+    navigate('/dashboard?view=' + view + tabParam)
   }
 
   const sub = location.pathname.replace('/dashboard', '').replace(/^\//, '')
@@ -63,7 +64,7 @@ function DashMain({ sp, st, sv, go, reset, defaultView }) {
   const isProfileRoute = location.pathname === '/profile'
   const requested = isProfileRoute ? 'profile' : sp.get('view') || defaultView
   const valid = requested && VIEW_COMPONENTS[requested] ? requested : null
-  const [view, setView] = useState(valid || (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home'))
+  const [view, setView] = useState(valid || (st.landingView && VIEW_COMPONENTS[st.landingView] ? st.landingView : (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home')))
   const [mode, setMode] = useState(view === 'mentor' ? 'mentor' : 'innovator')
   const [mentorTab, setMentorTabState] = useState(sp.get('tab') || 'queue')
 
@@ -73,9 +74,9 @@ function DashMain({ sp, st, sv, go, reset, defaultView }) {
     } else if (valid) {
       setView(valid)
     } else if (location.pathname === '/dashboard' && !sp.get('view')) {
-      setView(st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home')
+      setView(st.landingView && VIEW_COMPONENTS[st.landingView] ? st.landingView : (st.primary && VIEW_COMPONENTS[st.primary] ? st.primary : 'home'))
     }
-  }, [location.pathname, valid, sp, st.primary])
+  }, [location.pathname, valid, sp, st.primary, st.landingView])
 
   const show = (v) => {
     if (v === 'profile') {
@@ -108,11 +109,41 @@ function DashMain({ sp, st, sv, go, reset, defaultView }) {
    the right column. */
 function SubShell({ st, sv, go, children }) {
   const navigate = useNavigate()
+  const [sp] = useSearchParams()
+  const id = sp.get('id')
+  const from = sp.get('from')
+  const o = byId(id)
+
+  let activeKey = 'home'
+  if (from) {
+    if (HOME_GROUP.has(from)) activeKey = 'home'
+    else activeKey = from
+  } else if (o?.purpose) {
+    activeKey = o.purpose
+  }
+
+  const sub = location.pathname.replace('/dashboard', '').replace(/^\//, '')
+  const BACK_LABELS = {
+    home: 'Dashboard',
+    learning: 'Learn',
+    competing: 'Compete',
+    learncompete: 'Build',
+    activity: 'My Activity',
+    saved: 'Saved',
+    recent: 'Recent',
+    continuing: 'Dashboard',
+    recommended: 'Recommended for you',
+  }
+  const backTarget = from || (o?.purpose ? o.purpose : 'home')
+  const backLabel = BACK_LABELS[backTarget] || 'Dashboard'
+  const onBack = () => go(backTarget)
+  const currentTitle = sub === 'evaluate' ? `Evaluate ${o ? o.name : ''}` : (o ? o.name : 'Workspace')
+
   const out = () => { sv({}); authStore.clear(); navigate('/auth') }
   return (
     <div className="dash-root">
       <div className="shell">
-        <Sidebar mode="innovator" active="home" st={st}
+        <Sidebar mode="innovator" active={activeKey} st={st}
           show={(v) => go(v)}
           onLoadSample={() => sv(seedDemoPatch(st))}
           onReset={() => { if (confirm('Reset all demo activity?')) sv({}) }}
@@ -120,11 +151,22 @@ function SubShell({ st, sv, go, children }) {
           switchPersona={(p) => go(p === 'mentor' ? 'mentor' : 'home')}
         />
         <div className="shell-col">
-          <Topbar st={st} sv={sv} who="innovator" onProfile={() => go('profile')} />
+          <Topbar
+            st={st}
+            sv={sv}
+            who="innovator"
+            view={activeKey}
+            onBack={onBack}
+            backLabel={backLabel}
+            currentTitle={currentTitle}
+            onProfile={() => go('profile')}
+            onActivity={() => go('activity')}
+            onSettings={() => go('settings')}
+            onSignOut={out}
+          />
           <div className="shell-body">{children}</div>
         </div>
       </div>
-      <SupportBot st={st} sv={sv} />
     </div>
   )
 }
@@ -150,6 +192,27 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const MENTOR_KEY_TO_TAB = { mentor: 'queue', m_challenges: 'challenges', m_queue: 'queue', m_teams: 'teams', m_sessions: 'sessions', m_impact: 'impact' }
   const mentorActiveKey = mentorTab === 'challenges' ? 'm_challenges' : mentorTab === 'teams' ? 'm_teams' : mentorTab === 'sessions' ? 'm_sessions' : mentorTab === 'impact' ? 'm_impact' : 'm_queue'
 
+  const SUB_VIEW_NAV = {
+    activity: { parent: 'home', parentLabel: 'Dashboard', title: 'My Activity' },
+    continuing: { parent: 'home', parentLabel: 'Dashboard', title: 'Continue where you left off' },
+    recommended: { parent: 'home', parentLabel: 'Dashboard', title: 'Recommended for you' },
+    settings: { parent: 'home', parentLabel: 'Dashboard', title: 'Settings' },
+    profile: { parent: 'home', parentLabel: 'Dashboard', title: 'My Profile' },
+  }
+  const subNav = SUB_VIEW_NAV[view]
+  const onBack = subNav ? () => show(subNav.parent) : null
+  const backLabel = subNav ? subNav.parentLabel : null
+  const VIEW_TITLES = {
+    home: 'Dashboard',
+    learning: 'Learn',
+    competing: 'Compete',
+    learncompete: 'Build',
+    arena: 'Arena',
+    saved: 'Saved',
+    recent: 'Recent',
+  }
+  const currentTitle = subNav ? subNav.title : (VIEW_TITLES[view] || (msup ? 'Mentor Workspace' : 'Dashboard'))
+
   return (
     <div className="dash-root">
       <div className={`shell${hasRail ? ' has-rail' : ''}${msup ? ' mode-mentor' : ''}`}>
@@ -161,7 +224,19 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
           onLoadSample={loadSample} onReset={doReset} onSignOut={out} switchPersona={switchPersona}
         />
         <div className="shell-col">
-          <Topbar st={st} sv={sv} who={mode} onProfile={() => show('profile')} />
+          <Topbar
+            st={st}
+            sv={sv}
+            who={mode}
+            view={view}
+            onBack={onBack}
+            backLabel={backLabel}
+            currentTitle={currentTitle}
+            onProfile={() => show('profile')}
+            onActivity={() => show('activity')}
+            onSettings={() => show('settings')}
+            onSignOut={out}
+          />
           <div className="shell-body">
             <div className="shell-main-wrap">
               <div id="main">
@@ -179,7 +254,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
           </div>
         </div>
       </div>
-      <SupportBot st={st} sv={sv} mode={mode} />
     </div>
   )
 }

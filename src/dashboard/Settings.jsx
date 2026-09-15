@@ -59,6 +59,7 @@ export default function Settings({ st, sv, go }) {
 
   const [region, setRegion] = useState(st.region || '')
   const [interests, setInterests] = useState(st.interests || [])
+  const [landingView, setLandingView] = useState(st.landingView || 'home')
   const [prefsSaved, setPrefsSaved] = useState(false)
 
   const patchNotif = (key, val) => sv({ settings: { ...st.settings, notifications: { ...settings.notifications, [key]: val } } })
@@ -75,7 +76,7 @@ export default function Settings({ st, sv, go }) {
   }
 
   const toggleInterest = (a) => setInterests((cur) => cur.includes(a) ? cur.filter(x => x !== a) : cur.length >= 8 ? cur : [...cur, a])
-  const savePrefs = () => { sv({ region, interests }); setPrefsSaved(true); setTimeout(() => setPrefsSaved(false), 2200) }
+  const savePrefs = () => { sv({ region, interests, landingView }); setPrefsSaved(true); setTimeout(() => setPrefsSaved(false), 2200) }
 
   const out = () => { sv({}); authStore.clear(); navigate('/auth') }
   const doDelete = () => {
@@ -85,9 +86,7 @@ export default function Settings({ st, sv, go }) {
 
   return (
     <>
-      <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}><Icon name="ArrowLeft" size={14} /> Dashboard</a>
-      <h1 className="mt12">Settings</h1>
-      <p className="small muted mt6">Your account, notifications, privacy, and platform preferences.</p>
+      <p className="small muted">Your account, notifications, privacy, and platform preferences.</p>
 
       <div className="row gap8 wrap mt16" style={{ marginBottom: 4 }}>
         {JUMP.map(([id, label]) => (
@@ -170,7 +169,17 @@ export default function Settings({ st, sv, go }) {
         </SectionCard>
 
         {/* ---------------------------------------------------------- Preferences */}
-        <SectionCard id="prefs" title="Preferences" sub="Drives what shows up under Recommended for you.">
+        <SectionCard id="prefs" title="Preferences" sub="Drives your default landing view and recommendations.">
+          <div className="field">
+            <label>Landing view</label>
+            <p className="xs muted mt2 mb6">Where you arrive after logging in or opening the platform.</p>
+            <select className="select" value={landingView} onChange={e => setLandingView(e.target.value)}>
+              <option value="home">🏠 Dashboard</option>
+              <option value="learning">📚 Learn</option>
+              <option value="competing">🏆 Compete</option>
+              <option value="arena">🎮 Arena</option>
+            </select>
+          </div>
           <div className="field"><label>Region</label>
             <select className="select" value={region} onChange={e => setRegion(e.target.value)}>
               <option value="">Not set</option>

@@ -49,43 +49,43 @@ export const AREAS = ['AI / GenAI', 'Agentic AI', 'Web3', 'Blockchain', 'AR / VR
 export const INITIATIVES = [
   { id: 'icc-global', name: 'ICC Global Cricket Hackathon', org: 'International Cricket Council',
     purpose: 'competing', status: 'live', region: 'India — West', mode: 'Hybrid',
-    areas: ['AI / GenAI', 'Data Science'], prize: '₹25L', deadline: '2026-08-28', regs: 14820, pop: 98,
+    areas: ['AI / GenAI', 'Data Science'], prize: '₹25L', deadline: '2026-10-28', regs: 14820, pop: 98,
     blurb: 'Build the next generation of fan-engagement and match-analytics products for global cricket.' },
   { id: 'ntpc-energy', name: 'NTPC Energy Innovation Challenge', org: 'NTPC Limited',
     purpose: 'learncompete', status: 'upcoming', region: 'India — North', mode: 'Hybrid',
-    areas: ['Sustainability', 'Data Science'], prize: '₹10L + pilot', deadline: '2026-09-02', regs: 2140, pop: 74,
+    areas: ['Sustainability', 'Data Science'], prize: '₹10L + pilot', deadline: '2026-10-30', regs: 2140, pop: 74,
     blurb: 'Six live problem statements from India’s largest power utility — winners get a paid pilot.' },
   { id: 'genai-academy', name: 'Gen AI Academy — Cohort 12', org: 'Hack2skill × Google Cloud',
     purpose: 'learning', status: 'live', region: 'India — North', mode: 'Virtual',
-    areas: ['AI / GenAI', 'Agentic AI'], prize: 'Free · Certified', deadline: '2026-08-30', regs: 31400, pop: 99,
+    areas: ['AI / GenAI', 'Agentic AI'], prize: 'Free · Certified', deadline: '2026-10-25', regs: 31400, pop: 99,
     blurb: 'Eight-module GenAI track with live sessions, labs and a Google Cloud certification path.' },
   { id: 'electhon', name: 'Electhon 2026', org: 'Ministry of Power',
     purpose: 'competing', status: 'upcoming', region: 'India — West', mode: 'In-person',
-    areas: ['Sustainability', 'IoT'], prize: '₹8L', deadline: '2026-09-12', regs: 1890, pop: 58,
+    areas: ['Sustainability', 'IoT'], prize: '₹8L', deadline: '2026-11-05', regs: 1890, pop: 58,
     blurb: '36-hour in-person build sprint on grid resilience and smart metering.' },
   { id: 'police-hack', name: 'Police Hackathon 2026', org: 'Ministry of Home Affairs',
     purpose: 'competing', status: 'live', region: 'India — North', mode: 'Hybrid',
-    areas: ['Cybersecurity', 'AI / GenAI'], prize: '₹15L', deadline: '2026-09-05', regs: 7240, pop: 82,
+    areas: ['Cybersecurity', 'AI / GenAI'], prize: '₹15L', deadline: '2026-10-22', regs: 7240, pop: 82,
     blurb: 'Public-safety technology challenge — forensics, cyber-crime triage and citizen services.' },
   { id: 'dishathon', name: 'Dishathon', org: 'Hack2skill Community',
     purpose: 'competing', status: 'live', region: 'India — South', mode: 'Virtual',
-    areas: ['FinTech', 'Product'], prize: '₹3L', deadline: '2026-09-05', regs: 3110, pop: 49,
+    areas: ['FinTech', 'Product'], prize: '₹3L', deadline: '2026-10-20', regs: 3110, pop: 49,
     blurb: 'Community-run weekend hackathon. Teams of 2–4, any stack, one weekend.' },
   { id: 'isro-bhuvan', name: 'ISRO Bhuvan Geospatial Challenge', org: 'ISRO',
     purpose: 'learncompete', status: 'upcoming', region: 'India — South', mode: 'Hybrid',
-    areas: ['Space', 'Data Science'], prize: '₹12L + incubation', deadline: '2026-09-25', regs: 1620, pop: 77,
+    areas: ['Space', 'Data Science'], prize: '₹12L + incubation', deadline: '2026-11-12', regs: 1620, pop: 77,
     blurb: 'Open satellite datasets, real agricultural and disaster-response problem statements.' },
   { id: 'npci-upi', name: 'NPCI UPI Fraud Detection Challenge', org: 'NPCI',
     purpose: 'learncompete', status: 'live', region: 'India — West', mode: 'Virtual',
-    areas: ['FinTech', 'Cybersecurity', 'Data Science'], prize: '₹20L', deadline: '2026-09-15', regs: 6050, pop: 88,
+    areas: ['FinTech', 'Cybersecurity', 'Data Science'], prize: '₹20L', deadline: '2026-10-24', regs: 6050, pop: 88,
     blurb: 'Anonymised transaction data at national scale. Cut false positives without missing fraud.' },
   { id: 'agentic-bootcamp', name: 'Agentic AI Bootcamp', org: 'Hack2skill',
     purpose: 'learning', status: 'live', region: 'APAC', mode: 'Virtual',
-    areas: ['Agentic AI', 'AI / GenAI'], prize: 'Free · Certified', deadline: '2026-09-08', regs: 18700, pop: 94,
+    areas: ['Agentic AI', 'AI / GenAI'], prize: 'Free · Certified', deadline: '2026-10-18', regs: 18700, pop: 94,
     blurb: 'Six weeks, hands-on. Build and ship three working agents with mentor review.' },
   { id: 'mena-fintech', name: 'MENA FinTech Innovation Sprint', org: 'Regional banking consortium',
     purpose: 'learncompete', status: 'upcoming', region: 'Middle East & Africa', mode: 'Hybrid',
-    areas: ['FinTech', 'Blockchain'], prize: '$25K', deadline: '2026-10-12', regs: 610, pop: 44,
+    areas: ['FinTech', 'Blockchain'], prize: '$25K', deadline: '2026-11-15', regs: 610, pop: 44,
     blurb: 'Cross-border payments and Islamic-finance-compliant lending products.' },
   { id: 'inspire-26', name: 'Inspire Hackathon 2026', org: 'Hack2skill',
     purpose: 'competing', status: 'past', region: 'India — North', mode: 'Virtual',
@@ -101,8 +101,92 @@ export const INITIATIVES = [
     blurb: 'Passenger-experience and ground-ops efficiency ideas. Two ideas went to pilot.' },
   { id: 'lat-am-web3', name: 'LATAM Web3 Builders Challenge', org: 'Hack2skill × regional partners',
     purpose: 'competing', status: 'upcoming', region: 'Americas', mode: 'Virtual',
-    areas: ['Web3', 'Blockchain'], prize: '$20K', deadline: '2026-10-20', regs: 780, pop: 46,
+    areas: ['Web3', 'Blockchain'], prize: '$20K', deadline: '2026-11-20', regs: 780, pop: 46,
     blurb: 'Open-track Web3 hackathon for builders across Latin America.' },
+  { id: 'aws-ai-masterclass', name: 'Full-Stack AI Systems Masterclass', org: 'Hack2skill × AWS',
+    purpose: 'learning', status: 'live', region: 'India — North', mode: 'Virtual',
+    areas: ['AI / GenAI', 'Cloud'], prize: 'Free · Certified', deadline: '2026-10-28', regs: 16200, pop: 95,
+    blurb: 'Master production-grade LLM architectures, vector databases, and real-time streaming interfaces on AWS cloud infrastructure.' },
+  { id: 'cyber-fellowship', name: 'Cybersecurity & Ethical Hacking Fellowship', org: 'Indian Cyber Crime Coordination Centre (I4C)',
+    purpose: 'learning', status: 'live', region: 'India — West', mode: 'Hybrid',
+    areas: ['Cybersecurity', 'Cloud'], prize: 'Certified · Mentored', deadline: '2026-11-05', regs: 9800, pop: 89,
+    blurb: 'Hands-on offensive and defensive cybersecurity labs, threat hunting, and incident response simulations with government mentors.' },
+  { id: 'iitd-ds-bootcamp', name: 'Data Science & Applied ML Bootcamp', org: 'IIT Delhi & Hack2skill',
+    purpose: 'learning', status: 'upcoming', region: 'India — North', mode: 'Virtual',
+    areas: ['Data Science', 'AI / GenAI'], prize: 'IITD Certificate', deadline: '2026-11-15', regs: 22400, pop: 97,
+    blurb: 'End-to-end data pipelines, statistical modeling, deep learning architectures, and scalable model deployment on edge devices.' },
+  { id: 'web3-zk-school', name: 'Web3 & Zero-Knowledge Cryptography School', org: 'Ethereum India & Polygon',
+    purpose: 'learning', status: 'live', region: 'India — South', mode: 'Virtual',
+    areas: ['Web3', 'Blockchain'], prize: 'Free · Certified', deadline: '2026-11-02', regs: 7400, pop: 84,
+    blurb: 'Deep dive into EVM internals, smart contract security audits, zk-SNARKs, and decentralized application development.' },
+  { id: 'robotics-cv-lab', name: 'Autonomous Robotics & Computer Vision Workshop', org: 'DRDO × Robotics Society of India',
+    purpose: 'learning', status: 'upcoming', region: 'India — South', mode: 'In-person',
+    areas: ['Robotics', 'AI / GenAI'], prize: 'Certified · Kit', deadline: '2026-11-25', regs: 4200, pop: 78,
+    blurb: 'Intensive hardware workshop covering ROS2, LiDAR SLAM, spatial perception, and embedded edge AI computing.' },
+  { id: 'climate-analytics', name: 'Climate Tech & Carbon Analytics Intensive', org: 'Global Sustainability Institute',
+    purpose: 'learning', status: 'upcoming', region: 'Europe', mode: 'Hybrid',
+    areas: ['Sustainability', 'Data Science'], prize: 'Free · Certified', deadline: '2026-12-05', regs: 5300, pop: 81,
+    blurb: 'Learn carbon accounting, ESG compliance frameworks, and satellite imagery analysis for environmental impact tracking.' },
+  { id: 'fintech-systems', name: 'FinTech Engineering & High-Frequency Systems', org: 'National Payments Exchange & Razorpay',
+    purpose: 'learning', status: 'live', region: 'India — West', mode: 'Virtual',
+    areas: ['FinTech', 'Cloud'], prize: 'Certified · Referrals', deadline: '2026-10-24', regs: 11500, pop: 91,
+    blurb: 'Low-latency distributed systems, ISO 20022 protocols, modern banking APIs, and high-frequency risk scoring.' },
+  { id: 'spatial-dev-lab', name: 'Spatial Computing & VisionOS Developer Lab', org: 'Hack2skill XR Lab',
+    purpose: 'learning', status: 'upcoming', region: 'Americas', mode: 'Virtual',
+    areas: ['AR / VR', 'Product'], prize: 'Free · Certified', deadline: '2026-12-12', regs: 6800, pop: 86,
+    blurb: 'Design and build immersive 3D spatial experiences, hand-tracking gestures, and mixed-reality enterprise applications.' },
+  { id: 'prompt-foundations', name: 'Foundations of Prompt Engineering (Cohort 3)', org: 'Hack2skill Community',
+    purpose: 'learning', status: 'past', region: 'India — North', mode: 'Virtual',
+    areas: ['AI / GenAI'], prize: 'Free · Certified', deadline: '2026-04-10', regs: 41000, pop: 96,
+    blurb: 'Introductory cohort on conversational prompt design, few-shot prompting, and chained workflows.' },
+  { id: 'smart-mobility-hack', name: 'Smart Mobility & Autonomous Transit Hackathon', org: 'Ministry of Road Transport & Highways',
+    purpose: 'competing', status: 'live', region: 'India — North', mode: 'Hybrid',
+    areas: ['IoT', 'Data Science', 'AI / GenAI'], prize: '₹18L', deadline: '2026-11-18', regs: 4300, pop: 83,
+    blurb: 'Edge telemetry, smart traffic optimization, and EV fleet grid integration challenges.' },
+  { id: 'fintech-revolution', name: 'Global FinTech & DeFi Hackathon', org: 'Singapore FinTech Festival × H2S',
+    purpose: 'competing', status: 'upcoming', region: 'APAC', mode: 'Virtual',
+    areas: ['FinTech', 'Blockchain', 'Web3'], prize: '$30K', deadline: '2026-12-10', regs: 5200, pop: 87,
+    blurb: 'Cross-border remittances, programmable liquidity, and regulated digital asset infrastructure.' },
+  { id: 'healthtech-ai-sprint', name: 'HealthTech Clinical AI Innovation Sprint', org: 'Apollo Hospitals & AIIMS',
+    purpose: 'learncompete', status: 'live', region: 'India — South', mode: 'Hybrid',
+    areas: ['HealthTech', 'AI / GenAI', 'Data Science'], prize: '₹15L + pilot', deadline: '2026-11-22', regs: 3800, pop: 85,
+    blurb: 'Diagnostic decision support, clinical note summarization, and remote telemetry prototypes.' },
+  { id: 'gcp-genai-hack', name: 'Google Cloud GenAI Hackathon 2026', org: 'Google Cloud × Hack2skill',
+    purpose: 'competing', status: 'live', region: 'India — North', mode: 'Hybrid',
+    areas: ['AI / GenAI', 'Cloud', 'Agentic AI'], prize: '₹35L', deadline: '2026-11-30', regs: 18500, pop: 99,
+    blurb: 'Build multimodal enterprise applications and autonomous agent pipelines on Vertex AI and Gemini models.' },
+  { id: 'national-cyber-defense', name: 'National Cyber Defense & Zero-Day Challenge', org: 'CERT-In & MeitY',
+    purpose: 'competing', status: 'live', region: 'India — West', mode: 'In-person',
+    areas: ['Cybersecurity', 'Cloud'], prize: '₹20L', deadline: '2026-11-25', regs: 8400, pop: 91,
+    blurb: 'Real-time threat emulation, automated network forensics, and kernel memory exploitation defenses.' },
+  { id: 'autonomous-drone-hack', name: 'NextGen Autonomous Drone & Robotics Hackathon', org: 'Aeronautical Development Agency (ADA)',
+    purpose: 'competing', status: 'upcoming', region: 'India — West', mode: 'In-person',
+    areas: ['Robotics', 'IoT', 'AI / GenAI'], prize: '₹15L + grant', deadline: '2026-12-15', regs: 4100, pop: 80,
+    blurb: 'Hardware build sprint: edge visual odometry, swarm pathfinding, and GPS-denied navigation.' },
+  { id: 'cbdc-finance-hack', name: 'Open Finance & CBDC Innovation Hackathon', org: 'Reserve Bank Innovation Hub (RBIH)',
+    purpose: 'competing', status: 'live', region: 'India — South', mode: 'Virtual',
+    areas: ['FinTech', 'Blockchain', 'Web3'], prize: '₹25L', deadline: '2026-12-05', regs: 9200, pop: 93,
+    blurb: 'Offline digital rupee payment rails, programmable smart vouchers, and micro-merchant settlement.' },
+  { id: 'clean-energy-ai', name: 'Clean Energy Grid AI Prototype Sprint', org: 'Adani Green Energy & SECI',
+    purpose: 'learncompete', status: 'live', region: 'India — West', mode: 'Hybrid',
+    areas: ['Sustainability', 'Data Science', 'IoT'], prize: '₹16L + pilot', deadline: '2026-11-28', regs: 3200, pop: 82,
+    blurb: 'Build working predictive prototypes for microgrid demand response and battery degradation modeling.' },
+  { id: 'medical-imaging-ai', name: 'AI-Powered Diagnostics & Medical Imaging Challenge', org: 'Indian Council of Medical Research (ICMR)',
+    purpose: 'learncompete', status: 'live', region: 'India — North', mode: 'Virtual',
+    areas: ['HealthTech', 'AI / GenAI', 'Data Science'], prize: '₹18L + clinical trial', deadline: '2026-12-02', regs: 4600, pop: 89,
+    blurb: 'Prototype automated radiological anomaly detection and rural telehealth screening tools.' },
+  { id: 'smart-logistics-build', name: 'Smart Logistics & Multimodal Supply Chain Sprint', org: 'PM GatiShakti & National Logistics Portal',
+    purpose: 'learncompete', status: 'live', region: 'India — North', mode: 'Hybrid',
+    areas: ['Product', 'Data Science', 'Cloud'], prize: '₹14L + incubation', deadline: '2026-12-18', regs: 2900, pop: 79,
+    blurb: 'Create route optimization prototypes, cold-chain temperature sensors, and intermodal freight dashboards.' },
+  { id: 'decentralized-id-build', name: 'Decentralized Identity & Verifiable Credentials Build', org: 'National Informatics Centre (NIC) & Polygon Labs',
+    purpose: 'learncompete', status: 'upcoming', region: 'India — South', mode: 'Virtual',
+    areas: ['Web3', 'Blockchain', 'Cybersecurity'], prize: '₹22L', deadline: '2026-12-25', regs: 3700, pop: 86,
+    blurb: 'Build zero-knowledge proofs for citizen credential verification without leaking private PII.' },
+  { id: 'isro-weather-ai', name: 'ISRO Satellite Weather & Disaster Prediction Challenge', org: 'ISRO & NRSC',
+    purpose: 'learncompete', status: 'live', region: 'India — South', mode: 'Hybrid',
+    areas: ['Space', 'Data Science', 'AI / GenAI'], prize: '₹20L + incubation', deadline: '2026-12-12', regs: 5100, pop: 94,
+    blurb: 'Develop high-resolution flash flood forecasting and cyclone trajectory prediction pipelines.' },
 ]
 
 export function byId(id) { return INITIATIVES.find(x => x.id === id) }
@@ -137,11 +221,10 @@ export function recommendedList(st) {
   const areas = st.interests || []
   const region = st.region || ''
   let list = INITIATIVES.filter(o => o.status !== 'past' && !registeredIds.includes(o.id) && !o.unlisted)
-  if (areas.length || region) {
-    const matched = list.filter(o => (o.areas || []).some(a => areas.includes(a)) || o.region === region)
-    if (matched.length) list = matched
-  }
   return list.slice().sort((a, b) => {
+    const matchA = (areas.length && (a.areas || []).some(x => areas.includes(x))) || (region && a.region === region)
+    const matchB = (areas.length && (b.areas || []).some(x => areas.includes(x))) || (region && b.region === region)
+    if (matchA !== matchB) return matchA ? -1 : 1
     const liveA = a.status === 'live', liveB = b.status === 'live'
     if (liveA !== liveB) return liveA ? -1 : 1
     return daysLeft(a.deadline) - daysLeft(b.deadline)
@@ -235,16 +318,52 @@ const MODULE_BANK = {
   'Sustainability': ['Carbon accounting', 'Systems thinking', 'Reporting standards'],
 }
 const MODULE_KIND = ['Video', 'Lab', 'Reading', 'Live session']
+const SECTION_NAMES = ['Introduction', 'Key concepts', 'Applied example', 'Recap']
+const SECTION_SPLIT = [0.15, 0.35, 0.35, 0.15]
+const QUIZ_BANK = [
+  ['Which approach helps keep a response grounded in real data?', ['Citing retrieved sources', 'Longer prompts', 'Higher temperature', 'More parameters'], 0],
+  ['What is the main risk of skipping evaluation?', ['Slower inference', 'Undetected regressions', 'Higher cost only', 'Nothing, it is optional'], 1],
+  ['A guardrail is best described as a', ['UI theme', 'Constraint that blocks unsafe output', 'Type of model', 'Logging library'], 1],
+  ['What makes a lab exercise different from a video module?', ['It has no duration', 'You do it, not just watch it', 'It is always longer', 'It has no title'], 1],
+]
+
+const CONCEPT_BANK = [
+  'Grounding responses in retrieved sources', 'Keeping context windows small and relevant',
+  'Evaluating output quality with real metrics', 'Guardrails as constraints, not afterthoughts',
+  'Designing for graceful failure', 'Measuring before optimizing',
+]
+
+/* Each module carries sections (right-rail nav + resume position), 0-2
+   resources, a 3-4 bullet "key concepts" list, and — for Lab/Reading
+   modules — a 3-question quiz. Same rng(hashStr(...)) determinism as
+   everything else in this file, so the same initiative always generates
+   the same module content. */
 export function modules(o) {
   const r = rng(hashStr(o.id + 'mod'))
   const pool = o.areas.flatMap(a => MODULE_BANK[a] || [])
   const base = pool.length ? pool : ['Getting started', 'Core concepts', 'Applied practice']
   const list = [...base, 'Capstone project']
-  return list.map((title, i) => ({
-    i, title,
-    kind: i === list.length - 1 ? 'Project' : MODULE_KIND[Math.floor(r() * MODULE_KIND.length)],
-    mins: 15 + Math.floor(r() * 50),
-  }))
+  return list.map((title, i) => {
+    const kind = i === list.length - 1 ? 'Project' : MODULE_KIND[Math.floor(r() * MODULE_KIND.length)]
+    const mins = 15 + Math.floor(r() * 50)
+    const sections = SECTION_NAMES.map((name, si) => ({ i: si, title: name, mins: Math.max(3, Math.round(mins * SECTION_SPLIT[si])) }))
+    /* Own rng, seeded per-module rather than drawing from the shared r
+       above — resources are decided per-module and must not shift how many
+       draws happen before the NEXT module's kind/mins get generated. */
+    const rr = rng(hashStr(o.id + 'res' + i))
+    const resources = []
+    if (rr() > 0.4) resources.push({ name: title + ' Guide.pdf', type: 'PDF', size: (1 + rr() * 3).toFixed(1) + ' MB', desc: 'Reference notes for this module.' })
+    if (kind === 'Lab' && rr() > 0.3) resources.push({ name: 'Example code', type: 'GitHub', desc: 'Starter repo with a working baseline.', url: 'https://github.com/hack2skill/examples' })
+    if (rr() > 0.6) resources.push({ name: 'Further reading', type: 'Article', desc: 'External article on the same topic.', url: 'https://hack2skill.com/blog' })
+    const concepts = [0, 1, 2].map(k => CONCEPT_BANK[(i + k) % CONCEPT_BANK.length])
+    const quiz = (kind === 'Lab' || kind === 'Reading')
+      ? { questions: [0, 1, 2].map(k => {
+          const [q, options, correct] = QUIZ_BANK[(i + k) % QUIZ_BANK.length]
+          return { q, options, correct }
+        }) }
+      : null
+    return { i, title, kind, mins, sections, resources, concepts, quiz }
+  })
 }
 
 const ART_VERB = ['Realtime', 'Adaptive', 'Federated', 'Explainable', 'Lightweight', 'Offline-first']
@@ -269,7 +388,7 @@ export function submissionArtifact(key, team, o) {
 export const JOURNEY = {
   learning:     ['Enrolled', 'Modules', 'Capstone', 'Certificate'],
   competing:    ['Registered', 'Team', 'Build', 'Submit', 'Results'],
-  learncompete: ['Enrolled', 'Modules', 'Capstone', 'Registered', 'Statement', 'Build', 'Submit', 'Evaluation'],
+  learncompete: ['Registered', 'Statement', 'Build', 'Submit', 'Results'],
 }
 export function journeyFor(o) {
   const base = JOURNEY[(o || {}).purpose] || ['Registered', 'Work', 'Done']
@@ -293,8 +412,7 @@ export function ofPurpose(st, purpose) {
 }
 export function purposeOpenList(view, st, filters) {
   filters = filters || {}
-  const registeredIds = st.registered || []
-  let list = INITIATIVES.filter(o => o.purpose === view && !registeredIds.includes(o.id) && !o.unlisted)
+  let list = INITIATIVES.filter(o => o.purpose === view && !o.unlisted)
   if (filters.q) list = list.filter(o => (o.name + o.org).toLowerCase().includes(filters.q.toLowerCase()))
   if (filters.area && filters.area !== 'all') list = list.filter(o => (o.areas || []).includes(filters.area))
   if (filters.region && filters.region !== 'all') list = list.filter(o => o.region === filters.region)
@@ -313,6 +431,21 @@ export function purposeModesList(view) {
 export function bagFor(st, key, id, def) {
   return ((st || {})[key] || {})[id] !== undefined ? ((st || {})[key] || {})[id] : def
 }
+
+/* ---- Learn: per-module section/quiz progress. Reuses bagFor's existing
+   {key: {id: value}} shape — 'moduleSections' and 'moduleQuiz' are just
+   two more bags alongside 'lessons', keyed by "initiativeId::moduleIndex". */
+export const moduleKey = (o, m) => o.id + '::' + m.i
+export const moduleSectionsDone = (st, o, m) => bagFor(st, 'moduleSections', moduleKey(o, m), [])
+/* { answers: [correct?, ...] } — one bool per question answered so far. */
+export const moduleQuizState = (st, o, m) => bagFor(st, 'moduleQuiz', moduleKey(o, m), { answers: [] })
+export const quizDone = (st, o, m) => !m.quiz || moduleQuizState(st, o, m).answers.length >= m.quiz.questions.length
+/* A module is completable once every section is done and, if it has a
+   quiz, every question has been answered (score doesn't gate completion —
+   this is a prototype self-check, not a pass/fail exam). */
+export function moduleReady(st, o, m) {
+  return moduleSectionsDone(st, o, m).length >= m.sections.length && quizDone(st, o, m)
+}
 export function reachedFor(o, st) {
   st = st || {}
   const done = bagFor(st, 'lessons', o.id, []) || []
@@ -327,10 +460,9 @@ export function reachedFor(o, st) {
     case 'competing':
       return !team ? 1 : !sub ? 2 : (o.status === 'past' || evaluated) ? 4 : 3
     case 'learncompete': {
-      if (!bagFor(st, 'lcCapstone', o.id, false)) {
-        return done.length === 0 ? 1 : done.length < m.length ? 1 : 2
-      }
-      return 3 + (!ps ? 1 : !sub ? 2 : (o.status === 'past' || evaluated) ? 4 : 3)
+      if (!ps) return 1
+      if (!sub) return 2
+      return (o.status === 'past' || evaluated) ? 4 : 3
     }
   }
   return 1
@@ -508,7 +640,7 @@ export const PROFILE_STEPS = [
   { key: 'region', label: 'Set your region', w: 10 },
   { key: 'interests', label: 'Pick at least 3 interests', w: 20, test: v => (v || []).length >= 3 },
   { key: 'skills', label: 'Add your skills', w: 15, test: v => (v || []).length >= 1 },
-  { key: 'resume', label: 'Upload your resume', w: 10 },
+  { key: 'avatar', label: 'Add a profile photo', w: 10 },
   { key: 'links', label: 'Link GitHub or LinkedIn', w: 10 },
 ]
 export function profileScore(st) {
@@ -563,7 +695,7 @@ export const CREDIT_WEIGHTS = { certificate: 40, submission: 15, achievementShar
 export function creditsFor(st, certCount) {
   st = st || {}; certCount = certCount || 0
   return certCount * CREDIT_WEIGHTS.certificate + (st.submissions || []).length * CREDIT_WEIGHTS.submission
-    + achievements(st).filter(a => a.shared).length * CREDIT_WEIGHTS.achievementShared
+    + achievements(st).length * CREDIT_WEIGHTS.achievementShared
 }
 export const isProfilePublic = st => !!(st || {}).profilePublic
 

@@ -39,7 +39,6 @@ import EditItemModal from '../components/profile/EditItemModal.jsx'
 import EditCertModal from '../components/profile/EditCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
-import ResumeCustomizer from '../components/profile/ResumeCustomizer.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
@@ -173,12 +172,9 @@ export default function Profile() {
   const [editCertModal, setEditCertModal] = useState(null)
   // editLinkModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editLinkModal, setEditLinkModal] = useState(null)
-  // showAllCerts: boolean — toggle all certificates view inside nested profile block
-  const [showAllCerts, setShowAllCerts] = useState(false)
   // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
   const [viewingPhoto, setViewingPhoto] = useState(null)
-  // customizingResume: boolean — nested resume builder preview mode taking space of top card
-  const [customizingResume, setCustomizingResume] = useState(location.state?.customizingResume ?? false)
+  // resumeConfig: saved resume customization state
   const [resumeConfig, setResumeConfig] = useState(location.state?.resumeConfig ?? null)
 
   // ---- inline edit / add / delete state ----
@@ -282,13 +278,6 @@ export default function Profile() {
     setProfile(p => ({ ...p, [field]: (p[field] || []).filter(x => x.id !== id) }))
   }
 
-  function toggleShare(field, id) {
-    setProfile(p => ({
-      ...p,
-      [field]: (p[field] || []).map(x => x.id === id ? { ...x, shared: !x.shared } : x),
-    }))
-  }
-
   function uid(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
   }
@@ -359,9 +348,10 @@ export default function Profile() {
       })),
     ]
 
-    setResumeConfig(prev => prev || {
-      sectionOrder: ['skills', 'projects', 'education', 'certifications', 'achievements'],
+    const initialConfig = {
+      sectionOrder: ['summary', 'skills', 'projects', 'education', 'certifications', 'achievements'],
       includedSections: {
+        summary: true,
         skills: true,
         projects: true,
         education: true,
@@ -369,6 +359,7 @@ export default function Profile() {
         achievements: true,
       },
       customItems: {
+        summary: profile.about || '',
         skills: profile.skills || [],
         projects: (profile.projects || []).map(p => ({ ...p, _included: true })),
         education: (profile.education || []).map(e => ({ ...e, _included: true })),
@@ -376,8 +367,16 @@ export default function Profile() {
         achievements: (profile.achievements || []).map(a => ({ ...a, _included: true })),
         links: profile.connectedProfiles || [],
       },
+    }
+
+    navigate('/profile/resume', {
+      state: {
+        profile,
+        initiatives: inits,
+        avatar,
+        config: initialConfig,
+      },
     })
-    setCustomizingResume(true)
   }
 
   // ================================================================
@@ -441,6 +440,7 @@ export default function Profile() {
           <KVRow label="Headline"     value={profile.headline} />
           <KVRow label="Organisation" value={profile.org}    />
           <KVRow label="Region"       value={profile.region} />
+          {profile.phone && <KVRow label="Phone" value={profile.phone} />}
           <KVRow label="Email"        value={profile.email}  last />
         </div>
       </SectionCard>
@@ -477,93 +477,7 @@ export default function Profile() {
         </div>
       </SectionCard>
 
-      {/* Roles */}
-      <SectionCard title="Roles">
-        <div className="mt-4 space-y-0">
-          {(profile.roles ?? []).length > 0 ? (
-            (profile.roles ?? []).map(r => (
-              <div key={r.key} className="flex items-center justify-between gap-4 py-3 border-b border-paper-line last:border-0">
-                <div className="flex items-center gap-3">
-                  <Pill variant={r.primary ? 'hat' : 'default'}>{r.label}</Pill>
-                  {r.primary && <span className="text-[11px] text-graphite-dim">your landing view</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] text-graphite-dim">Active</span>
-                  {/* Go to view button — stub; wire to dashboard view when teammate's shell is merged */}
-                  <button
-                    type="button"
-                    id={`btn-go-to-view-${r.key}`}
-                    onClick={() => navigate(`/dashboard?view=${r.key}`)}
-                    title={`Go to your ${r.label} view`}
-                    className={[
-                      'inline-flex items-center gap-1 px-2.5 py-[4px] text-[11.5px] font-semibold',
-                      'border border-paper-line rounded-[2px] bg-white text-graphite-dim',
-                      'hover:border-signal hover:text-signal transition-colors cursor-pointer',
-                    ].join(' ')}
-                  >
-                    Go to view →
-                  </button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-[13px] text-graphite-dim py-2">Engage with a view and your hat appears here.</p>
-          )}
-        </div>
 
-        {/* Landing view picker (stub) */}
-        <div className="mt-4 pt-3 border-t border-paper-line">
-          <p className="text-[10.5px] font-mono font-semibold tracking-widest text-graphite-dim uppercase">Landing view</p>
-          <p className="text-[11px] text-graphite-dim mt-1.5 mb-3">Where you arrive after logging in.</p>
-          <div className="flex flex-wrap gap-2">
-            {['🏠 Dashboard', '📚 Learn', '🏆 Compete', '🛠️ Build'].map(v => {
-              const k = v.split(' ')[1].toLowerCase()
-              const isOn = profile.landingView === k
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => updateField('landingView', k)}
-                  className={[
-                    'px-3.5 py-2 text-[13px] rounded-[2px] border font-medium cursor-pointer transition-colors',
-                    isOn
-                      ? 'bg-signal text-white border-signal'
-                      : 'bg-white text-graphite-dim border-paper-line hover:border-graphite-dim',
-                  ].join(' ')}
-                >
-                  {v}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Register as mentor CTA */}
-        <div className="mt-4 pt-3 border-t border-paper-line flex flex-wrap items-center justify-between gap-4">
-          <p className="text-[13px] text-graphite-dim flex-1 min-w-[240px]">
-            Experienced enough to guide teams or score submissions? Anyone can register — the H2S team approves mentors.
-          </p>
-          <button
-            type="button"
-            className="px-3 py-[5px] text-[12px] font-semibold bg-signal text-white rounded-[2px] hover:bg-signal-dark cursor-pointer"
-          >
-            Register as a mentor
-          </button>
-        </div>
-
-        {/* Become a sponsor CTA */}
-        <div className="mt-3 pt-3 border-t border-paper-line flex flex-wrap items-center justify-between gap-4">
-          <p className="text-[13px] text-graphite-dim flex-1 min-w-[240px]">
-            Representing an organisation that wants to run a challenge, hire from one, or put up a prize pool?
-          </p>
-          <a
-            href="/sponsor"
-            className="px-3 py-[5px] text-[12px] font-bold border-[1.5px] border-violet text-violet bg-violet-soft rounded-[2px] hover:bg-violet hover:text-white transition-colors"
-          >
-            Become a Sponsor
-          </a>
-        </div>
-      </SectionCard>
 
       {/* Interests */}
       <SectionCard
@@ -822,15 +736,6 @@ export default function Profile() {
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {p.title}
                       </h4>
-                      {p.shared ? (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                          ✓ Shared on public profile
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                          Private
-                        </span>
-                      )}
                     </div>
 
                     {p.description && (
@@ -952,15 +857,6 @@ export default function Profile() {
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {p.title}
                       </h4>
-                      {p.shared ? (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                          ✓ Shared
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                          Private
-                        </span>
-                      )}
                     </div>
 
                     {p.description && (
@@ -1033,7 +929,7 @@ export default function Profile() {
         }
       >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Highlight hackathon wins, honors, or milestones. Toggle "Share on public profile" to show on your link.
+          Highlight hackathon wins, honors, or milestones.
         </p>
         {(profile.achievements ?? []).length > 0 ? (
           <div className="mt-4 divide-y divide-paper-line">
@@ -1046,15 +942,6 @@ export default function Profile() {
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {a.title}
                       </h4>
-                      {a.shared ? (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                          ✓ Shared
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                          Private
-                        </span>
-                      )}
                     </div>
 
                     {a.description && (
@@ -1089,13 +976,8 @@ export default function Profile() {
   )
 
   // ---- CERTIFICATES ----
-  const earnedCerts  = inits?.completed ?? []
-  const pendingCerts = inits?.pending   ?? []
-  const totalEarned  = earnedCerts.length
-  const totalPending = pendingCerts.length
-  // Cap displayed certs to 2 in the tab — user can see all via "Show all"
-  const CERT_PREVIEW_LIMIT = 2
-  const displayedCerts = earnedCerts.slice(0, CERT_PREVIEW_LIMIT)
+  const earnedCerts = inits?.completed ?? []
+  const totalEarned = earnedCerts.length
 
   // Reusable Self-added certificates SectionCard for both preview and expanded views
   const SelfAddedCertsSection = (
@@ -1118,7 +1000,7 @@ export default function Profile() {
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Unverified — credentials earned elsewhere. Turn on "Share on public profile" to include on your public link.
+        Credentials and certificates earned from external organizations and learning platforms.
       </p>
       {(() => {
         const sortedSelfCerts = [...(profile.selfCerts ?? [])].sort((a, b) => {
@@ -1140,15 +1022,6 @@ export default function Profile() {
                     <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                       {c.title}
                     </h4>
-                    {c.shared ? (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                        ✓ Shared on public profile
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                        Private
-                      </span>
-                    )}
                   </div>
 
                   {(c.org || c.issueDate || c.date) && (
@@ -1228,27 +1101,9 @@ export default function Profile() {
     </SectionCard>
   )
 
-  const CertificatesTab = showAllCerts ? (
+  const CertificatesTab = (
     <div className="space-y-4">
-      {/* Back button header inside nested block */}
-      <div className="flex items-center justify-between pb-1">
-        <button
-          type="button"
-          id="btn-back-to-certs-summary"
-          onClick={() => setShowAllCerts(false)}
-          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-signal hover:underline cursor-pointer"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span>Back to certificates summary</span>
-        </button>
-        <span className="text-[12px] font-semibold text-graphite-dim">
-          All Certificates ({totalEarned + totalPending})
-        </span>
-      </div>
-
-      {/* Full H2S Verified Certificates list */}
+      {/* H2S Verified Certificates */}
       <SectionCard
         title={
           <span className="flex items-center gap-2 flex-wrap">
@@ -1258,7 +1113,7 @@ export default function Profile() {
         }
       >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Issued automatically the moment an initiative closes — read-only, verifiable certificates.
+          Issued automatically the moment an initiative closes — read-only, never editable.
         </p>
         {earnedCerts.length > 0 ? (
           earnedCerts.map(o => (
@@ -1267,8 +1122,6 @@ export default function Profile() {
               icon=""
               title={o.name}
               subtitle={`${o.org} · Verifiable ID ${o.verifiableId}`}
-              verified
-              verifiedId={o.verifiableId}
               onView={() => navigate(`/profile/certificate/${o.id}`, {
                 state: {
                   cert: o,
@@ -1282,97 +1135,6 @@ export default function Profile() {
           <p className="text-[13px] text-graphite-dim py-4">
             Nothing yet — certificates appear automatically when an initiative closes.
           </p>
-        )}
-
-        {/* Pending certs — shown under the same section, dimmed */}
-        {pendingCerts.length > 0 && (
-          <div className="pt-4 mt-2 border-t border-paper-line">
-            <p className="text-[11px] font-mono font-semibold tracking-widest uppercase text-graphite-dim mb-1">
-              Pending ({pendingCerts.length})
-            </p>
-            <p className="text-[12px] text-graphite-dim mb-2">
-              These initiatives closed or are in review — your certificate will appear here once issued.
-            </p>
-            {pendingCerts.map(c => (
-              <div key={c.id} className="flex items-center gap-3 py-3 border-b border-paper-line last:border-0 opacity-60">
-                <span className="text-[20px]">⏳</span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13.5px] font-semibold text-ink-900">{c.name}</span>
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#fff8e7] text-[#b08000] rounded-[2px] uppercase">
-                      ⏳ Pending
-                    </span>
-                  </div>
-                  <p className="text-[12px] text-graphite-dim mt-0.5">{c.org}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* Self-added certificates */}
-      {SelfAddedCertsSection}
-    </div>
-  ) : (
-    <div className="space-y-4">
-      {/* H2S Verified (preview of 2) */}
-      <SectionCard
-        title={
-          <span className="flex items-center gap-2 flex-wrap">
-            H2S Verified Certificates
-            <span className="font-normal text-[13px] text-ink-900">({totalEarned})</span>
-            {totalPending > 0 && (
-              <span className="font-normal text-[12px] text-graphite-dim/70">{totalPending} pending</span>
-            )}
-          </span>
-        }
-      >
-        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Issued automatically the moment an initiative closes — read-only, never editable.
-        </p>
-        {displayedCerts.length > 0 ? (
-          displayedCerts.map(o => (
-            <AchRow
-              key={o.id}
-              icon=""
-              title={o.name}
-              subtitle={`${o.org} · Verifiable ID ${o.verifiableId}`}
-              verified
-              verifiedId={o.verifiableId}
-              onView={() => navigate(`/profile/certificate/${o.id}`, {
-                state: {
-                  cert: o,
-                  userName: profile.name,
-                  returnTo: { path: '/profile', state: { tab: 'certificates' } },
-                },
-              })}
-            />
-          ))
-        ) : (
-          <p className="text-[13px] text-graphite-dim py-4">
-            Nothing yet — certificates appear automatically when an initiative closes.
-          </p>
-        )}
-
-        {/* LinkedIn-style full-width "Show all certificates" button opening in same nested block */}
-        {(totalEarned > 0 || totalPending > 0) && (
-          <button
-            id="btn-show-all-certs"
-            type="button"
-            onClick={() => setShowAllCerts(true)}
-            className={[
-              'w-full mt-4 py-3 text-[13.5px] font-semibold text-graphite-dim',
-              'border-t border-paper-line hover:bg-paper transition-colors cursor-pointer',
-              'flex items-center justify-center gap-1.5 rounded-b-card -mx-[1px] -mb-[1px]',
-            ].join(' ')}
-          >
-            Show all certificates
-            {totalEarned + totalPending > CERT_PREVIEW_LIMIT && (
-              <span className="text-[12px] text-graphite-dim/60">({totalEarned + totalPending})</span>
-            )}
-            <span className="text-[14px]">→</span>
-          </button>
         )}
       </SectionCard>
 
@@ -1402,7 +1164,7 @@ export default function Profile() {
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Connect your developer accounts, coding profiles, and online presence. Toggle "Share on public profile" to control public visibility.
+        Connect your developer accounts, coding profiles, and online presence.
       </p>
 
       {(profile.connectedProfiles ?? []).length > 0 ? (
@@ -1418,15 +1180,6 @@ export default function Profile() {
                     <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                       {item.platform}
                     </h4>
-                    {item.shared ? (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#e7f6ee] text-[#0f9d58] rounded-[2px]">
-                        ✓ Shared
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-paper text-graphite-dim border border-paper-line rounded-[2px]">
-                        Private
-                      </span>
-                    )}
                   </div>
                   <a
                     href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}
@@ -1541,28 +1294,8 @@ export default function Profile() {
   // ================================================================
   return (
     <div className="w-full">
-      <div className="max-w-[800px] mx-auto pb-12">
+      <div className="w-full pb-12">
 
-        {customizingResume ? (
-          <ResumeCustomizer
-            profile={profile}
-            initiatives={inits}
-            config={resumeConfig}
-            onChangeConfig={setResumeConfig}
-            onBack={() => setCustomizingResume(false)}
-            onGenerate={() => {
-              navigate('/profile/resume', {
-                state: {
-                  profile,
-                  initiatives: inits,
-                  avatar,
-                  config: resumeConfig,
-                },
-              })
-            }}
-          />
-        ) : (
-          <>
             {/* ── Profile header card ── */}
             <div className="bg-white border border-paper-line rounded-card overflow-hidden shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)] mb-6">
           <CoverBand
@@ -1646,6 +1379,7 @@ export default function Profile() {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <span className="font-mono text-ink-900 break-all">{profileUrl}</span>
                   <button
+                    id="btn-copy-share-link"
                     type="button"
                     onClick={handleCopyLink}
                     className="px-3 py-1 text-[11px] font-semibold bg-signal text-white rounded-[2px] hover:bg-signal-dark transition-colors cursor-pointer whitespace-nowrap"
@@ -1653,18 +1387,6 @@ export default function Profile() {
                     {copyDone ? '✓ Copied!' : 'Copy link'}
                   </button>
                 </div>
-                <p className="text-[11px] text-graphite-dim mt-2 leading-relaxed">
-                  {profile.isPublic
-                    ? 'Public — shows badges, XP, verified certificates, and any item you\'ve marked "shared". Email is never shown.'
-                    : 'Private — a visitor sees only your banner, avatar and name. Nothing else, until you switch to Public.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/profile/preview', { state: { profile, avatar, initiatives: inits } })}
-                  className="mt-2 text-signal hover:underline text-[11.5px] font-medium inline-block cursor-pointer"
-                >
-                  👁 Preview what a visitor sees →
-                </button>
               </div>
             )}
 
@@ -1684,7 +1406,7 @@ export default function Profile() {
         </div>
 
         {/* ── Tab bar ── */}
-        <TabBar tabs={TABS} active={tab} onSelect={(newTab) => { setTab(newTab); setShowAllCerts(false); }} />
+        <TabBar tabs={TABS} active={tab} onSelect={(newTab) => setTab(newTab)} />
 
         {/* ── Tab panel ── */}
         <div
@@ -1694,8 +1416,6 @@ export default function Profile() {
         >
           {TAB_BODY[tab] ?? null}
         </div>
-      </>
-    )}
   </div>
 
       {/* Delete confirmation dialog */}
@@ -1931,7 +1651,7 @@ function SkeletonBox({ className = '' }) {
 function ProfileSkeleton() {
   return (
     <div className="min-h-screen bg-paper">
-      <div className="max-w-[780px] mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full px-4 sm:px-6 py-8">
         <div className="bg-white border border-paper-line rounded-card overflow-hidden mb-6">
           <SkeletonBox className="h-[110px] w-full rounded-none" />
           <div className="px-5 py-5 space-y-3">

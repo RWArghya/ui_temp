@@ -10,22 +10,22 @@
  * @param {string}   active      key of the active tab
  * @param {function} onSelect    (key) => void
  */
-export default function TabBar({ tabs, active, onSelect }) {
+export default function TabBar({ tabs, active, onSelect, ariaLabel = "Sections", idPrefix = "profile-tab" }) {
   return (
     <div
       className="flex gap-1 border-b border-paper-line mb-6 overflow-x-auto no-scrollbar"
       role="tablist"
-      aria-label="Profile sections"
+      aria-label={ariaLabel}
     >
       {tabs.map(({ key, label }) => {
         const isActive = key === active
         return (
           <button
             key={key}
-            id={`profile-tab-${key}`}
+            id={`${idPrefix}-${key}`}
             role="tab"
             aria-selected={isActive}
-            aria-controls={`profile-panel-${key}`}
+            aria-controls={`${idPrefix}-panel-${key}`}
             onClick={() => onSelect(key)}
             className={[
               'px-4 py-3 text-[14px] font-medium whitespace-nowrap cursor-pointer',

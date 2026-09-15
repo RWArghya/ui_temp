@@ -13,7 +13,6 @@ export default function EditCertModal({
   const [issueDate, setIssueDate] = useState('')
   const [link, setLink] = useState('')
   const [photo, setPhoto] = useState('')
-  const [shared, setShared] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -23,14 +22,12 @@ export default function EditCertModal({
         setIssueDate(initialData.issueDate || initialData.date || '')
         setLink(initialData.link || '')
         setPhoto(initialData.photo || initialData.proofUrl || '')
-        setShared(Boolean(initialData.shared))
       } else {
         setTitle('')
         setOrg('')
         setIssueDate('')
         setLink('')
         setPhoto('')
-        setShared(false)
       }
     }
   }, [isOpen, initialData])
@@ -70,7 +67,6 @@ export default function EditCertModal({
       link: link.trim(),
       photo: photo || '',
       proofUrl: photo || '',
-      shared,
     })
   }
 
@@ -200,24 +196,6 @@ export default function EditCertModal({
               />
             </label>
           )}
-        </div>
-
-        {/* Share on Public Profile Toggle */}
-        <div className="pt-2 border-t border-paper-line">
-          <label className="flex items-center justify-between p-2.5 rounded-[2px] bg-paper border border-paper-line cursor-pointer">
-            <div>
-              <span className="text-[12.5px] font-bold text-ink-900 block">Share on public profile</span>
-              <span className="text-[11px] text-graphite-dim block">
-                Allow visitors with your public profile link to view this certificate.
-              </span>
-            </div>
-            <input
-              type="checkbox"
-              checked={shared}
-              onChange={e => setShared(e.target.checked)}
-              className="w-4 h-4 rounded border-paper-line text-signal focus:ring-signal"
-            />
-          </label>
         </div>
 
         {/* Footer actions */}

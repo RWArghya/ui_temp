@@ -32,7 +32,7 @@ export default function LevelStrip({ level, xp, xpNext, xpPct, badgeCount, credi
       {/* Level badge */}
       <div
         className={[
-          'w-[38px] h-[38px] rounded-full flex-none grid place-items-center',
+          'w-[38px] h-[38px] min-w-[38px] max-w-[38px] rounded-full flex-none flex items-center justify-center',
           'bg-signal-soft text-signal-dark font-bold text-[13px] font-display',
         ].join(' ')}
         aria-hidden="true"

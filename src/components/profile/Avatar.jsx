@@ -14,9 +14,9 @@
  * @param {function}      onClear    "Remove photo" action (only rendered when src is set)
  */
 const SIZE = {
-  sm: 'w-[30px] h-[30px] text-[11px]',
-  md: 'w-[34px] h-[34px] text-[13px]',
-  xl: 'w-[84px] h-[84px] text-[26px] border-[4px] border-white shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)]',
+  sm: 'w-[30px] h-[30px] min-w-[30px] max-w-[30px] text-[11px]',
+  md: 'w-[34px] h-[34px] min-w-[34px] max-w-[34px] text-[13px]',
+  xl: 'w-[84px] h-[84px] min-w-[84px] max-w-[84px] text-[26px] border-[4px] border-white shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)]',
 }
 
 function initials(name) {
@@ -27,7 +27,7 @@ function initials(name) {
 
 export default function Avatar({ src, name, size = 'md', onUpload, className = '' }) {
   const ring = SIZE[size] || SIZE.md
-  const base = `rounded-full flex-none bg-ink-900 text-white grid place-items-center font-bold ${ring} ${className}`
+  const base = `rounded-full flex-none bg-ink-900 text-white flex items-center justify-center font-bold ${ring} ${className}`
 
   const inner = src
     ? <img src={src} alt={name || 'Avatar'} className="w-full h-full rounded-full object-cover" />
