@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+
 /* ---- Modal ----
  * Reusable modal matching the exact design tokens of ConfirmDialog.jsx and the project.
  */
@@ -9,12 +11,14 @@ export default function Modal({
   onClose,
   maxWidth = 'max-w-md',
 }) {
+  const downOnBackdrop = useRef(false)
   if (!isOpen) return null
 
   return (
     <div
       className="fixed inset-0 z-50 bg-ink-900/40 flex items-center justify-center p-4"
-      onClick={onClose}
+      onMouseDown={e => { downOnBackdrop.current = e.target === e.currentTarget }}
+      onClick={e => { if (downOnBackdrop.current && e.target === e.currentTarget) onClose() }}
     >
       <div
         className={`bg-white rounded-card border border-paper-line shadow-2xl ${maxWidth} w-full overflow-hidden`}

@@ -629,7 +629,13 @@ ul{ margin:0; padding:0; list-style:none; }
 
 /* ---- Modal ---- */
 .modal-backdrop{ position:fixed; inset:0; background:rgba(15,22,41,.45); z-index:100; display:flex; align-items:center; justify-content:center; padding:24px; }
-.modal{ background:var(--surface); border-radius:0; box-shadow:var(--sh-lg); width:100%; max-width:520px; max-height:88vh; overflow:auto; }
+/* all:revert first — daisyUI ships its own unscoped .modal for a native
+   <dialog>, hidden by default via visibility/pointer-events/opacity until
+   its [open] attribute is set. This is a plain div, never gets [open], so
+   without reverting those properties first the modal renders in the DOM
+   but stays invisible and unclickable (same class of bug as .btn/.card/
+   .avatar elsewhere in this file). */
+.modal{ all:revert; background:var(--surface); border-radius:0; box-shadow:var(--sh-lg); width:100%; max-width:520px; max-height:88vh; overflow:auto; display:block; visibility:visible; opacity:1; pointer-events:auto; position:static; }
 .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line-soft); }
 .modal-body{ padding:22px; }
 .modal-foot{ padding:16px 22px; border-top:1px solid var(--line-soft); display:flex; justify-content:flex-end; gap:10px; }

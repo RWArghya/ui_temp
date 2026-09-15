@@ -699,18 +699,21 @@ export function creditsFor(st, certCount) {
 }
 export const isProfilePublic = st => !!(st || {}).profilePublic
 
-/* ---- Settings: notification/privacy prefs, merged over sane defaults so a
-   fresh account (no st.settings yet) still renders real toggle states
-   instead of undefined. Settings.jsx never reads st.settings directly. */
+/* ---- Settings: notification prefs, merged over sane defaults so a fresh
+   account (no st.settings yet) still renders real toggle states instead of
+   undefined. Settings.jsx never reads st.settings directly.
+   Three broad categories, not one row per event type — nothing elsewhere
+   in the app reads the old per-event keys (deadlines/applicationStatus/
+   evaluations/programUpdates were never consumed by a real notification
+   producer), so collapsing them here is a data-model simplification, not
+   just a UI one. */
 export const NOTIFICATION_DEFAULTS = {
-  deadlines: true, applicationStatus: true, sessions: true, evaluations: true, programUpdates: true, channel: 'inapp',
+  activity: true, sessions: true, announcements: true, channel: 'inapp',
 }
 export function settingsFor(st) {
   const s = (st || {}).settings || {}
   return {
     notifications: { ...NOTIFICATION_DEFAULTS, ...(s.notifications || {}) },
-    discoverable: !!s.discoverable,
-    openToTeams: !!s.openToTeams,
   }
 }
 
