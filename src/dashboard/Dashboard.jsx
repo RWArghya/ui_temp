@@ -5,7 +5,7 @@ import { authStore } from '../store/auth'
 import './proto.css'
 import {
   VIEWS, initials, mentorStatus, mentorRoleLabel,
-  approvedChallenges, notesFor, unreadFor, profileScore,
+  approvedChallenges, notesFor, unreadFor, profileScore, byId,
 } from './data'
 import { Sidebar, Topbar } from './Shell'
 import { ProfileProgressCard } from './Cards'
@@ -42,7 +42,7 @@ export default function Dashboard({ defaultView }) {
   }, [logged.onboarded])
 
   function go(view, id) {
-    if (id) { navigate('/dashboard/workspace?id=' + id); return }
+    if (id) { navigate('/dashboard/workspace?id=' + id + (view ? '&from=' + view : '')); return }
     if (view === 'profile') { navigate('/profile'); return }
     if (view === 'home') { navigate('/dashboard'); return }
     navigate('/dashboard?view=' + view)
@@ -108,11 +108,24 @@ function DashMain({ sp, st, sv, go, reset, defaultView }) {
    the right column. */
 function SubShell({ st, sv, go, children }) {
   const navigate = useNavigate()
+  const [sp] = useSearchParams()
+  const id = sp.get('id')
+  const from = sp.get('from')
+  const o = byId(id)
+
+  let activeKey = 'home'
+  if (from) {
+    if (HOME_GROUP.has(from)) activeKey = 'home'
+    else activeKey = from
+  } else if (o?.purpose) {
+    activeKey = o.purpose
+  }
+
   const out = () => { sv({}); authStore.clear(); navigate('/auth') }
   return (
     <div className="dash-root">
       <div className="shell">
-        <Sidebar mode="innovator" active="home" st={st}
+        <Sidebar mode="innovator" active={activeKey} st={st}
           show={(v) => go(v)}
           onLoadSample={() => sv(seedDemoPatch(st))}
           onReset={() => { if (confirm('Reset all demo activity?')) sv({}) }}
@@ -124,7 +137,9 @@ function SubShell({ st, sv, go, children }) {
             st={st}
             sv={sv}
             who="innovator"
+            view={activeKey}
             onProfile={() => go('profile')}
+            onActivity={() => go('activity')}
             onSettings={() => go('settings')}
             onSignOut={out}
           />

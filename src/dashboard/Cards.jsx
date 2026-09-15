@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from './Icon'
 import { daysLeft, isSaved, toggleSavedPatch, progressPctFor, PROFILE_STEPS, profileScore } from './data'
 
@@ -41,9 +41,11 @@ function daysLeftLabel(deadline) {
    one other control and never navigates (stopPropagation). */
 export function InitiativeCard({ o, st, sv, dest, progress, stepLabel }) {
   const navigate = useNavigate()
+  const [sp] = useSearchParams()
+  const currentView = sp.get('view') || 'home'
   const meta = purposeMeta(o.purpose)
   const saved = isSaved(o.id, st)
-  const href = `/dashboard/${dest === 'workspace' ? 'workspace' : 'initiative'}?id=${o.id}`
+  const href = `/dashboard/${dest === 'workspace' ? 'workspace' : 'initiative'}?id=${o.id}&from=${currentView}`
   const showProgress = !!progress
   const pct = showProgress ? progressPctFor(o, st) : 0
   const actionTitle = dest === 'workspace' ? 'Continue' : 'View'

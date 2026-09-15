@@ -282,16 +282,52 @@ const MODULE_BANK = {
   'Sustainability': ['Carbon accounting', 'Systems thinking', 'Reporting standards'],
 }
 const MODULE_KIND = ['Video', 'Lab', 'Reading', 'Live session']
+const SECTION_NAMES = ['Introduction', 'Key concepts', 'Applied example', 'Recap']
+const SECTION_SPLIT = [0.15, 0.35, 0.35, 0.15]
+const QUIZ_BANK = [
+  ['Which approach helps keep a response grounded in real data?', ['Citing retrieved sources', 'Longer prompts', 'Higher temperature', 'More parameters'], 0],
+  ['What is the main risk of skipping evaluation?', ['Slower inference', 'Undetected regressions', 'Higher cost only', 'Nothing, it is optional'], 1],
+  ['A guardrail is best described as a', ['UI theme', 'Constraint that blocks unsafe output', 'Type of model', 'Logging library'], 1],
+  ['What makes a lab exercise different from a video module?', ['It has no duration', 'You do it, not just watch it', 'It is always longer', 'It has no title'], 1],
+]
+
+const CONCEPT_BANK = [
+  'Grounding responses in retrieved sources', 'Keeping context windows small and relevant',
+  'Evaluating output quality with real metrics', 'Guardrails as constraints, not afterthoughts',
+  'Designing for graceful failure', 'Measuring before optimizing',
+]
+
+/* Each module carries sections (right-rail nav + resume position), 0-2
+   resources, a 3-4 bullet "key concepts" list, and — for Lab/Reading
+   modules — a 3-question quiz. Same rng(hashStr(...)) determinism as
+   everything else in this file, so the same initiative always generates
+   the same module content. */
 export function modules(o) {
   const r = rng(hashStr(o.id + 'mod'))
   const pool = o.areas.flatMap(a => MODULE_BANK[a] || [])
   const base = pool.length ? pool : ['Getting started', 'Core concepts', 'Applied practice']
   const list = [...base, 'Capstone project']
-  return list.map((title, i) => ({
-    i, title,
-    kind: i === list.length - 1 ? 'Project' : MODULE_KIND[Math.floor(r() * MODULE_KIND.length)],
-    mins: 15 + Math.floor(r() * 50),
-  }))
+  return list.map((title, i) => {
+    const kind = i === list.length - 1 ? 'Project' : MODULE_KIND[Math.floor(r() * MODULE_KIND.length)]
+    const mins = 15 + Math.floor(r() * 50)
+    const sections = SECTION_NAMES.map((name, si) => ({ i: si, title: name, mins: Math.max(3, Math.round(mins * SECTION_SPLIT[si])) }))
+    /* Own rng, seeded per-module rather than drawing from the shared r
+       above — resources are decided per-module and must not shift how many
+       draws happen before the NEXT module's kind/mins get generated. */
+    const rr = rng(hashStr(o.id + 'res' + i))
+    const resources = []
+    if (rr() > 0.4) resources.push({ name: title + ' Guide.pdf', type: 'PDF', size: (1 + rr() * 3).toFixed(1) + ' MB', desc: 'Reference notes for this module.' })
+    if (kind === 'Lab' && rr() > 0.3) resources.push({ name: 'Example code', type: 'GitHub', desc: 'Starter repo with a working baseline.', url: 'https://github.com/hack2skill/examples' })
+    if (rr() > 0.6) resources.push({ name: 'Further reading', type: 'Article', desc: 'External article on the same topic.', url: 'https://hack2skill.com/blog' })
+    const concepts = [0, 1, 2].map(k => CONCEPT_BANK[(i + k) % CONCEPT_BANK.length])
+    const quiz = (kind === 'Lab' || kind === 'Reading')
+      ? { questions: [0, 1, 2].map(k => {
+          const [q, options, correct] = QUIZ_BANK[(i + k) % QUIZ_BANK.length]
+          return { q, options, correct }
+        }) }
+      : null
+    return { i, title, kind, mins, sections, resources, concepts, quiz }
+  })
 }
 
 const ART_VERB = ['Realtime', 'Adaptive', 'Federated', 'Explainable', 'Lightweight', 'Offline-first']
@@ -359,6 +395,21 @@ export function purposeModesList(view) {
 
 export function bagFor(st, key, id, def) {
   return ((st || {})[key] || {})[id] !== undefined ? ((st || {})[key] || {})[id] : def
+}
+
+/* ---- Learn: per-module section/quiz progress. Reuses bagFor's existing
+   {key: {id: value}} shape — 'moduleSections' and 'moduleQuiz' are just
+   two more bags alongside 'lessons', keyed by "initiativeId::moduleIndex". */
+export const moduleKey = (o, m) => o.id + '::' + m.i
+export const moduleSectionsDone = (st, o, m) => bagFor(st, 'moduleSections', moduleKey(o, m), [])
+/* { answers: [correct?, ...] } — one bool per question answered so far. */
+export const moduleQuizState = (st, o, m) => bagFor(st, 'moduleQuiz', moduleKey(o, m), { answers: [] })
+export const quizDone = (st, o, m) => !m.quiz || moduleQuizState(st, o, m).answers.length >= m.quiz.questions.length
+/* A module is completable once every section is done and, if it has a
+   quiz, every question has been answered (score doesn't gate completion —
+   this is a prototype self-check, not a pass/fail exam). */
+export function moduleReady(st, o, m) {
+  return moduleSectionsDone(st, o, m).length >= m.sections.length && quizDone(st, o, m)
 }
 export function reachedFor(o, st) {
   st = st || {}

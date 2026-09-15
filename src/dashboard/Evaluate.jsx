@@ -1,12 +1,30 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import Icon from './Icon'
 import { Card, PageHead, Field, Kv } from './ui'
 import { byId, RUBRIC, bagFor, submissionArtifact, SELF_KEY } from './data'
 
 export default function Evaluate({ st, sv, go }) {
   const [sp] = useSearchParams()
   const id = sp.get('id')
+  const from = sp.get('from')
   const o = byId(id)
+
+  const backTarget = from || (o?.purpose ? o.purpose : 'home')
+  const BACK_LABELS = {
+    home: 'Dashboard',
+    learning: 'Learn',
+    competing: 'Compete',
+    learncompete: 'Build',
+    activity: 'My Activity',
+    saved: 'Saved',
+    recent: 'Recent',
+    continuing: 'Dashboard',
+    recommended: 'Recommended for you',
+  }
+  const backLabel = BACK_LABELS[backTarget] || 'Dashboard'
+  const handleBack = () => (go ? go(backTarget) : null)
+
   const [r, setR] = useState({})
   if (!o) return <PageHead title="Evaluation" />
   const team = bagFor(st, 'teams', o.id, null) || 'solo'
@@ -17,6 +35,11 @@ export default function Evaluate({ st, sv, go }) {
 
   return (
     <>
+      <div className="mb-3">
+        <a className="btn btn-ghost btn-sm rounded-[4px] cursor-pointer" onClick={handleBack}>
+          <Icon name="ArrowLeft" size={14} /> {backLabel}
+        </a>
+      </div>
       <PageHead>
         <h2 className="mb-1.5">Evaluate {o.name}</h2>
         <p className="text-sm text-dash-muted">Score your own artifact against the rubric. Honest feedback closes the loop.</p>
@@ -31,7 +54,7 @@ export default function Evaluate({ st, sv, go }) {
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-dash-line-soft"><div className="h-full bg-ramp" style={{ width: existing.total * 20 + '%' }} /></div>
           <p className="mt-1 text-xs text-dash-faint">{existing.total} / 50</p>
           {RUBRIC.map(k => <Kv key={k} k={k} v={existing[k] + ' / 10'} />)}
-          <Link className="btn btn-ghost mt-2 rounded-btn border border-dash-line-soft" to={'/dashboard?view=' + (o.purpose === 'competing' ? 'competing' : 'learning')}>Back to dashboard</Link>
+          <button className="btn btn-ghost mt-2 rounded-[4px] border border-dash-line-soft cursor-pointer" onClick={handleBack}>Back to {backLabel}</button>
         </Card>
       ) : (
         <Card title="Rubric — self score" className="mt-4">
