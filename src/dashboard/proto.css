@@ -145,9 +145,12 @@ ul{ margin:0; padding:0; list-style:none; }
 .app-sidebar{
   position:sticky; top:0; height:100vh; width:var(--sidebar-w);
   background:var(--surface); border-right:1px solid var(--line);
-  display:flex; flex-direction:column; padding:18px 14px; overflow:visible; z-index:40;
+  display:flex; flex-direction:column; padding:0 14px 18px; overflow:visible; z-index:40;
 }
-.brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 18px; }
+.brand{
+  display:flex; align-items:center; gap:10px; height:var(--topbar-h); padding:0 8px;
+  border-bottom:1px solid var(--line-soft); margin-bottom:10px; cursor:pointer;
+}
 .brand-mark{
   width:32px; height:32px; border-radius:9px; display:grid; place-items:center;
   background:var(--primary); color:#fff; font-weight:800; font-size:14px;
@@ -263,6 +266,21 @@ ul{ margin:0; padding:0; list-style:none; }
   border-bottom:1px solid var(--line); display:flex; align-items:center;
   padding:0 28px; gap:16px;
 }
+.topbar-nav-start{
+  display:flex; align-items:center; gap:12px; min-width:0; max-width:calc(100% - 140px);
+}
+.btn-topbar-back{
+  width:36px; height:36px; border-radius:50%; border:1px solid var(--line);
+  background:var(--surface); display:grid; place-items:center; cursor:pointer;
+  color:var(--ink-soft); transition:background .15s ease, border-color .15s ease, color .15s ease;
+  flex-shrink:0; padding:0; outline:none;
+}
+.btn-topbar-back:hover{
+  background:var(--line-soft); border-color:#d1d5db; color:var(--ink);
+}
+.topbar-breadcrumbs{
+  display:flex; align-items:center; gap:8px; font-size:14px; min-width:0;
+}
 .topbar-search{
   flex:1; max-width:560px; display:flex; align-items:center; gap:8px;
   background:var(--canvas); border:1px solid var(--line); border-radius:var(--r-pill);
@@ -301,8 +319,8 @@ ul{ margin:0; padding:0; list-style:none; }
    Reverting first, then redeclaring, keeps this exactly the prototype. */
 .avatar{
   all:revert;
-  width:32px; height:32px; border-radius:50%; background:var(--primary); color:#fff;
-  display:grid; place-items:center; font-weight:700; font-size:12.5px; flex-shrink:0; overflow:hidden;
+  width:36px; height:36px; border-radius:50%; background:var(--primary); color:#fff;
+  display:grid; place-items:center; font-weight:700; font-size:13px; flex-shrink:0; overflow:hidden;
 }
 .avatar.lg{ width:52px; height:52px; font-size:18px; }
 .avatar.xl{ width:76px; height:76px; font-size:26px; }

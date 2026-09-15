@@ -65,9 +65,8 @@ export function Home({ st, sv, go }) {
   const recs = recommendedList(st)
   return (
     <>
-      <div className="mb24">
-        <h1>Dashboard</h1>
-        <p className="small muted mt6">Pick up where you left off and explore recommended initiatives.</p>
+      <div className="mb20">
+        <p className="small muted">Pick up where you left off and explore recommended initiatives.</p>
       </div>
 
       <div>
@@ -108,8 +107,7 @@ export function Continuing({ st, sv, go }) {
   const active = activeList(st)
   return (
     <>
-      <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}><Icon name="ArrowLeft" size={14} /> Dashboard</a>
-      <h1 className="mt12">Continue where you left off</h1>
+      <h1>Continue where you left off</h1>
       <p className="small muted mt6">{active.length} initiative{active.length === 1 ? '' : 's'} you're actively working on.</p>
       {active.length ? (
         <div className="grid g3 mt20">
@@ -131,10 +129,7 @@ export function Recommended({ st, sv, go }) {
   return (
     <div className="space-y-8">
       <div>
-        <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}>
-          <Icon name="ArrowLeft" size={14} /> Dashboard
-        </a>
-        <h1 className="mt12">Recommended for you</h1>
+        <h1>Recommended for you</h1>
         <p className="small muted mt6">
           {(st.interests || []).length || st.region
             ? 'Curated recommendations matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ')

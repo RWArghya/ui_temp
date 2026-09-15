@@ -12,10 +12,7 @@ export default function MyActivity({ st, sv, go }) {
   return (
     <div className="space-y-8">
       <div>
-        <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}>
-          <Icon name="ArrowLeft" size={14} /> Dashboard
-        </a>
-        <h1 className="mt12">My activity</h1>
+        <h1>My activity</h1>
         <p className="small muted mt6">
           All your in-progress initiatives, bootcamps, and hackathons organized by track.
         </p>

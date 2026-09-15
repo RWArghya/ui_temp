@@ -831,11 +831,6 @@ export default function Workspace({ st, sv, go }) {
   if (!reg) {
     return (
       <>
-        <div className="mb-3">
-          <a className="btn btn-ghost btn-sm rounded-[4px] cursor-pointer" onClick={handleBack}>
-            <Icon name="ArrowLeft" size={14} /> {backLabel}
-          </a>
-        </div>
         <PageHead title={o.name} sub={o.org + ' · ' + o.mode + ' · ' + o.prize} />
         <Card title="About">
           <p className="text-sm text-dash-ink">{o.blurb}</p>
@@ -861,11 +856,6 @@ export default function Workspace({ st, sv, go }) {
   const isCompete = o.purpose === 'competing'
   return (
     <>
-      <div className="mb-3">
-        <a className="btn btn-ghost btn-sm rounded-[4px] cursor-pointer" onClick={handleBack}>
-          <Icon name="ArrowLeft" size={14} /> {backLabel}
-        </a>
-      </div>
       <PageHead>
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="mb-1.5">{o.name}</h2>

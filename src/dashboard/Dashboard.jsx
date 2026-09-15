@@ -121,6 +121,23 @@ function SubShell({ st, sv, go, children }) {
     activeKey = o.purpose
   }
 
+  const sub = location.pathname.replace('/dashboard', '').replace(/^\//, '')
+  const BACK_LABELS = {
+    home: 'Dashboard',
+    learning: 'Learn',
+    competing: 'Compete',
+    learncompete: 'Build',
+    activity: 'My Activity',
+    saved: 'Saved',
+    recent: 'Recent',
+    continuing: 'Dashboard',
+    recommended: 'Recommended for you',
+  }
+  const backTarget = from || (o?.purpose ? o.purpose : 'home')
+  const backLabel = BACK_LABELS[backTarget] || 'Dashboard'
+  const onBack = () => go(backTarget)
+  const currentTitle = sub === 'evaluate' ? `Evaluate ${o ? o.name : ''}` : (o ? o.name : 'Workspace')
+
   const out = () => { sv({}); authStore.clear(); navigate('/auth') }
   return (
     <div className="dash-root">
@@ -138,6 +155,9 @@ function SubShell({ st, sv, go, children }) {
             sv={sv}
             who="innovator"
             view={activeKey}
+            onBack={onBack}
+            backLabel={backLabel}
+            currentTitle={currentTitle}
             onProfile={() => go('profile')}
             onActivity={() => go('activity')}
             onSettings={() => go('settings')}
@@ -171,6 +191,27 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const MENTOR_KEY_TO_TAB = { mentor: 'queue', m_challenges: 'challenges', m_queue: 'queue', m_teams: 'teams', m_sessions: 'sessions', m_impact: 'impact' }
   const mentorActiveKey = mentorTab === 'challenges' ? 'm_challenges' : mentorTab === 'teams' ? 'm_teams' : mentorTab === 'sessions' ? 'm_sessions' : mentorTab === 'impact' ? 'm_impact' : 'm_queue'
 
+  const SUB_VIEW_NAV = {
+    activity: { parent: 'home', parentLabel: 'Dashboard', title: 'My Activity' },
+    continuing: { parent: 'home', parentLabel: 'Dashboard', title: 'Continue where you left off' },
+    recommended: { parent: 'home', parentLabel: 'Dashboard', title: 'Recommended for you' },
+    saved: { parent: 'home', parentLabel: 'Dashboard', title: 'Saved initiatives' },
+    recent: { parent: 'home', parentLabel: 'Dashboard', title: 'Recently viewed' },
+    settings: { parent: 'home', parentLabel: 'Dashboard', title: 'Settings' },
+    profile: { parent: 'home', parentLabel: 'Dashboard', title: 'My Profile' },
+  }
+  const subNav = SUB_VIEW_NAV[view]
+  const onBack = subNav ? () => show(subNav.parent) : null
+  const backLabel = subNav ? subNav.parentLabel : null
+  const VIEW_TITLES = {
+    home: 'Dashboard',
+    learning: 'Learn',
+    competing: 'Compete',
+    learncompete: 'Build',
+    arena: 'Arena',
+  }
+  const currentTitle = subNav ? subNav.title : (VIEW_TITLES[view] || (msup ? 'Mentor Workspace' : 'Dashboard'))
+
   return (
     <div className="dash-root">
       <div className={`shell${hasRail ? ' has-rail' : ''}${msup ? ' mode-mentor' : ''}`}>
@@ -187,6 +228,9 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
             sv={sv}
             who={mode}
             view={view}
+            onBack={onBack}
+            backLabel={backLabel}
+            currentTitle={currentTitle}
             onProfile={() => show('profile')}
             onActivity={() => show('activity')}
             onSettings={() => show('settings')}

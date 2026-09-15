@@ -17,6 +17,7 @@ let cache = null
 const DEFAULT_REGISTERED = [
   'genai-academy',          // Learn
   'aws-ai-masterclass',     // Learn
+  'agentic-bootcamp',       // Learn
   'police-hack',            // Compete
   'smart-mobility-hack',    // Compete
   'npci-upi',               // Build
@@ -35,9 +36,11 @@ function rawRead() {
       return init
     }
     const data = JSON.parse(item)
-    if (!data.registered || data.registered.length === 0) {
-      data.registered = DEFAULT_REGISTERED
-      data.intents = ['learning', 'learncompete', 'competing']
+    const existing = Array.isArray(data.registered) ? data.registered : []
+    const merged = [...new Set([...DEFAULT_REGISTERED, ...existing])]
+    if (merged.length !== existing.length) {
+      data.registered = merged
+      data.intents = [...new Set([...(data.intents || []), 'learning', 'learncompete', 'competing'])]
       localStorage.setItem(H2S_KEY, JSON.stringify(data))
     }
     return data

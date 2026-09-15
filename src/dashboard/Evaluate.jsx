@@ -35,11 +35,6 @@ export default function Evaluate({ st, sv, go }) {
 
   return (
     <>
-      <div className="mb-3">
-        <a className="btn btn-ghost btn-sm rounded-[4px] cursor-pointer" onClick={handleBack}>
-          <Icon name="ArrowLeft" size={14} /> {backLabel}
-        </a>
-      </div>
       <PageHead>
         <h2 className="mb-1.5">Evaluate {o.name}</h2>
         <p className="text-sm text-dash-muted">Score your own artifact against the rubric. Honest feedback closes the loop.</p>

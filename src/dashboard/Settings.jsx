@@ -86,8 +86,7 @@ export default function Settings({ st, sv, go }) {
 
   return (
     <>
-      <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}><Icon name="ArrowLeft" size={14} /> Dashboard</a>
-      <h1 className="mt12">Settings</h1>
+      <h1>Settings</h1>
       <p className="small muted mt6">Your account, notifications, privacy, and platform preferences.</p>
 
       <div className="row gap8 wrap mt16" style={{ marginBottom: 4 }}>

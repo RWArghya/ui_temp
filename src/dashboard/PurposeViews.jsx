@@ -56,11 +56,8 @@ function PurposePage({ view, st, sv }) {
 
   return (
     <>
-      <div className="row between">
-        <div>
-          <h1>{meta.label}</h1>
-          <p className="small muted mt6">{meta.blurb}</p>
-        </div>
+      <div className="mb16">
+        <p className="small muted">{meta.blurb}</p>
       </div>
 
       <div className="mt20">

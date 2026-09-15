@@ -412,8 +412,7 @@ export function ofPurpose(st, purpose) {
 }
 export function purposeOpenList(view, st, filters) {
   filters = filters || {}
-  const registeredIds = st.registered || []
-  let list = INITIATIVES.filter(o => o.purpose === view && !registeredIds.includes(o.id) && !o.unlisted)
+  let list = INITIATIVES.filter(o => o.purpose === view && !o.unlisted)
   if (filters.q) list = list.filter(o => (o.name + o.org).toLowerCase().includes(filters.q.toLowerCase()))
   if (filters.area && filters.area !== 'all') list = list.filter(o => (o.areas || []).includes(filters.area))
   if (filters.region && filters.region !== 'all') list = list.filter(o => o.region === filters.region)

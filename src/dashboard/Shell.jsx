@@ -263,19 +263,64 @@ export function NotificationBell({ st, sv, who }) {
   )
 }
 
-export function Topbar({ st, sv, who, onProfile, onActivity, onSettings, onSignOut }) {
+export function Topbar({
+  st,
+  sv,
+  who,
+  view,
+  onBack,
+  backLabel,
+  currentTitle,
+  onProfile,
+  onActivity,
+  onSettings,
+  onSignOut,
+}) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   usePopoverClose(menuOpen, setMenuOpen, menuRef)
 
   return (
     <header className="app-topbar">
+      <div className="topbar-nav-start">
+        {onBack ? (
+          <button
+            type="button"
+            id="btn-topbar-back"
+            onClick={onBack}
+            className="btn-topbar-back"
+            title={`Back to ${backLabel || 'Dashboard'}`}
+            aria-label={`Back to ${backLabel || 'Dashboard'}`}
+          >
+            <Icon name="ArrowLeft" size={17} />
+          </button>
+        ) : null}
+
+        <div className="topbar-breadcrumbs">
+          {onBack && backLabel ? (
+            <>
+              <button
+                type="button"
+                onClick={onBack}
+                className="text-dash-muted hover:text-dash-ink hover:underline font-medium truncate cursor-pointer transition-colors bg-transparent border-0 p-0 text-[14px]"
+              >
+                {backLabel}
+              </button>
+              <span className="text-dash-faint select-none">/</span>
+            </>
+          ) : null}
+          <span className="font-semibold text-dash-ink truncate text-[14.5px]">
+            {currentTitle || (onBack ? '' : 'Innovator Dashboard')}
+          </span>
+        </div>
+      </div>
+
       <div className="grow" />
-      <div className="topbar-actions">
+      <div className="topbar-actions flex items-center gap-3">
         <NotificationBell st={st} sv={sv} who={who} />
 
         {/* Profile Avatar Trigger & Dropdown Menu */}
-        <div className="relative" ref={menuRef}>
+        <div className="relative flex items-center" ref={menuRef}>
           <button
             id="btn-topbar-profile"
             type="button"
