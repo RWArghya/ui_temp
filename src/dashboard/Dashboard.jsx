@@ -41,11 +41,12 @@ export default function Dashboard({ defaultView }) {
     if (!logged.onboarded) navigate('/onboarding', { replace: true })
   }, [logged.onboarded])
 
-  function go(view, id) {
+  function go(view, id, tab) {
     if (id) { navigate('/dashboard/workspace?id=' + id + (view ? '&from=' + view : '')); return }
     if (view === 'profile') { navigate('/profile'); return }
     if (view === 'home') { navigate('/dashboard'); return }
-    navigate('/dashboard?view=' + view)
+    const tabParam = tab ? '&tab=' + tab : ''
+    navigate('/dashboard?view=' + view + tabParam)
   }
 
   const sub = location.pathname.replace('/dashboard', '').replace(/^\//, '')

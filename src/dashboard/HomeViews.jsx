@@ -60,16 +60,90 @@ function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
   )
 }
 
+function MetricCard({ title, value, subtext, icon, colorClass, bgClass, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      className="p-3.5 bg-white border border-dash-line rounded-[6px] shadow-sm hover:shadow-md hover:border-signal/50 transition-all duration-150 cursor-pointer flex flex-col justify-between group"
+      style={{ minHeight: '96px' }}
+    >
+      <div className="flex items-center justify-between">
+        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${bgClass} ${colorClass}`}>
+          <Icon name={icon} size={16} />
+        </span>
+        <span className="text-gray-400 group-hover:text-signal group-hover:translate-x-0.5 transition-all">
+          <Icon name="ArrowRight" size={13} />
+        </span>
+      </div>
+      <div className="mt-2.5">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[22px] font-bold text-dash-ink leading-tight font-display">{value}</span>
+          <span className="text-[12.5px] font-semibold text-dash-ink truncate">{title}</span>
+        </div>
+        <p className="text-[11px] text-dash-muted mt-0.5 truncate">{subtext}</p>
+      </div>
+    </div>
+  )
+}
+
 export function Home({ st, sv, go }) {
   const active = activeList(st)
   const recs = recommendedList(st)
+
+  const learnActive = active.filter(o => o.purpose === 'learning')
+  const buildActive = active.filter(o => o.purpose === 'learncompete')
+  const competeActive = active.filter(o => o.purpose === 'competing')
+
   return (
     <>
-
+      {/* KPI Overview Tiles */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <MetricCard
+          title="Total Ongoing"
+          value={active.length}
+          subtext="All active tracks"
+          icon="Activity"
+          colorClass="text-[#2563eb]"
+          bgClass="bg-blue-50"
+          onClick={() => go('activity')}
+        />
+        <MetricCard
+          title="Courses Enrolled"
+          value={learnActive.length}
+          subtext="Masterclasses & cohorts"
+          icon="GraduationCap"
+          colorClass="text-[#0f9c7a]"
+          bgClass="bg-emerald-50"
+          onClick={() => go('activity', null, 'learning')}
+        />
+        <MetricCard
+          title="Build Challenges"
+          value={buildActive.length}
+          subtext="Prototypes in dev"
+          icon="Wrench"
+          colorClass="text-[#d9820a]"
+          bgClass="bg-amber-50"
+          onClick={() => go('activity', null, 'learncompete')}
+        />
+        <MetricCard
+          title="Hackathons"
+          value={competeActive.length}
+          subtext="Active competitions"
+          icon="Trophy"
+          colorClass="text-[#7c4dea]"
+          bgClass="bg-purple-50"
+          onClick={() => go('activity', null, 'competing')}
+        />
+      </div>
 
       <div>
         <div className="card-head">
-          <h2>Continue where you left off</h2>
+          <div className="flex items-center gap-2">
+            <h2>Continue where you left off</h2>
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
+              {active.length} ongoing
+            </span>
+          </div>
           {active.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('activity')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
         </div>
         {active.length ? (
@@ -85,7 +159,12 @@ export function Home({ st, sv, go }) {
 
       <div className="mt24">
         <div className="card-head">
-          <h2>Recommended for you</h2>
+          <div className="flex items-center gap-2">
+            <h2>Recommended for you</h2>
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
+              {recs.length} available
+            </span>
+          </div>
           {recs.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
         </div>
         {recs.length ? (
