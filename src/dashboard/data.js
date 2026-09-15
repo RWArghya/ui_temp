@@ -103,6 +103,54 @@ export const INITIATIVES = [
     purpose: 'competing', status: 'upcoming', region: 'Americas', mode: 'Virtual',
     areas: ['Web3', 'Blockchain'], prize: '$20K', deadline: '2026-10-20', regs: 780, pop: 46,
     blurb: 'Open-track Web3 hackathon for builders across Latin America.' },
+  { id: 'aws-ai-masterclass', name: 'Full-Stack AI Systems Masterclass', org: 'Hack2skill × AWS',
+    purpose: 'learning', status: 'live', region: 'India — North', mode: 'Virtual',
+    areas: ['AI / GenAI', 'Cloud'], prize: 'Free · Certified', deadline: '2026-09-28', regs: 16200, pop: 95,
+    blurb: 'Master production-grade LLM architectures, vector databases, and real-time streaming interfaces on AWS cloud infrastructure.' },
+  { id: 'cyber-fellowship', name: 'Cybersecurity & Ethical Hacking Fellowship', org: 'Indian Cyber Crime Coordination Centre (I4C)',
+    purpose: 'learning', status: 'live', region: 'India — West', mode: 'Hybrid',
+    areas: ['Cybersecurity', 'Cloud'], prize: 'Certified · Mentored', deadline: '2026-10-05', regs: 9800, pop: 89,
+    blurb: 'Hands-on offensive and defensive cybersecurity labs, threat hunting, and incident response simulations with government mentors.' },
+  { id: 'iitd-ds-bootcamp', name: 'Data Science & Applied ML Bootcamp', org: 'IIT Delhi & Hack2skill',
+    purpose: 'learning', status: 'upcoming', region: 'India — North', mode: 'Virtual',
+    areas: ['Data Science', 'AI / GenAI'], prize: 'IITD Certificate', deadline: '2026-10-15', regs: 22400, pop: 97,
+    blurb: 'End-to-end data pipelines, statistical modeling, deep learning architectures, and scalable model deployment on edge devices.' },
+  { id: 'web3-zk-school', name: 'Web3 & Zero-Knowledge Cryptography School', org: 'Ethereum India & Polygon',
+    purpose: 'learning', status: 'live', region: 'India — South', mode: 'Virtual',
+    areas: ['Web3', 'Blockchain'], prize: 'Free · Certified', deadline: '2026-10-02', regs: 7400, pop: 84,
+    blurb: 'Deep dive into EVM internals, smart contract security audits, zk-SNARKs, and decentralized application development.' },
+  { id: 'robotics-cv-lab', name: 'Autonomous Robotics & Computer Vision Workshop', org: 'DRDO × Robotics Society of India',
+    purpose: 'learning', status: 'upcoming', region: 'India — South', mode: 'In-person',
+    areas: ['Robotics', 'AI / GenAI'], prize: 'Certified · Kit', deadline: '2026-10-25', regs: 4200, pop: 78,
+    blurb: 'Intensive hardware workshop covering ROS2, LiDAR SLAM, spatial perception, and embedded edge AI computing.' },
+  { id: 'climate-analytics', name: 'Climate Tech & Carbon Analytics Intensive', org: 'Global Sustainability Institute',
+    purpose: 'learning', status: 'upcoming', region: 'Europe', mode: 'Hybrid',
+    areas: ['Sustainability', 'Data Science'], prize: 'Free · Certified', deadline: '2026-11-05', regs: 5300, pop: 81,
+    blurb: 'Learn carbon accounting, ESG compliance frameworks, and satellite imagery analysis for environmental impact tracking.' },
+  { id: 'fintech-systems', name: 'FinTech Engineering & High-Frequency Systems', org: 'National Payments Exchange & Razorpay',
+    purpose: 'learning', status: 'live', region: 'India — West', mode: 'Virtual',
+    areas: ['FinTech', 'Cloud'], prize: 'Certified · Referrals', deadline: '2026-09-24', regs: 11500, pop: 91,
+    blurb: 'Low-latency distributed systems, ISO 20022 protocols, modern banking APIs, and high-frequency risk scoring.' },
+  { id: 'spatial-dev-lab', name: 'Spatial Computing & VisionOS Developer Lab', org: 'Hack2skill XR Lab',
+    purpose: 'learning', status: 'upcoming', region: 'Americas', mode: 'Virtual',
+    areas: ['AR / VR', 'Product'], prize: 'Free · Certified', deadline: '2026-11-12', regs: 6800, pop: 86,
+    blurb: 'Design and build immersive 3D spatial experiences, hand-tracking gestures, and mixed-reality enterprise applications.' },
+  { id: 'prompt-foundations', name: 'Foundations of Prompt Engineering (Cohort 3)', org: 'Hack2skill Community',
+    purpose: 'learning', status: 'past', region: 'India — North', mode: 'Virtual',
+    areas: ['AI / GenAI'], prize: 'Free · Certified', deadline: '2026-04-10', regs: 41000, pop: 96,
+    blurb: 'Introductory cohort on conversational prompt design, few-shot prompting, and chained workflows.' },
+  { id: 'smart-mobility-hack', name: 'Smart Mobility & Autonomous Transit Hackathon', org: 'Ministry of Road Transport & Highways',
+    purpose: 'competing', status: 'live', region: 'India — North', mode: 'Hybrid',
+    areas: ['IoT', 'Data Science', 'AI / GenAI'], prize: '₹18L', deadline: '2026-10-18', regs: 4300, pop: 83,
+    blurb: 'Edge telemetry, smart traffic optimization, and EV fleet grid integration challenges.' },
+  { id: 'fintech-revolution', name: 'Global FinTech & DeFi Hackathon', org: 'Singapore FinTech Festival × H2S',
+    purpose: 'competing', status: 'upcoming', region: 'APAC', mode: 'Virtual',
+    areas: ['FinTech', 'Blockchain', 'Web3'], prize: '$30K', deadline: '2026-11-10', regs: 5200, pop: 87,
+    blurb: 'Cross-border remittances, programmable liquidity, and regulated digital asset infrastructure.' },
+  { id: 'healthtech-ai-sprint', name: 'HealthTech Clinical AI Innovation Sprint', org: 'Apollo Hospitals & AIIMS',
+    purpose: 'learncompete', status: 'live', region: 'India — South', mode: 'Hybrid',
+    areas: ['HealthTech', 'AI / GenAI', 'Data Science'], prize: '₹15L + pilot', deadline: '2026-10-22', regs: 3800, pop: 85,
+    blurb: 'Diagnostic decision support, clinical note summarization, and remote telemetry prototypes.' },
 ]
 
 export function byId(id) { return INITIATIVES.find(x => x.id === id) }
@@ -137,11 +185,10 @@ export function recommendedList(st) {
   const areas = st.interests || []
   const region = st.region || ''
   let list = INITIATIVES.filter(o => o.status !== 'past' && !registeredIds.includes(o.id) && !o.unlisted)
-  if (areas.length || region) {
-    const matched = list.filter(o => (o.areas || []).some(a => areas.includes(a)) || o.region === region)
-    if (matched.length) list = matched
-  }
   return list.slice().sort((a, b) => {
+    const matchA = (areas.length && (a.areas || []).some(x => areas.includes(x))) || (region && a.region === region)
+    const matchB = (areas.length && (b.areas || []).some(x => areas.includes(x))) || (region && b.region === region)
+    if (matchA !== matchB) return matchA ? -1 : 1
     const liveA = a.status === 'live', liveB = b.status === 'live'
     if (liveA !== liveB) return liveA ? -1 : 1
     return daysLeft(a.deadline) - daysLeft(b.deadline)

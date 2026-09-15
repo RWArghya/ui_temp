@@ -123,21 +123,148 @@ export function Continuing({ st, sv, go }) {
 }
 export function Recommended({ st, sv, go }) {
   const recs = recommendedList(st)
+
+  const learnItems = recs.filter(o => o.purpose === 'learning')
+  const buildItems = recs.filter(o => o.purpose === 'learncompete')
+  const competeItems = recs.filter(o => o.purpose === 'competing')
+
   return (
-    <>
-      <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}><Icon name="ArrowLeft" size={14} /> Dashboard</a>
-      <h1 className="mt12">Recommended for you</h1>
-      <p className="small muted mt6">
-        {(st.interests || []).length || st.region ? 'Matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ') : 'Popular right now'}.
-      </p>
-      {recs.length ? (
-        <div className="grid g3 mt20">
-          {recs.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}
+    <div className="space-y-8">
+      <div>
+        <a className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }} onClick={() => go('home')}>
+          <Icon name="ArrowLeft" size={14} /> Dashboard
+        </a>
+        <h1 className="mt12">Recommended for you</h1>
+        <p className="small muted mt6">
+          {(st.interests || []).length || st.region
+            ? 'Curated recommendations matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ')
+            : 'Personalized initiatives, challenges, and hackathons organized by track.'}
+        </p>
+      </div>
+
+      {/* 1. Learn Section */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between border-b border-dash-line-soft pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📚</span>
+            <h2 className="text-[17px] font-bold text-dash-ink">Learn</h2>
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
+              {learnItems.length}
+            </span>
+          </div>
+          <a
+            className="link-more text-[12.5px] cursor-pointer"
+            onClick={() => go('learning')}
+          >
+            Explore catalog <Icon name="ArrowRight" size={13} />
+          </a>
         </div>
-      ) : (
-        <EmptyState ico="Sparkles" title="Nothing to recommend yet" msg="Check back soon for personalized recommendations." />
-      )}
-    </>
+        <p className="text-[12.5px] text-dash-muted">
+          Recommended masterclasses, cohorts, and skill-building programs.
+        </p>
+
+        {learnItems.length ? (
+          <div className="grid g3 mt-3">
+            {learnItems.map(o => (
+              <InitiativeCard key={o.id} o={o} st={st} sv={sv} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 rounded-[2px] border border-dashed border-dash-line text-center bg-dash-surface/50 my-2">
+            <p className="text-[13px] text-dash-muted">No learning recommendations at this time.</p>
+            <button
+              type="button"
+              onClick={() => go('learning')}
+              className="btn btn-outline btn-sm mt-3"
+            >
+              Browse Learn catalog
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* 2. Build Section */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between border-b border-dash-line-soft pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🛠️</span>
+            <h2 className="text-[17px] font-bold text-dash-ink">Build</h2>
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
+              {buildItems.length}
+            </span>
+          </div>
+          <a
+            className="link-more text-[12.5px] cursor-pointer"
+            onClick={() => go('learncompete')}
+          >
+            Explore catalog <Icon name="ArrowRight" size={13} />
+          </a>
+        </div>
+        <p className="text-[12.5px] text-dash-muted">
+          Hands-on problem statements and practical challenges to build working prototypes.
+        </p>
+
+        {buildItems.length ? (
+          <div className="grid g3 mt-3">
+            {buildItems.map(o => (
+              <InitiativeCard key={o.id} o={o} st={st} sv={sv} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 rounded-[2px] border border-dashed border-dash-line text-center bg-dash-surface/50 my-2">
+            <p className="text-[13px] text-dash-muted">No build recommendations at this time.</p>
+            <button
+              type="button"
+              onClick={() => go('learncompete')}
+              className="btn btn-outline btn-sm mt-3"
+            >
+              Browse Build challenges
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* 3. Compete Section */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between border-b border-dash-line-soft pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏆</span>
+            <h2 className="text-[17px] font-bold text-dash-ink">Compete</h2>
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
+              {competeItems.length}
+            </span>
+          </div>
+          <a
+            className="link-more text-[12.5px] cursor-pointer"
+            onClick={() => go('competing')}
+          >
+            Explore catalog <Icon name="ArrowRight" size={13} />
+          </a>
+        </div>
+        <p className="text-[12.5px] text-dash-muted">
+          Competitive hackathons and prize challenges open for registration.
+        </p>
+
+        {competeItems.length ? (
+          <div className="grid g3 mt-3">
+            {competeItems.map(o => (
+              <InitiativeCard key={o.id} o={o} st={st} sv={sv} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 rounded-[2px] border border-dashed border-dash-line text-center bg-dash-surface/50 my-2">
+            <p className="text-[13px] text-dash-muted">No compete recommendations at this time.</p>
+            <button
+              type="button"
+              onClick={() => go('competing')}
+              className="btn btn-outline btn-sm mt-3"
+            >
+              Browse Compete hackathons
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
   )
 }
 export function Saved({ st, sv, go }) {
