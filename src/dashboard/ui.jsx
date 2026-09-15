@@ -62,17 +62,17 @@ export const Kv = ({ k, v, className = '' }) => (
   </div>
 )
 
-export const Field = ({ label, hint, as, className = '', children, ...rest }) => {
+export const Field = ({ label, hint, as, className = '', inputClassName = '', children, ...rest }) => {
   const Tag = as === 'select' ? 'select' : as === 'textarea' ? 'textarea' : 'input'
   const base = as === 'select'
-    ? 'select select-bordered w-full rounded-btn'
+    ? 'select select-bordered w-full rounded-[4px] text-sm box-border'
     : as === 'textarea'
-    ? 'textarea textarea-bordered w-full rounded-btn text-sm'
-    : 'input input-bordered w-full rounded-btn text-sm'
+    ? 'textarea textarea-bordered w-full rounded-[4px] text-sm box-border'
+    : 'input input-bordered w-full rounded-[4px] text-sm box-border h-10'
   return (
-    <div className={`mb-3 flex flex-col gap-1.5 ${className}`}>
-      <label className="text-[12.5px] font-medium text-dash-muted">{label}</label>
-      <Tag className={base} {...rest}>{children}</Tag>
+    <div className={`flex flex-col gap-1.5 w-full ${className}`}>
+      {label ? <label className="text-[12px] font-semibold tracking-tight text-dash-ink">{label}</label> : null}
+      <Tag className={`${base} ${inputClassName}`} {...rest}>{children}</Tag>
       {hint ? <p className="text-xs text-dash-muted/70">{hint}</p> : null}
     </div>
   )

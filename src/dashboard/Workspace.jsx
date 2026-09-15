@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Card, PageHead, Pill, Empty, Tag, Kv, Field, StepStrip } from './ui'
+import { Card, PageHead, Pill, Empty, Tag, Kv, Field } from './ui'
 import Icon from './Icon'
 import { S } from './store'
 import {
@@ -12,34 +12,57 @@ import {
 
 const stepFor = (o, st) => toScreenStep(o, reachedFor(o, st))
 
-function Steps({ o, st }) {
-  return <StepStrip steps={journeyFor(o)} cur={stepFor(o, st)} />
-}
-
-/* Learn-only visual: same steps/cur as StepStrip (journeyFor/stepFor),
-   chevron-shaped instead of pills with clean, sharp design tokens. */
+/* Unified Google-Grade Chevron Stepper:
+   Used identically across Compete, Learn, and Build initiatives.
+   Consistent with arg/proto2 design language, typography, and tokens. */
 function ChevronSteps({ steps, cur }) {
-  const clip = (i) => {
-    const notch = 'polygon(0% 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 0% 100%, 14px 50%)'
-    const first = 'polygon(0% 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 0% 100%)'
-    const last = 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 14px 50%)'
+  const clip = (i, len) => {
+    if (len <= 1) return 'none'
+    const notch = 'polygon(0% 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 0% 100%, 10px 50%)'
+    const first = 'polygon(0% 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 0% 100%)'
+    const last = 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 10px 50%)'
     if (i === 0) return first
-    if (i === steps.length - 1) return last
+    if (i === len - 1) return last
     return notch
   }
+
   return (
-    <div className="flex flex-wrap gap-y-1">
+    <div className="flex flex-wrap items-center gap-1.5 p-1 bg-white border border-dash-line-soft rounded-[4px] shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
       {steps.map((s, i) => {
-        const done = i < cur, active = i === cur
+        const done = i < cur
+        const active = i === cur
+        const isFirst = i === 0
+        const isLast = i === steps.length - 1
+
         return (
           <div
             key={s}
-            className={`flex items-center gap-1.5 whitespace-nowrap px-4 py-2 text-xs font-semibold ${i > 0 ? '-ml-3.5' : ''} ${
-              done ? 'bg-dash-ok text-white' : active ? 'bg-signal text-white' : 'bg-dash-line-soft text-dash-muted'
+            className={`flex items-center gap-2 h-9 text-[12.5px] font-semibold tracking-tight transition-all select-none ${
+              isFirst ? 'pl-3.5 pr-5' : isLast ? 'pl-5 pr-4' : 'pl-5 pr-5'
+            } ${
+              done
+                ? 'bg-[#e6f4ea] text-[#137333] hover:bg-[#daf0df]'
+                : active
+                  ? 'bg-signal text-white shadow-sm font-bold'
+                  : 'bg-[#f1f3f4] text-[#5f6368] hover:bg-[#e8eaed]'
             }`}
-            style={{ clipPath: clip(i) }}
+            style={{ clipPath: clip(i, steps.length) }}
+            title={`Step ${i + 1}: ${s}`}
           >
-            {done ? '✓' : i + 1}. {s}
+            {done ? (
+              <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#10a35e] text-white text-[10px] font-bold">
+                ✓
+              </span>
+            ) : active ? (
+              <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-white text-signal text-[11px] font-bold shadow-xs">
+                {i + 1}
+              </span>
+            ) : (
+              <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#d2d6dc] text-[#4b5563] text-[11px] font-semibold">
+                {i + 1}
+              </span>
+            )}
+            <span className="whitespace-nowrap">{s}</span>
           </div>
         )
       })}
@@ -428,7 +451,7 @@ function LearningWS({ o, st, sv }) {
 
 /* ---- pre-registration preview ---- */
 function InitiativePreview({ o }) {
-  const ms = o.purpose !== 'competing' ? modules(o) : []
+  const ms = o.purpose === 'learning' ? modules(o) : []
   const ps = o.purpose !== 'learning' ? problemStatements(o) : []
   const teams = o.purpose !== 'learning' ? openTeams(o.id) : []
   return (
@@ -486,7 +509,7 @@ function InitiativePreview({ o }) {
   )
 }
 
-/* ---- team picker (competing) ---- */
+/* ---- team picker (competing & build) ---- */
 function TeamStep({ o, st, sv }) {
   const teams = openTeams(o.id)
   const chosen = bagFor(st, 'teams', o.id, null)
@@ -508,21 +531,120 @@ function TeamStep({ o, st, sv }) {
   )
 }
 
-/* ---- statement picker (learncompete build phase) ---- */
+/* ---- statement picker (Build track) ---- */
 function StatementStep({ o, st, sv }) {
   const ps = problemStatements(o)
   const chosen = bagFor(st, 'chosenPS', o.id, null)
+  const [picking, setPicking] = useState(false)
+  const selected = ps.find(p => p.code === chosen) || ps[0]
+
+  if (chosen && !picking && selected) {
+    return (
+      <Card title="Active Problem Statement">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dash-line-soft pb-3">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-bold text-signal px-2 py-0.5 rounded-[4px] bg-signal-soft border border-signal/20">{selected.code}</span>
+            <strong className="text-base text-dash-ink">{selected.title}</strong>
+          </div>
+          <div className="flex items-center gap-2">
+            <Pill ok>Selected</Pill>
+            <button className="btn btn-ghost btn-xs rounded-[4px] text-dash-muted hover:text-dash-ink" onClick={() => setPicking(true)}>
+              Switch statement
+            </button>
+          </div>
+        </div>
+        <div className="mt-3">
+          <p className="text-sm text-dash-ink">{selected.desc}</p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <Pill>{selected.area}</Pill>
+            <span className="text-xs text-dash-muted">
+              Deliverables: Working functional prototype, documented repo, and demo video
+            </span>
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
   return (
-    <Card title="Pick a problem statement">
-      {chosen ? <div className="mt-2"><Pill ok>Registered — {chosen}</Pill></div> : ps.map(p => (
+    <Card title="Problem Statements — Pick Your Challenge">
+      <p className="text-sm text-dash-muted mb-3">
+        Choose a live problem statement to focus your prototype build on.
+      </p>
+      {ps.map(p => (
         <div className="flex items-center justify-between gap-3 border-b border-dash-line-soft py-3 last:border-0" key={p.code}>
           <div className="min-w-0">
-            <strong className="text-dash-ink">{p.code} · {p.title}</strong>
-            <p className="mt-0.5 text-sm text-dash-muted">{p.area} — {p.desc}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-mono text-xs font-bold text-signal px-1.5 py-0.5 rounded-[4px] bg-signal-soft">{p.code}</span>
+              <strong className="text-sm text-dash-ink">{p.title}</strong>
+              <Pill>{p.area}</Pill>
+            </div>
+            <p className="text-xs text-dash-muted">{p.desc}</p>
           </div>
-          <button className="btn btn-primary btn-sm rounded-[4px]" onClick={() => sv({ chosenPS: Object.assign({}, st.chosenPS || {}, { [o.id]: p.code }) })}>Choose</button>
+          <button
+            className={`btn btn-sm rounded-[4px] shrink-0 ${p.code === chosen ? 'btn-outline border-dash-ok text-dash-ok' : 'btn-primary'}`}
+            onClick={() => {
+              sv({ chosenPS: Object.assign({}, st.chosenPS || {}, { [o.id]: p.code }) })
+              setPicking(false)
+            }}
+          >
+            {p.code === chosen ? 'Selected ✓' : 'Choose'}
+          </button>
         </div>
       ))}
+      {chosen && picking ? (
+        <button className="btn btn-ghost btn-sm mt-3 rounded-[4px]" onClick={() => setPicking(false)}>
+          Cancel
+        </button>
+      ) : null}
+    </Card>
+  )
+}
+
+/* ---- Build workspace: starter kit, APIs, docs, and mentoring ---- */
+function BuildWorkspace({ o, st, sv }) {
+  return (
+    <Card title="Build Guidelines & Developer Workspace" className="mt-4">
+      <p className="text-sm text-dash-muted">
+        Access starter repositories, problem-specific guidelines, and developer resources to build your working prototype.
+      </p>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="rounded-[4px] border border-dash-line-soft bg-dash-surface/50 p-3.5">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📦</span>
+            <strong className="text-sm text-dash-ink">Starter Repository</strong>
+          </div>
+          <p className="mt-1 text-xs text-dash-muted">
+            Pre-configured scaffold with sample dataset, inference pipeline boilerplate, and Docker deployment config.
+          </p>
+          <a
+            href="https://github.com/hack2skill/examples"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-signal hover:underline"
+          >
+            Clone starter template <Icon name="ArrowRight" size={12} />
+          </a>
+        </div>
+
+        <div className="rounded-[4px] border border-dash-line-soft bg-dash-surface/50 p-3.5">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📑</span>
+            <strong className="text-sm text-dash-ink">APIs & Guidelines</strong>
+          </div>
+          <p className="mt-1 text-xs text-dash-muted">
+            Evaluation rubric, API documentation, testing payloads, and technical architecture references.
+          </p>
+          <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-dash-muted">
+            Rubric: Functionality (40%), Innovation (30%), Code Quality (30%)
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 pt-3 border-t border-dash-line-soft">
+        <MentorToggle o={o} st={st} sv={sv} />
+      </div>
     </Card>
   )
 }
@@ -534,9 +656,9 @@ function BuildSubmit({ o, st, sv }) {
   const seed = sub || submissionArtifact(o.id, team, o)
   const scored = !!(st.scores || {})[SELF_KEY(o.id)]
 
-  const [repo, setRepo] = useState(seed.repo)
-  const [demo, setDemo] = useState(seed.demo)
-  const [notes, setNotes] = useState(seed.notes)
+  const [repo, setRepo] = useState(seed.repo || '')
+  const [demo, setDemo] = useState(seed.demo || '')
+  const [notes, setNotes] = useState(seed.notes || '')
   const [file, setFile] = useState(seed.file || null)
   const [fileErr, setFileErr] = useState('')
 
@@ -552,7 +674,7 @@ function BuildSubmit({ o, st, sv }) {
   }
 
   const doSubmit = () => {
-    const art = { title: seed.title, repo, demo, notes, file }
+    const art = { title: seed.title || (o.name + ' Submission'), repo: repo || seed.repo, demo: demo || seed.demo, notes: notes || seed.notes, file }
     sv({
       submissions: (st.submissions || []).includes(o.id) ? st.submissions : (st.submissions || []).concat(o.id),
       submission: Object.assign({}, st.submission || {}, { [o.id]: art }),
@@ -560,37 +682,98 @@ function BuildSubmit({ o, st, sv }) {
   }
 
   return (
-    <Card title="Submit">
+    <Card title="Submit Project">
       {sub ? (
         <>
-          <Pill ok>Submitted</Pill>
+          <div className="flex items-center gap-2">
+            <Pill ok>Submitted</Pill>
+            <span className="text-xs text-dash-muted">Your project artifact has been registered for evaluation.</span>
+          </div>
           <div className="mt-3"><Kv k="Artifact" v={sub.title} /></div>
-          <Kv k="Repo" v={<a className="text-signal hover:underline" href={sub.repo} target="_blank" rel="noopener">{sub.repo}</a>} />
-          {sub.demo ? <Kv k="Demo" v={<a className="text-signal hover:underline" href={sub.demo} target="_blank" rel="noopener">watch</a>} /> : null}
+          <Kv k="Repo" v={<a className="text-signal hover:underline" href={sub.repo} target="_blank" rel="noopener noreferrer">{sub.repo}</a>} />
+          {sub.demo ? <Kv k="Demo" v={<a className="text-signal hover:underline" href={sub.demo} target="_blank" rel="noopener noreferrer">Watch demo video ↗</a>} /> : null}
           {sub.file ? <Kv k="Attachment" v={<a className="text-signal hover:underline" href={sub.file.dataUrl} download={sub.file.name}>{sub.file.name} ({sub.file.sizeKB} KB)</a>} /> : null}
-          <Kv k="Last note" v={sub.notes} />
+          <Kv k="Notes" v={sub.notes} />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {!scored ? <Link className="btn btn-primary rounded-[4px]" to={'/dashboard/evaluate?id=' + o.id}>Open evaluation →</Link> : null}
+          </div>
         </>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Repo" value={repo} onChange={(e) => setRepo(e.target.value)} />
-          <Field label="Demo URL (optional)" value={demo} onChange={(e) => setDemo(e.target.value)} />
-          <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-dash-muted">Notes for evaluators</label>
-            <textarea className="textarea textarea-bordered textarea-md w-full rounded-[4px]" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+        <form onSubmit={(e) => { e.preventDefault(); doSubmit(); }} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full box-border">
+            <Field
+              label="Repository URL"
+              placeholder="https://github.com/organization/repository"
+              value={repo}
+              onChange={(e) => setRepo(e.target.value)}
+              required
+            />
+            <Field
+              label="Demo URL (optional)"
+              placeholder="https://youtu.be/... or https://demo.app"
+              value={demo}
+              onChange={(e) => setDemo(e.target.value)}
+            />
           </div>
-          <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-sm text-dash-muted">Attach a file (optional) — deck, report, design export, up to 2MB</label>
-            <input type="file" className="file-input file-input-bordered w-full max-w-sm text-sm rounded-[4px]" onChange={onFile} />
-            {file ? <p className="text-xs text-dash-ok mt-1">{file.name} · {file.sizeKB} KB attached</p> : null}
-            {fileErr ? <p className="text-xs text-dash-live mt-1">{fileErr}</p> : null}
+
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[12px] font-semibold tracking-tight text-dash-ink">
+              Notes for evaluators
+            </label>
+            <textarea
+              className="textarea textarea-bordered w-full rounded-[4px] text-sm box-border p-3 border border-dash-line focus:outline-none focus:border-signal focus:ring-1 focus:ring-signal bg-white"
+              placeholder="Provide an overview of your architecture, technical decisions, and setup instructions..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
           </div>
-        </div>
+
+          <div className="flex flex-col gap-1.5 w-full">
+            <label className="text-[12px] font-semibold tracking-tight text-dash-ink">
+              Attach a file (optional) <span className="text-xs font-normal text-dash-muted">— deck, report, design export, up to 2MB</span>
+            </label>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="file"
+                className="file-input file-input-bordered file-input-sm h-10 text-sm rounded-[4px] border border-dash-line w-full max-w-sm box-border bg-white"
+                onChange={onFile}
+              />
+              {file ? (
+                <div className="flex items-center gap-2 text-xs text-dash-ok bg-dash-ok-soft px-2.5 py-1.5 rounded-[4px]">
+                  <span>✓ {file.name}</span>
+                  <span className="text-dash-muted">({file.sizeKB} KB)</span>
+                  <button type="button" onClick={() => setFile(null)} className="text-dash-muted hover:text-dash-live ml-1 font-bold">×</button>
+                </div>
+              ) : null}
+            </div>
+            {fileErr ? <p className="text-xs text-dash-live mt-0.5">{fileErr}</p> : null}
+          </div>
+
+          <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-dash-line-soft">
+            <div className="flex items-center gap-3">
+              <button type="submit" className="btn btn-primary h-10 px-6 rounded-[4px] font-semibold text-sm">
+                Submit project
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm text-xs text-dash-muted hover:text-dash-ink rounded-[4px]"
+                onClick={() => {
+                  const s = submissionArtifact(o.id, team, o)
+                  setRepo(s.repo)
+                  setDemo(s.demo)
+                  setNotes(s.notes)
+                }}
+              >
+                Pre-fill sample data
+              </button>
+            </div>
+            <span className="text-xs font-medium text-dash-muted">
+              {deadlineText(o)}
+            </span>
+          </div>
+        </form>
       )}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        {sub && !scored ? <Link className="btn btn-primary rounded-[4px]" to={'/dashboard/evaluate?id=' + o.id}>Evaluation →</Link> : null}
-        {!sub ? <button className="btn btn-primary rounded-[4px]" onClick={doSubmit}>Submit</button> : null}
-        <span className="text-sm text-dash-muted">{o.status === 'past' ? 'Competition finished' : 'Closed ' + daysLeft(o.deadline) + (daysLeft(o.deadline) >= 0 ? 'd left' : '')}</span>
-      </div>
     </Card>
   )
 }
@@ -690,7 +873,7 @@ export default function Workspace({ st, sv, go }) {
         </div>
         <p className="text-sm text-dash-muted">{o.org} · {o.mode} · {o.prize}</p>
       </PageHead>
-      {o.purpose === 'learning' || o.purpose === 'learncompete' ? <ChevronSteps steps={journeyFor(o)} cur={cur} /> : <Steps o={o} st={st} />}
+      <ChevronSteps steps={journeyFor(o)} cur={cur} />
       {ns && cur < journeyFor(o).length ? (
         <Card className="mt-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -704,23 +887,29 @@ export default function Workspace({ st, sv, go }) {
         </Card>
       ) : null}
 
-      {o.purpose === 'learning'
-        ? <div className="mt-4"><LearningWS o={o} st={st} sv={sv} /></div>
-        : isCompete
-          ? <>
-              {cur >= 1 ? <div className="mt-4"><TeamStep o={o} st={st} sv={sv} /></div> : null}
-              {cur >= 2 ? <div className="mt-4"><BuildSubmit o={o} st={st} sv={sv} /></div> : null}
-            </>
-          : <>
-              <div className="mt-4">
-                <LearningWS o={o} st={st} sv={sv} />
-                {cur >= 3 ? <div className="mt-4"><StatementStep o={o} st={st} sv={sv} /></div> : null}
-                {cur >= 5 ? <div className="mt-4"><BuildSubmit o={o} st={st} sv={sv} /></div> : null}
-                {mentoringOn(o) || o.mentoring ? <div className="mt-4"><MentorToggle o={o} st={st} sv={sv} /></div> : null}
-              </div>
-            </>
-      }
-      {isCompete && bagFor(st, 'submission', o.id, null) ? <div className="mt-4"><Link className="btn btn-primary rounded-[4px]" to={'/dashboard/evaluate?id=' + o.id + (from ? '&from=' + from : '')}>Open evaluation</Link></div> : null}
+      {o.purpose === 'learning' ? (
+        <div className="mt-4"><LearningWS o={o} st={st} sv={sv} /></div>
+      ) : isCompete ? (
+        <>
+          <div className="mt-4"><TeamStep o={o} st={st} sv={sv} /></div>
+          <div className="mt-4"><BuildSubmit o={o} st={st} sv={sv} /></div>
+        </>
+      ) : (
+        /* learncompete: Build Track - fully populated! */
+        <>
+          <div className="mt-4"><StatementStep o={o} st={st} sv={sv} /></div>
+          <BuildWorkspace o={o} st={st} sv={sv} />
+          <div className="mt-4"><TeamStep o={o} st={st} sv={sv} /></div>
+          <div className="mt-4"><BuildSubmit o={o} st={st} sv={sv} /></div>
+        </>
+      )}
+      {bagFor(st, 'submission', o.id, null) ? (
+        <div className="mt-4">
+          <Link className="btn btn-primary rounded-[4px]" to={'/dashboard/evaluate?id=' + o.id + (from ? '&from=' + from : '')}>
+            Open evaluation
+          </Link>
+        </div>
+      ) : null}
     </>
   )
 }

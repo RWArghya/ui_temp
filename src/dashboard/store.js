@@ -14,8 +14,36 @@ const H2S_KEY = 'h2s'
 let listeners = new Set()
 let cache = null
 
+const DEFAULT_REGISTERED = [
+  'genai-academy',          // Learn
+  'aws-ai-masterclass',     // Learn
+  'police-hack',            // Compete
+  'smart-mobility-hack',    // Compete
+  'npci-upi',               // Build
+  'clean-energy-ai',        // Build
+]
+
 function rawRead() {
-  try { return JSON.parse(localStorage.getItem(H2S_KEY) || '{}') } catch { return {} }
+  try {
+    const item = localStorage.getItem(H2S_KEY)
+    if (!item) {
+      const init = {
+        registered: DEFAULT_REGISTERED,
+        intents: ['learning', 'learncompete', 'competing'],
+      }
+      localStorage.setItem(H2S_KEY, JSON.stringify(init))
+      return init
+    }
+    const data = JSON.parse(item)
+    if (!data.registered || data.registered.length === 0) {
+      data.registered = DEFAULT_REGISTERED
+      data.intents = ['learning', 'learncompete', 'competing']
+      localStorage.setItem(H2S_KEY, JSON.stringify(data))
+    }
+    return data
+  } catch {
+    return { registered: DEFAULT_REGISTERED, intents: ['learning', 'learncompete', 'competing'] }
+  }
 }
 function read() {
   if (cache) return cache
@@ -47,18 +75,15 @@ function identity() {
   return Object.assign({}, base, a.primary ? { primary: a.primary } : {})
 }
 
-/* A fresh account stays genuinely empty — no auto-injected registrations,
-   submissions or completed profile. app.html never fabricates activity on
-   load; the only way to get a populated demo is the sidebar's explicit
-   "load sample activity" link (seedDemoPatch below), matching the reference
-   exactly. An auto-seeded dashboard is why "Getting started" showed as
-   already complete and the stats never matched a real first visit.
-
-   The reference's seedDemo(): "fills a plausible history so the numbers
-   have something to count." Only invoked from the sidebar's opt-in link. */
+/* Sample activity patch: seeds a rich history across Learn, Compete, and Build tracks. */
 export function seedDemoPatch(st) {
   return {
-    registered: ['icc-global', 'genai-academy', 'npci-upi', 'police-hack', 'agentic-bootcamp', 'dishathon', 'inspire-26'],
+    registered: [
+      'genai-academy', 'aws-ai-masterclass', 'agentic-bootcamp', // Learn
+      'police-hack', 'icc-global', 'smart-mobility-hack', 'gcp-genai-hack', // Compete
+      'npci-upi', 'clean-energy-ai', 'isro-bhuvan', 'medical-imaging-ai', // Build
+      'inspire-26',
+    ],
     submissions: ['inspire-26'],
     intents: [...new Set([...(st.intents || []), 'competing', 'learning', 'learncompete'])],
   }
