@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react'
 import Icon from './Icon'
 import { InitiativeCard, ContinueCard } from './Cards'
 import { activeList, recommendedList, nextStepFor, savedList, recentViews, byId } from './data'
@@ -20,29 +21,65 @@ function EmptyState({ ico, title, msg, cta }) {
   )
 }
 
+function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
+  const containerRef = useRef(null)
+  const [cols, setCols] = useState(3)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const update = () => {
+      const w = el.clientWidth
+      if (w > 0) {
+        const calculated = Math.max(1, Math.floor((w + gap) / (minColWidth + gap)))
+        setCols(calculated)
+      }
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [minColWidth, gap])
+
+  const visible = items.slice(0, cols)
+
+  return (
+    <div
+      ref={containerRef}
+      className="dash-cards-row"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        gap: `${gap}px`,
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
+      {visible.map(renderCard)}
+    </div>
+  )
+}
+
 export function Home({ st, sv, go }) {
   const active = activeList(st)
   const recs = recommendedList(st)
   return (
     <>
-      <div className="rounded-banner">
-        <div>
-          <div className="xs bold" style={{ letterSpacing: '.06em', color: 'var(--primary)' }}>WELCOME BACK</div>
-          <h1 className="mt6">{st.profile?.name || st.name || 'there'} 👋</h1>
-          <p className="small muted mt8">Build your skills, complete initiatives, and grow your career.</p>
-        </div>
-        <span className="icon-chip lg purple" style={{ width: 72, height: 72, flexShrink: 0 }}><Icon name="Sparkles" size={32} /></span>
+      <div className="mb24">
+        <h1>Dashboard</h1>
+        <p className="small muted mt6">Pick up where you left off and explore recommended initiatives.</p>
       </div>
 
-      <div className="mt24">
+      <div>
         <div className="card-head">
           <h2>Continue where you left off</h2>
           {active.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('activity')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
         </div>
         {active.length ? (
-          <div className="grid g3">
-            {active.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
-          </div>
+          <SingleRowGrid
+            items={active}
+            renderCard={o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />}
+          />
         ) : (
           <EmptyState ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
             cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Explore initiatives <Icon name="ArrowRight" size={14} /></a>} />
@@ -55,7 +92,10 @@ export function Home({ st, sv, go }) {
           {recs.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
         </div>
         {recs.length ? (
-          <div className="grid g3">{recs.slice(0, 6).map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}</div>
+          <SingleRowGrid
+            items={recs}
+            renderCard={o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />}
+          />
         ) : (
           <EmptyState ico="Sparkles" title="No recommendations available yet" msg="Check back soon for personalized recommendations based on your interests." />
         )}

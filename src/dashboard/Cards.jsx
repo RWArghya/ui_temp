@@ -97,7 +97,7 @@ export function InitiativeCard({ o, st, sv, dest, progress, stepLabel }) {
         {/* Lower section pinned to the bottom: progress bar sits at the exact same level across cards */}
         <div className="init-bottom-section">
           {showProgress ? (
-            <div className="init-progress-block" style={{ marginBottom: '10px' }}>
+            <div className="init-progress-block" style={{ marginBottom: '8px' }}>
               <div className="pbar">
                 <i style={{ width: pct + '%', background: meta.fg }} />
               </div>

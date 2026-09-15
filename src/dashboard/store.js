@@ -58,7 +58,7 @@ function identity() {
    have something to count." Only invoked from the sidebar's opt-in link. */
 export function seedDemoPatch(st) {
   return {
-    registered: ['icc-global', 'genai-academy', 'npci-upi', 'inspire-26'],
+    registered: ['icc-global', 'genai-academy', 'npci-upi', 'police-hack', 'agentic-bootcamp', 'dishathon', 'inspire-26'],
     submissions: ['inspire-26'],
     intents: [...new Set([...(st.intents || []), 'competing', 'learning', 'learncompete'])],
   }
