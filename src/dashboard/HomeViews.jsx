@@ -65,9 +65,7 @@ export function Home({ st, sv, go }) {
   const recs = recommendedList(st)
   return (
     <>
-      <div className="mb20">
-        <p className="small muted">Pick up where you left off and explore recommended initiatives.</p>
-      </div>
+
 
       <div>
         <div className="card-head">
@@ -107,10 +105,9 @@ export function Continuing({ st, sv, go }) {
   const active = activeList(st)
   return (
     <>
-      <h1>Continue where you left off</h1>
-      <p className="small muted mt6">{active.length} initiative{active.length === 1 ? '' : 's'} you're actively working on.</p>
+      <p className="small muted mb16">{active.length} initiative{active.length === 1 ? '' : 's'} you're actively working on.</p>
       {active.length ? (
-        <div className="grid g3 mt20">
+        <div className="grid g3">
           {active.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
         </div>
       ) : (
@@ -129,8 +126,7 @@ export function Recommended({ st, sv, go }) {
   return (
     <div className="space-y-8">
       <div>
-        <h1>Recommended for you</h1>
-        <p className="small muted mt6">
+        <p className="small muted">
           {(st.interests || []).length || st.region
             ? 'Curated recommendations matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ')
             : 'Personalized initiatives, challenges, and hackathons organized by track.'}
@@ -266,10 +262,9 @@ export function Saved({ st, sv, go }) {
   const list = savedList(st).map(byId).filter(Boolean)
   return (
     <>
-      <h1>Saved initiatives</h1>
-      <p className="small muted mt6">{list.length} saved</p>
+      <p className="small muted mb16">{list.length} {list.length === 1 ? 'initiative' : 'initiatives'} saved</p>
       {list.length ? (
-        <div className="grid g3 mt20">
+        <div className="grid g3">
           {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)}
         </div>
       ) : (
@@ -283,10 +278,9 @@ export function Recent({ st, sv, go }) {
   const list = recentViews(st).map(byId).filter(Boolean)
   return (
     <>
-      <h1>Recently viewed</h1>
-      <p className="small muted mt6">{list.length} viewed recently</p>
+      <p className="small muted mb16">Recently viewed · {list.length} {list.length === 1 ? 'initiative' : 'initiatives'}</p>
       {list.length ? (
-        <div className="grid g3 mt20">
+        <div className="grid g3">
           {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)}
         </div>
       ) : (

@@ -86,8 +86,7 @@ export default function Settings({ st, sv, go }) {
 
   return (
     <>
-      <h1>Settings</h1>
-      <p className="small muted mt6">Your account, notifications, privacy, and platform preferences.</p>
+      <p className="small muted">Your account, notifications, privacy, and platform preferences.</p>
 
       <div className="row gap8 wrap mt16" style={{ marginBottom: 4 }}>
         {JUMP.map(([id, label]) => (

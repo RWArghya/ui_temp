@@ -12,8 +12,7 @@ export default function MyActivity({ st, sv, go }) {
   return (
     <div className="space-y-8">
       <div>
-        <h1>My activity</h1>
-        <p className="small muted mt6">
+        <p className="small muted">
           All your in-progress initiatives, bootcamps, and hackathons organized by track.
         </p>
       </div>

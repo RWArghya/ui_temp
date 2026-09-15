@@ -195,8 +195,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     activity: { parent: 'home', parentLabel: 'Dashboard', title: 'My Activity' },
     continuing: { parent: 'home', parentLabel: 'Dashboard', title: 'Continue where you left off' },
     recommended: { parent: 'home', parentLabel: 'Dashboard', title: 'Recommended for you' },
-    saved: { parent: 'home', parentLabel: 'Dashboard', title: 'Saved initiatives' },
-    recent: { parent: 'home', parentLabel: 'Dashboard', title: 'Recently viewed' },
     settings: { parent: 'home', parentLabel: 'Dashboard', title: 'Settings' },
     profile: { parent: 'home', parentLabel: 'Dashboard', title: 'My Profile' },
   }
@@ -209,6 +207,8 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     competing: 'Compete',
     learncompete: 'Build',
     arena: 'Arena',
+    saved: 'Saved',
+    recent: 'Recent',
   }
   const currentTitle = subNav ? subNav.title : (VIEW_TITLES[view] || (msup ? 'Mentor Workspace' : 'Dashboard'))
 
