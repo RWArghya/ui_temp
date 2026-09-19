@@ -41,6 +41,8 @@ export default function Auth() {
 
   const [mode, setMode] = useState(urlMode)
   const [step, setStep] = useState("credentials")
+  const [loginMethod, setLoginMethod] = useState("password") // "password" | "otp" — login-only toggle
+  const [otpPurpose, setOtpPurpose] = useState("signup") // "signup" | "login" — what a successful verify does
   const [otp, setOtp] = useState("")
   const [generatedOtp, setGeneratedOtp] = useState("")
   const [otpCountdown, setOtpCountdown] = useState(30)
@@ -110,6 +112,27 @@ export default function Auth() {
     setErrors({})
     startOtpCountdown()
   }, [startOtpCountdown])
+
+  // "Log in with OTP" — passwordless login for an existing account. Unlike
+  // signup's OTP (which verifies a brand-new email), this looks an account
+  // up by email first, same existence check the password path already does.
+  function requestLoginOtp() {
+    const email = form.email.trim()
+    const r = VALIDATION.email(email)
+    if (r !== true) {
+      setErrors((prev) => ({ ...prev, email: r }))
+      return
+    }
+    const existing = authStore.read().account
+    if (!existing || existing.email.toLowerCase() !== email.toLowerCase()) {
+      setFormError("No account found for that email.")
+      return
+    }
+    setFormError("")
+    setOtpPurpose("login")
+    generateOtp()
+    setStep("verify")
+  }
 
   const contextBanner = useMemo(() => {
     if (!next) return null
@@ -206,6 +229,7 @@ export default function Auth() {
       name: form.name.trim(),
       email: form.email.trim(),
     })
+    setOtpPurpose("signup")
     generateOtp()
     setStep("verify")
   }
@@ -244,7 +268,7 @@ export default function Auth() {
     }
     if (otpTimerRef.current) clearInterval(otpTimerRef.current)
     const acct = authStore.read().account
-    authStore.save({ account: { ...acct, verified: true } })
+    if (!acct.verified) authStore.save({ account: { ...acct, verified: true } })
     afterAuth()
   }
 
@@ -407,62 +431,83 @@ export default function Auth() {
                 </div>
               )}
 
-              {/* Password */}
-              <div className="mb-3">
-                <label htmlFor="auth-pw" className="mb-1.5 block text-[0.85rem] font-medium text-ink-900">
-                  Password
-                </label>
-                <input
-                  id="auth-pw"
-                  type="password"
-                  placeholder="••••••••"
-                  value={form.pw}
-                  onChange={(e) => {
-                    updateField("pw", e.target.value)
-                  }}
-                  className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
-                  style={errors.pw ? { borderColor: ERROR_COLOR } : undefined}
-                />
-                {errors.pw && (
-                  <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>
-                    {errors.pw}
-                  </p>
-                )}
-                {!login && (
-                  <>
-                    <div className="auth-pw-meter mt-2">
-                      <div
-                        className="auth-pw-meter-fill"
-                        style={{
-                          width: `${(pwStrength / 4) * 100}%`,
-                          background:
-                            pwStrength <= 1
-                              ? ERROR_COLOR
-                              : pwStrength === 2
-                                ? "#d97706"
-                                : "var(--color-status)",
-                        }}
-                      />
-                    </div>
-                    <p className="mt-1 text-[0.75rem] text-graphite-dim">
-                      {!form.pw
-                        ? "At least 8 characters, including a number"
-                        : PW_LABELS[pwStrength]}
+              {/* Password (hidden in login mode when logging in with OTP instead) */}
+              {(!login || loginMethod === "password") && (
+                <div className="mb-3">
+                  <label htmlFor="auth-pw" className="mb-1.5 block text-[0.85rem] font-medium text-ink-900">
+                    Password
+                  </label>
+                  <input
+                    id="auth-pw"
+                    type="password"
+                    placeholder="••••••••"
+                    value={form.pw}
+                    onChange={(e) => {
+                      updateField("pw", e.target.value)
+                    }}
+                    className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
+                    style={errors.pw ? { borderColor: ERROR_COLOR } : undefined}
+                  />
+                  {errors.pw && (
+                    <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>
+                      {errors.pw}
                     </p>
-                  </>
-                )}
-              </div>
+                  )}
+                  {!login && (
+                    <>
+                      <div className="auth-pw-meter mt-2">
+                        <div
+                          className="auth-pw-meter-fill"
+                          style={{
+                            width: `${(pwStrength / 4) * 100}%`,
+                            background:
+                              pwStrength <= 1
+                                ? ERROR_COLOR
+                                : pwStrength === 2
+                                  ? "#d97706"
+                                  : "var(--color-status)",
+                          }}
+                        />
+                      </div>
+                      <p className="mt-1 text-[0.75rem] text-graphite-dim">
+                        {!form.pw
+                          ? "At least 8 characters, including a number"
+                          : PW_LABELS[pwStrength]}
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
 
-              {/* Forgot password (login only) */}
+              {login && loginMethod === "otp" && (
+                <p className="mb-3 text-[0.78rem] text-graphite-dim">
+                  We'll email a 6-digit code to sign you in — no password needed.
+                </p>
+              )}
+
+              {/* Forgot password / OTP toggle (login only) */}
               {login && (
-                <p className="mb-3 text-[0.78rem]">
+                <p className="mb-3 flex items-center justify-between text-[0.78rem]">
                   <button
                     type="button"
-                    onClick={() => setStep("forgot")}
+                    onClick={() => {
+                      setLoginMethod((m) => (m === "password" ? "otp" : "password"))
+                      setErrors({})
+                      setFormError("")
+                    }}
                     className="text-signal hover:underline"
                   >
-                    Forgot password?
+                    {loginMethod === "password" ? "Log in with OTP instead" : "Log in with password instead"}
                   </button>
+                  {loginMethod === "password" && (
+                    <button
+                      type="button"
+                      onClick={() => setStep("forgot")}
+                      className="text-signal hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
                 </p>
               )}
 
@@ -501,10 +546,10 @@ export default function Auth() {
               {/* Submit */}
               <button
                 type="button"
-                onClick={handleSubmit}
+                onClick={login && loginMethod === "otp" ? requestLoginOtp : handleSubmit}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-btn bg-signal px-4 py-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-signal-dark"
               >
-                {login ? "Log in" : "Create account"}
+                {login ? (loginMethod === "otp" ? "Send OTP" : "Log in") : "Create account"}
               </button>
 
               {formError && (
@@ -519,11 +564,11 @@ export default function Auth() {
           {step === "verify" && (
             <>
               <h2 className="font-display text-[1.5rem] font-extrabold text-ink-900">
-                Verify your email
+                {otpPurpose === "login" ? "Enter your login code" : "Verify your email"}
               </h2>
               <p className="mt-2 text-[0.88rem] text-graphite">
-                We sent a 6-digit code to <strong className="text-ink-900">{form.email}</strong>. It
-                expires in 10 minutes.
+                We sent a 6-digit code to <strong className="text-ink-900">{form.email}</strong>.{" "}
+                {otpPurpose === "login" ? "Enter it below to sign in." : "It expires in 10 minutes."}
               </p>
 
               <div className="mt-6">

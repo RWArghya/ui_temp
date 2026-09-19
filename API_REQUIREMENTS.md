@@ -1,74 +1,82 @@
 # Backend API Requirements — Master Specification
 
-Tracks every backend endpoint and data contract assumed by the frontend application across all modules:
-- **Dashboard & Workspaces**: [api_req/dashboard.md](file:///c:/Users/MP2KK/ui_temp/api_req/dashboard.md)
-- **Profile & Resume Builder**: [api_req/profile.md](file:///c:/Users/MP2KK/ui_temp/api_req/profile.md)
-- **Landing & Marketing**: Documented below
-
-Mock implementations live in `src/api/mock/` and `src/dashboard/data.js` behind standard client abstractions.
-
-Status legend: **Mocked / Client-Ready** (implemented against typed mock data or client store, ready for swap) · **TBD** (external marketing stubs).
+> **Status**: Aligned with latest `dev` code and Go modular monolith backend architecture.  
+> **Detailed Module Specs**:
+> - 🔐 **Auth & Identity**: [`api_req/auth.md`](api_req/auth.md)
+> - 📊 **Dashboard, Catalogs & Workspaces**: [`api_req/dashboard.md`](api_req/dashboard.md)
+> - 👤 **Profile, Account Security & Resume**: [`api_req/profile.md`](api_req/profile.md)
 
 ---
 
-## 1. Dashboard, Catalogs & Workspaces (See [api_req/dashboard.md](file:///c:/Users/MP2KK/ui_temp/api_req/dashboard.md))
+## 1. Authentication & Identity (See [`api_req/auth.md`](api_req/auth.md))
 
-| Feature | UI Action | Endpoint | Method | Request | Response Shape | Status |
-|---|---|---|---|---|---|---|
-| KPI Overview Metrics | Dashboard load (`/dashboard`) | `/api/dashboard/kpis` | GET | Bearer token | `{ totalOngoing: number, coursesEnrolled: number, buildChallenges: number, hackathons: number, savedCount: number }` | Mocked — `src/dashboard/data.js` |
-| Active Initiatives | "Continue where you left off" single row | `/api/initiatives/active` | GET | Bearer token | `Initiative[]` (with progress %, active step label, next action) | Mocked — `src/dashboard/data.js` |
-| Recommended Initiatives | "Recommended for you" track sections | `/api/initiatives/recommended` | GET | Query: `?limit=12` | `Initiative[]` (sorted by matching user interests & region) | Mocked — `src/dashboard/data.js` |
-| Filtered Catalogs | Filter bar in Learn, Build, Compete | `/api/initiatives` | GET | `?purpose=&q=&area=&region=&status=&mode=` | `Initiative[]` | Mocked — `src/dashboard/data.js` |
-| My Activity (4 Tabs) | `/dashboard?view=activity` (All, Learn, Build, Compete) | `/api/initiatives/active` | GET | `?purpose=learning\|learncompete\|competing` | `Initiative[]` (filtered by active track) | Mocked — `src/dashboard/ActivityView.jsx` |
-| Saved Initiatives | `/dashboard?view=saved` & bookmark click | `/api/initiatives/saved` & `/api/initiatives/:id/save` | GET / POST | `{ saved: boolean }` | `{ success: true, saved: boolean }` | Mocked — `src/dashboard/data.js` |
-| Recently Viewed | `/dashboard?view=recent` & opening cards | `/api/initiatives/recent` & `/api/initiatives/:id/recent-view` | GET / POST | — | `Initiative[]` | Mocked — `src/dashboard/data.js` |
-| Initiative Details | Opening `/dashboard/initiative?id=:id` | `/api/initiatives/:id` | GET | Path: `id` | Full `<InitiativeDetail>` (syllabus, problem statements, teams) | Mocked — `src/dashboard/data.js` |
-| Register Initiative | Clicking "Register" on card preview | `/api/initiatives/:id/register` | POST | Path: `id` | `{ success: true, registeredAt: string }` | Mocked — `src/dashboard/Workspace.jsx` |
-| Module Syllabus | Learn track module hub & detail reader | `/api/initiatives/:id/modules` | GET | Path: `id` | `Module[]` (sections, concepts, resources, quiz) | Mocked — `src/dashboard/data.js` |
-| Mark Section Done | "Mark section complete →" | `/api/initiatives/:id/modules/:mod/sections/:sec/complete` | POST | Path params | `{ success: true, progressPct: number }` | Mocked — `src/dashboard/data.js` |
-| Submit Module Quiz | Quiz assessment submission | `/api/initiatives/:id/modules/:mod/quiz` | POST | `{ answers: Record<number, number> }` | `{ success: true, score: number, passed: boolean }` | Mocked — `src/dashboard/data.js` |
-| Claim Certificate | Capstone module completion | `/api/initiatives/:id/certificate/claim` | POST | Path: `id` | `{ success: true, certificateId: string }` | Mocked — `src/dashboard/Workspace.jsx` |
-| Submit Prototype | Artifact submission form (Build & Compete) | `/api/initiatives/:id/submissions` | POST | `{ repoUrl, demoUrl, notes, fileAttachment }` | `{ success: true, submissionId: string }` | Mocked — `src/dashboard/Workspace.jsx` |
-| Mentor Connect | Toggle mentor support pairing | `/api/initiatives/:id/mentor-connect` | POST | `{ enabled: boolean }` | `{ success: true, mentorRequested: boolean }` | Mocked — `src/dashboard/Workspace.jsx` |
-| Innovator Settings | `/dashboard?view=settings` | `/api/profile/me/settings` | GET / PATCH | Partial `<Settings>` | Updated `<Settings>` | Mocked — `src/dashboard/Settings.jsx` |
-| Change Password | "Change password" form in Settings | `/api/auth/change-password` | POST | `{ currentPassword, newPassword }` | `{ success: true, message: string }` | Mocked — `authStore.changePassword` |
-| Delete Account | Danger Zone → "Delete account" in Settings | `/api/account/me` | DELETE | Bearer token | `{ success: true }` | Mocked — `authStore.clear()` & `S.reset()` |
+| Feature | UI Action | Endpoint | Method | Rate Limit | Status |
+|---|---|---|---|---|---|
+| **Register User** | Signup submit | `/api/v1/auth/register` | `POST` | 10/min (IP) | Ready for backend |
+| **Verify Signup OTP** | 6-digit email OTP after signup | `/api/v1/auth/signup/otp/verify` | `POST` | 10/min (IP) | Ready for backend |
+| **Resend Signup OTP** | Click "Resend code" | `/api/v1/auth/signup/otp/resend` | `POST` | 5/min (IP) | Ready for backend |
+| **Password Login** | Standard login submit | `/api/v1/auth/login` | `POST` | 10/min (IP) | Ready for backend |
+| **Request Login OTP** | "Log in with OTP instead" $\rightarrow$ email submit | `/api/v1/auth/login/otp/request` | `POST` | 5/min (IP) | Simulated in `src/pages/Auth.jsx` |
+| **Verify Login OTP** | 6-digit login code $\rightarrow$ sign in | `/api/v1/auth/login/otp/verify` | `POST` | 10/min (IP) | Simulated in `src/pages/Auth.jsx` |
+| **Token Refresh** | Background silent token rotation | `/api/v1/auth/refresh` | `POST` | None | Ready for backend |
+| **Logout** | Topbar profile dropdown $\rightarrow$ Log out | `/api/v1/auth/logout` | `POST` | Bearer Token | Client store clear |
+| **Forgot Password** | "Forgot password?" modal submit | `/api/v1/auth/password/forgot` | `POST` | 5/min (IP) | Ready for backend |
+| **Reset Password** | Reset password form submit | `/api/v1/auth/password/reset` | `POST` | 5/min (IP) | Ready for backend |
+| **Initial Onboarding** | Track/interest picker on `/onboarding` | `/api/v1/auth/onboarding` | `POST` | Bearer Token | Client store update |
 
 ---
 
-## 2. Profile & Resume Builder (See [api_req/profile.md](file:///c:/Users/MP2KK/ui_temp/api_req/profile.md))
+## 2. Dashboard, Catalogs & Workspaces (See [`api_req/dashboard.md`](api_req/dashboard.md))
 
-| Feature | UI action | API required | Method | Request | Response | Status |
-|---|---|---|---|---|---|---|
-| User Profile details | `/profile` load | `/api/profile/me` | GET | Bearer token | Complete Profile Object | Mocked — `src/api/mock/profile.js` |
-| Update Profile | Save edits / privacy toggle | `/api/profile/me` | PATCH | Partial `<Profile>` | Updated `<Profile>` | Mocked — `src/api/mock/profile.js` |
-| Registered Initiatives | Profile journey / certs / all certs | `/api/initiatives?userId=me` | GET | `userId=me` | `{ completed: [], active: [], pending: [], submittedIds: [] }` | Mocked — `src/api/mock/initiatives.js` |
-| Single Certificate View | Direct link or reload `/profile/certificate/:certId` | `/api/certificates/:certId` | GET | `certId` | Certificate Object | Client state with API fallback |
-| Public Visitor Profile | Visitor view (`/profile/preview`) | `/api/profile/public/:slug` | GET | `slug` | Filtered public Profile Object | Stubbed in `ProfilePreview.jsx` |
-| Export Resume PDF / LaTeX | "Print / Save PDF" & "Export LaTeX (.tex)" | `/api/profile/resume/pdf` & `/api/profile/resume/latex` | POST / Client | `{ profileId, config }` | Binary PDF / Plaintext `.tex` file | Client-side `window.print()` & `latexGenerator.js` |
-| Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Certs, Links | `/api/profile/me/:section` | POST / PATCH | Detailed payload per section | `{ success: true, item }` | Mocked — `src/api/mock/profile.js` |
-| Edit Section Item | "Edit" → "Save Changes" on item | `/api/profile/me/:section/:id` | PUT / PATCH | Detailed payload per section | `{ success: true, item }` | Mocked — `src/api/mock/profile.js` |
-| Delete Section Item | "Remove" with modal confirmation | `/api/profile/me/:section/:id` | DELETE / PATCH | `id` | `{ success: true, removedId }` | Mocked — `src/api/mock/profile.js` |
-| Upload Certificate Proof | "Add certificate image" file picker | `/api/profile/me/certificates/proof` | POST | `multipart/form-data` | `{ proofUrl: string }` | Client FileReader |
+| Feature | UI Action | Endpoint | Method | Status |
+|---|---|---|---|---|
+| **KPI Overview** | Dashboard load (`/dashboard`) | `/api/v1/dashboard/kpis` | `GET` | Mocked — `src/dashboard/Views.jsx` |
+| **My Initiatives** | User's enrolled initiatives ("My Activity") | `/api/v1/initiatives/mine` | `GET` | Mocked — `src/api/mock/initiatives.js` |
+| **Active Initiatives** | "Continue where you left off" carousel | `/api/v1/initiatives/active` | `GET` | Mocked — `src/dashboard/data.js` |
+| **Recommended Initiatives**| "Recommended for you" track section | `/api/v1/initiatives/recommended` | `GET` | Mocked — `src/dashboard/data.js` |
+| **Filtered Catalogs** | Search & filters in Learn, Build, Compete | `/api/v1/initiatives` | `GET` | Mocked — `src/dashboard/PurposeViews.jsx` |
+| **Bookmark / Save** | Bookmark button toggle on cards | `/api/v1/initiatives/:id/save` | `POST` | Mocked — `src/dashboard/data.js` |
+| **Recently Viewed** | Recent initiatives recording & retrieval | `/api/v1/initiatives/recent` & `/:id/recent-view` | `GET` / `POST` | Mocked — `src/dashboard/data.js` |
+| **Initiative Detail** | `/dashboard/initiative?id=:id` | `/api/v1/initiatives/:id` | `GET` | Mocked — `src/dashboard/data.js` |
+| **Register Initiative** | Click "Register" on preview card | `/api/v1/initiatives/:id/register` | `POST` | Mocked — `src/dashboard/Workspace.jsx` |
+| **Module Curriculum** | Learn track syllabus reader | `/api/v1/initiatives/:id/modules` | `GET` | Mocked — `src/dashboard/data.js` |
+| **Complete Section** | "Mark section complete →" | `/api/v1/initiatives/:id/modules/:mod/sections/:sec/complete` | `POST` | Mocked — `src/dashboard/data.js` |
+| **Submit Module Quiz** | Module assessment quiz submission | `/api/v1/initiatives/:id/modules/:mod/quiz` | `POST` | Mocked — `src/dashboard/data.js` |
+| **Claim Certificate** | Capstone completion claim | `/api/v1/initiatives/:id/certificate/claim` | `POST` | Mocked — `src/dashboard/Workspace.jsx` |
+| **Pick Problem Statement** | Build track radio card selection | `/api/v1/initiatives/:id/problem-statement` | `POST` | Mocked — `src/dashboard/Workspace.jsx` |
+| **Join Squad / Team** | "Join squad" in Team step | `/api/v1/initiatives/:id/teams/:teamId/join` | `POST` | Mocked — `src/dashboard/Workspace.jsx` |
+| **Submit Prototype** | Repository, demo link, notes & file upload | `/api/v1/initiatives/:id/submissions` | `POST` | Mocked — `src/dashboard/Workspace.jsx` |
+| **Self-Assessment** | Evaluator rubric scoring in `Evaluate.jsx` | `/api/v1/initiatives/:id/submissions/self-assessment` | `POST` | Mocked — `src/dashboard/Evaluate.jsx` |
+| **Public Certificate** | `/certificate/:id` standalone view | `/api/v1/certificates/:certId` | `GET` | Built — `src/pages/CertificateView.jsx` |
+| **Notifications Feed** | Topbar notification bell dropdown | `/api/v1/notifications` & `/:id/read` | `GET` / `POST` | Built in `src/dashboard/Dashboard.jsx` |
 
 ---
 
-## 3. Home / Landing Page
+## 3. Profile, Account Security & Resume (See [`api_req/profile.md`](api_req/profile.md))
 
-| Feature | UI action | API required | Method | Request | Response | Status |
-|---|---|---|---|---|---|---|
-| Hero live console | Home page load | `/api/network/live-stats` | GET | — | `{ liveInitiatives: number, submissionsThisWeek: number, mentorsMapped: number, partnerInstitutes: string, networkStatus: "live" \| "offline" }` | Mocked — `src/api/mock/liveStats.js` |
-| Flagship challenges grid | Home page load | `/api/initiatives?flagship=true` | GET | — | `[{ id, tag, title, description, href }]` | Mocked — `src/api/mock/challenges.js` |
-| Testimonials / proof section | Home page load | `/api/testimonials` | GET | — | `[{ id, status: "pending" \| "published", quote?, placeholder?, role }]` | Mocked — `src/api/mock/testimonials.js` |
+| Feature | UI Action | Endpoint | Method | Status |
+|---|---|---|---|---|
+| **User Profile Details** | `/profile` load | `/api/v1/profile/me` | `GET` | Mocked — `src/api/mock/profile.js` |
+| **Update Scalar Profile** | Save bio, headline, region, public toggle | `/api/v1/profile/me` | `PATCH` | Mocked — `src/api/mock/profile.js` |
+| **Upload Avatar** | Avatar image file select | `/api/v1/profile/me/avatar` | `POST` | S3 Upload wrapper |
+| **Public Visitor Profile** | Visitor URL (`/profile/preview` or `/p/:slug`) | `/api/v1/profile/public/:slug` | `GET` | Built — `src/pages/ProfilePreview.jsx` |
+| **Export Resume PDF** | "Download PDF" in Resume builder | `/api/v1/profile/me/resume/pdf` | `POST` | Built — `src/pages/Resume.jsx` |
+| **Export Resume LaTeX** | "Copy LaTeX Source" in Resume builder | `/api/v1/profile/me/resume/latex` | `POST` | Built — `src/pages/Resume.jsx` |
+| **Section Items CRUD** | Add/Edit/Delete Education, Projects, Publications, Achievements, Certs, Links | `/api/v1/profile/me/:section(/:itemId)` | `POST` / `PATCH` / `DELETE` | Mocked — `src/dashboard/Profile.jsx` |
+| **Upload Cert Proof** | External certificate image proof upload | `/api/v1/profile/me/certificates/proof` | `POST` | Client FileReader / S3 |
+| **User Settings** | `/dashboard?view=settings` load & update | `/api/v1/profile/me/settings` | `GET` / `PATCH` | Mocked — `src/dashboard/Settings.jsx` |
+| **Change Password** | "Change password" form submit in Settings | `/api/v1/account/password` | `POST` | Mocked — `src/store/auth.js` |
+| **Change Email** | Request & verify new email address | `/api/v1/account/email/request` & `/verify` | `POST` | Ready for backend |
+| **Manage Sessions** | List and revoke active login sessions | `/api/v1/account/sessions(/:id/revoke)` | `GET` / `POST` | Ready for backend |
+| **Deactivate Account** | Password-gated account deactivation | `/api/v1/account/deactivate` | `POST` | Ready for backend |
+| **Delete Account** | Danger zone $\rightarrow$ Type "DELETE" | `/api/v1/account` | `DELETE` | Mocked — `src/store/auth.js` |
 
 ---
 
-## Mock → Real Backend Swap Guide
+## 4. Landing & Marketing Endpoints
 
-1. **Dashboard & Workspaces**:
-   - The reactive state store in `src/dashboard/store.js` and queries in `src/dashboard/data.js` map 1:1 to the endpoints defined in [api_req/dashboard.md](file:///c:/Users/MP2KK/ui_temp/api_req/dashboard.md).
-   - Swapping local store queries with backend calls involves replacing `rawRead()` / `activeList()` with standard `api.get('/initiatives/active')` hooks.
-
-2. **Profile & Marketing**:
-   - Each mock function in `src/api/mock/*.js` returns `Promise<data>` via `mockRequest()`, matching `axios` promises.
-   - Replace the mock function bodies with `api.get(...)` / `api.post(...)` without changing component call sites.
+| Feature | UI Action | Endpoint | Method | Status |
+|---|---|---|---|---|
+| **Live Stats Console** | Homepage live stats bar | `/api/v1/network/live-stats` | `GET` | Mocked — `src/api/mock/liveStats.js` |
+| **Featured Challenges** | Homepage challenge carousel | `/api/v1/initiatives?flagship=true` | `GET` | Mocked — `src/api/mock/challenges.js` |
+| **Testimonials** | Homepage proof section | `/api/v1/testimonials` | `GET` | Mocked — `src/api/mock/testimonials.js` |

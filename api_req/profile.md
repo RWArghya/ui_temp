@@ -1,54 +1,74 @@
-# Backend API Requirements — Profile & Public Preview
+# Backend API Requirements — Profile, Account & Resume
 
-Tracks all backend endpoints and data contracts for the Profile module (`/profile`), Public Preview (`/profile/preview`), and Overleaf Resume generator (`/profile/resume`).
-
-Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiatives.js`.
-
----
-
-## Endpoints
-
-| Feature | UI Action | Endpoint | Method | Request Body / Params | Expected Response Shape | Mock File |
-|---|---|---|---|---|---|---|
-| User Profile | Profile load | `/api/profile/me` | `GET` | Headers: Bearer Token | Profile Object (see schema below) | `src/api/mock/profile.js` |
-| Update Profile | Save inline edits, privacy toggle, landing view | `/api/profile/me` | `PATCH` | Partial `<Profile>` | Updated `<Profile>` | `src/api/mock/profile.js` |
-| Upload Avatar | Avatar file select | `/api/profile/me/avatar` | `POST` | `multipart/form-data` or `{ avatarDataUrl: string }` | `{ avatarUrl: string }` | Local canvas resize → dataURL |
-| Registered Initiatives | Profile load (Journey, Certs, Rewards tabs, All Certs page) | `/api/initiatives?userId=me` | `GET` | Query: `userId=me` | `{ completed: Initiative[], active: Initiative[], pending: Initiative[], submittedIds: string[] }` | `src/api/mock/initiatives.js` |
-| Public Profile Visitor View | Share URL visited (`/p/:slug` or `/profile/preview?u=:id`) | `/api/profile/public/:slug` | `GET` | Params: `slug` | Sanitized public `<Profile>` (omits email, private items) | Stubbed in `ProfilePreview.jsx` |
-| Export Resume PDF | "Print / Save PDF" (backend rendering) | `/api/profile/resume/pdf` | `POST` | `{ profileId: string, template: "overleaf-classic" }` | Binary PDF stream or `{ pdfUrl: string }` | Client-side `window.print()` / LaTeX stub |
-| Export Resume LaTeX | "Export LaTeX (.tex)" | `/api/profile/resume/latex` | `POST` / Client | `{ config: ResumeConfig, profileId: string }` | Plaintext `.tex` LaTeX source file download | Client-side `src/utils/latexGenerator.js` |
-| All Certificates Page | "Show all certificates" button in Certs tab | `/api/initiatives?userId=me` (same call, full data passed via router state) | `GET` | Same as above | Same as above, but `pending[]` must include closed initiatives where `cert_issued: false` | `src/api/mock/initiatives.js` |
-| Single Certificate View | Direct link or page reload on `/profile/certificate/:certId` | `/api/certificates/:certId` | `GET` | Path param: `certId` | `{ certId: string, title: string, org: string, date: string, type: string, recipientName: string, issuerLogo?: string, signatureUrl?: string }` | Client router state (`location.state.cert`) with API fallback |
-| Add Section Item | "+ Add" in Education, Projects, Publications, Achievements, Self-Certs, Connected Profiles | `/api/profile/me/:section` or `/api/profile/me` | `POST` / `PATCH` | Detailed Section Payload (see CRUD specs below) | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
-| Edit Section Item | "Edit" → "Save Changes" on any existing item | `/api/profile/me/:section/:itemId` or `/api/profile/me` | `PUT` / `PATCH` | Detailed Section Payload | `{ success: true, item: <SectionItem> }` | `src/api/mock/profile.js` |
-| Delete Section Item | "Remove" → Confirmation modal "Remove" | `/api/profile/me/:section/:itemId` or `/api/profile/me` | `DELETE` / `PATCH` | `itemId` | `{ success: true, removedId: string }` | `src/api/mock/profile.js` |
-| Upload Certificate Proof | "Add certificate image" file picker | `/api/profile/me/certificates/proof` | `POST` | `multipart/form-data` | `{ proofUrl: string }` | Data URL FileReader |
+> **Module**: Profile & Account (`internal/profile/` and `internal/account/` in backend)  
+> **Route Group**: `/api/v1/profile` and `/api/v1/account`  
+> **Client Sources**: [`src/dashboard/Profile.jsx`](file:///c:/Users/MP2KK/ui_temp/src/dashboard/Profile.jsx), [`src/dashboard/Settings.jsx`](file:///c:/Users/MP2KK/ui_temp/src/dashboard/Settings.jsx), [`src/pages/Resume.jsx`](file:///c:/Users/MP2KK/ui_temp/src/pages/Resume.jsx), and [`src/pages/ProfilePreview.jsx`](file:///c:/Users/MP2KK/ui_temp/src/pages/ProfilePreview.jsx)  
+> **Backend Architecture Reference**: [`H2S-Innovator-Dashboard-Backend.md §3`](file:///c:/Users/MP2KK/ui_temp/H2S-Innovator-Dashboard-Backend.md#3-http-layer--chi-with-public-vs-authenticated-route-groups)
 
 ---
 
-## Schema: Full Profile Object (`/api/profile/me`)
+## 1. Endpoints Overview
+
+### A. Profile & Portfolio Endpoints (`/api/v1/profile`)
+
+| Feature | UI Action | Endpoint | Method | Request Body / Params | Expected Response Shape |
+|---|---|---|---|---|---|
+| **Get My Profile** | Profile load | `/api/v1/profile/me` | `GET` | Headers: Bearer Token | Full `<Profile>` object (see schema below) |
+| **Update Scalar Fields** | Edit bio, headline, region, public toggle | `/api/v1/profile/me` | `PATCH` | Partial `<Profile>` | Updated `<Profile>` |
+| **Upload Avatar** | Avatar file picker select | `/api/v1/profile/me/avatar` | `POST` | `multipart/form-data` | `{ avatarUrl: string }` |
+| **Public Profile View** | Open `/p/:slug` or `/profile/preview` | `/api/v1/profile/public/:slug` | `GET` | Path: `slug` | Sanitized public `<Profile>` (omits email & private prefs) |
+| **Export Resume PDF** | Click "Download PDF" in Resume builder | `/api/v1/profile/me/resume/pdf` | `POST` | `{ settings?: ResumeSettings, overrides?: Partial<Profile> }` | Binary PDF stream or `{ pdfUrl: string }` |
+| **Export Resume LaTeX** | Click "Copy LaTeX Source" in Resume builder | `/api/v1/profile/me/resume/latex` | `POST` | `{ settings?: ResumeSettings, overrides?: Partial<Profile> }` | Plaintext `.tex` LaTeX source |
+| **Add Section Item** | Click "+ Add" in any profile section modal | `/api/v1/profile/me/:section` | `POST` | Path: `section`, Body: `<SectionItem>` | `{ success: true, item: <SectionItem> }` |
+| **Edit Section Item** | "Edit" $\rightarrow$ "Save Changes" on any item | `/api/v1/profile/me/:section/:itemId` | `PATCH` | Path: `section`, `itemId`, Body: `<SectionItem>` | `{ success: true, item: <SectionItem> }` |
+| **Delete Section Item** | "Remove" on item with confirmation | `/api/v1/profile/me/:section/:itemId` | `DELETE` | Path: `section`, `itemId` | `{ success: true, removedId: string }` |
+| **Upload External Cert Proof** | Certificate image upload picker | `/api/v1/profile/me/certificates/proof` | `POST` | `multipart/form-data` | `{ proofUrl: string }` |
+| **User Settings & Prefs** | Settings tab load | `/api/v1/profile/me/settings` | `GET` | Headers: Bearer Token | `{ notifications: NotificationPrefs, discoverable: boolean, openToTeams: boolean, landingView: string }` |
+| **Update Settings** | Toggle switch / select dropdown | `/api/v1/profile/me/settings` | `PATCH` | Partial `<Settings>` | Updated `<Settings>` |
+
+> Supported `:section` routes: `education`, `projects`, `publications`, `achievements`, `self-certs`, `links` (`connectedProfiles`).
+
+---
+
+### B. Account & Security Endpoints (`/api/v1/account`)
+Every mutating handler in this group re-verifies the user's current password server-side before executing, as built into `src/dashboard/Settings.jsx`.
+
+| Feature | UI Action | Endpoint | Method | Request Body / Params | Expected Response Shape |
+|---|---|---|---|---|---|
+| **Change Password** | "Change password" form submit | `/api/v1/account/password` | `POST` | `{ currentPassword: string, newPassword: string }` | `{ success: true, message: string }` |
+| **Request Email Change** | "Change email address" submit | `/api/v1/account/email/request` | `POST` | `{ newEmail: string, currentPassword: string }` | `{ success: true, message: "Verification link sent" }` |
+| **Resend Email Verification** | "Resend email link" click | `/api/v1/account/email/resend` | `POST` | `{ newEmail: string }` | `{ success: true, message: string }` |
+| **Verify Email Change** | Verification link clicked in email | `/api/v1/account/email/verify` | `POST` | `{ token: string }` | `{ success: true, newEmail: string }` |
+| **List Active Sessions** | "Active login sessions" panel | `/api/v1/account/sessions` | `GET` | Headers: Bearer Token | `Session[]` (IP, device/UA, lastActive, current: bool) |
+| **Revoke Session** | "Revoke device" button click | `/api/v1/account/sessions/:id/revoke` | `POST` | Path: `id` | `{ success: true, revokedId: string }` |
+| **Deactivate Account** | "Deactivate account" modal confirm | `/api/v1/account/deactivate` | `POST` | `{ currentPassword: string }` | `{ success: true, message: "Account deactivated" }` |
+| **Delete Account Permanently**| Danger Zone $\rightarrow$ Type "DELETE" & submit | `/api/v1/account` | `DELETE` | `{ currentPassword: string, confirmation: "DELETE" }` | `{ success: true, message: "Account and data purged" }` |
+
+---
+
+## 2. Schema: Full Profile Object (`/api/v1/profile/me`)
 
 ```json
 {
-  "id": "usr-aarav-001",
+  "id": "usr_7f8a9b1c-3d2e-4a5b-8c7d-9e0f1a2b3c4d",
   "name": "Aarav Sharma",
   "email": "aarav.sharma@iitd.ac.in",
-  "headline": "Final-year CSE · ML enthusiast",
+  "phone": "+91 98765 43210",
+  "headline": "Final-year CSE · ML & Distributed Systems",
+  "about": "Computer Science undergraduate at IIT Delhi with expertise in scalable architectures and applied GenAI.",
   "org": "IIT Delhi",
   "region": "India — North",
-  "avatar": "data:image/jpeg;base64,...",
-  "cover": "data:image/jpeg;base64,...",
-  "isPublic": false,
-  "links": "https://aarav-sharma.vercel.app",
-  "resume": null,
-  "skills": ["Python", "React", "ML / DL", "Node.js"],
-  "interests": ["AI / GenAI", "Agentic AI", "Cloud"],
-  "domains": ["HealthTech", "FinTech"],
+  "avatarUrl": "https://s3.amazonaws.com/h2s-avatars/usr_7f8a9b1c.png",
+  "isPublic": true,
+  "slug": "aarav-sharma",
+  "skills": ["Python", "Go", "C++", "React", "PostgreSQL", "Docker", "PyTorch"],
+  "interests": ["AI / GenAI", "Cloud Systems", "Distributed Computing"],
+  "domains": ["Distributed Systems", "Generative AI", "High-Throughput Backends"],
   "landingView": "learning",
-  "about": "Passionate developer and student researcher building AI systems and real-time distributed platforms.",
+  "createdAt": "2026-01-15T00:00:00Z",
   "education": [
     {
-      "id": "edu-1",
+      "id": "edu_1",
       "degree": "B.Tech",
       "specialization": "Computer Science & Engineering",
       "institution": "IIT Delhi",
@@ -57,145 +77,93 @@ Mock implementations live in `src/api/mock/profile.js` and `src/api/mock/initiat
       "startYear": "2022",
       "endYear": "2026",
       "isOngoing": true,
-      "title": "B.Tech, Computer Science & Engineering",
-      "org": "IIT Delhi"
+      "gpa": "9.4 / 10.0"
     }
   ],
   "projects": [
     {
-      "id": "proj-1",
-      "title": "AgentChat — LLM-Powered Multi-Agent Support Orchestrator",
-      "techStack": ["Python", "FastAPI", "React", "PostgreSQL", "Docker"],
-      "description": "Multi-agent customer routing engine using localized LLMs with automated fallback and vector search for knowledge retrieval.",
-      "sourceCodeUrl": "https://github.com/aarav-sharma/agentchat",
-      "demoUrl": "https://agentchat-demo.h2s.io",
-      "docsUrl": "https://docs.agentchat.dev"
+      "id": "proj_1",
+      "title": "Autonomous Distributed Cache",
+      "description": "High-throughput in-memory caching engine using consistent hashing and Raft consensus in Go.",
+      "techStack": ["Go", "Raft", "gRPC", "Docker"],
+      "sourceCodeUrl": "https://github.com/aarav-sharma/cache",
+      "demoUrl": "https://cache-demo.aarav.dev",
+      "docsUrl": ""
     }
   ],
   "publications": [
     {
-      "id": "pub-1",
-      "title": "Grounded RAG for Medical Q&A (EMNLP 2025 Workshop)",
-      "description": "Explores verified citation synthesis across multi-hop biomedical research queries with 94.2% factual consistency.",
-      "link": "https://arxiv.org/abs/2025.12345"
+      "id": "pub_1",
+      "title": "Optimizing Speculative Decoding in Resource-Constrained Edge LLMs",
+      "description": "Published in Workshop on Efficient Systems for Foundation Models.",
+      "link": "https://arxiv.org/abs/2403.00000"
     }
   ],
   "achievements": [
     {
-      "id": "ach-1",
-      "title": "Runner-up — CityHacks 2025",
-      "description": "Awarded 2nd place among 120+ teams for building an AI-powered urban traffic rerouting simulator."
-    },
-    {
-      "id": "ach-2",
-      "title": "Best ML Paper — IIT Delhi Tech Fest 2025",
-      "description": "Selected as the outstanding machine learning submission for work on sparse attention mechanisms."
+      "id": "ach_1",
+      "title": "1st Place Winner — Smart India Hackathon 2025",
+      "description": "Selected #1 out of 2,400+ nationwide teams."
     }
   ],
   "selfCerts": [
     {
-      "id": "sc-1",
-      "title": "AWS Certified Cloud Practitioner",
+      "id": "sc_1",
+      "title": "AWS Certified Solutions Architect",
       "org": "Amazon Web Services",
-      "date": "2024-08",
+      "issueDate": "2024-08",
       "link": "https://aws.amazon.com/verify",
-      "proofUrl": null
-    },
-    {
-      "id": "sc-2",
-      "title": "Full Stack Cloud & Java Development",
-      "org": "Infosys Springboard",
-      "date": "2024-10",
-      "link": "",
-      "proofUrl": "data:image/svg+xml;utf8,..."
+      "proofUrl": "https://s3.amazonaws.com/h2s-proofs/sc_1.png"
     }
   ],
   "connectedProfiles": [
-    {
-      "id": "link-1",
-      "platform": "GitHub",
-      "url": "https://github.com/aarav-sharma"
-    },
-    {
-      "id": "link-2",
-      "platform": "LeetCode",
-      "url": "https://leetcode.com/u/aarav_sharma"
-    },
-    {
-      "id": "link-3",
-      "platform": "LinkedIn",
-      "url": "https://linkedin.com/in/aarav-sharma-cse"
-    },
-    {
-      "id": "link-4",
-      "platform": "Developer Portfolio",
-      "url": "https://aarav-sharma.vercel.app"
-    }
+    { "id": "link_1", "platform": "GitHub", "url": "https://github.com/aarav-sharma" },
+    { "id": "link_2", "platform": "LinkedIn", "url": "https://linkedin.com/in/aarav-sharma-cse" },
+    { "id": "link_3", "platform": "LeetCode", "url": "https://leetcode.com/u/aarav_sharma" }
   ],
-  "contributions": {
-    "github": "aarav-sharma",
-    "stackoverflow": null
-  },
   "xp": 340,
   "level": 3,
   "credits": 180,
   "badges": [
-    { "id": "b1", "ico": "🚀", "label": "First submission" },
-    { "id": "b2", "ico": "📚", "label": "Active learner" }
-  ],
-  "promptCredits": 150,
-  "promptStreak": 2
+    { "id": "first-submission", "ico": "🚀", "label": "First submission" },
+    { "id": "active-learner", "ico": "📚", "label": "Active learner" }
+  ]
 }
 ```
 
 ---
 
-## Section Items CRUD Specification
+## 3. Section Items CRUD Specifications
 
-Sections supporting manual entries: `education`, `projects`, `publications`, `achievements`, `selfCerts` (external certificates), and `connectedProfiles` (Links).
+### 1. Add Entry (`POST /api/v1/profile/me/:section`)
+- **Payloads**:
+  - `education`: `{ degree: string, specialization?: string, institution?: string, boardOrUniversity?: string, location?: string, startYear?: string, endYear?: string, isOngoing?: boolean, gpa?: string }`
+  - `projects`: `{ title: string, techStack?: string[], description?: string, sourceCodeUrl?: string, demoUrl?: string, docsUrl?: string }`
+  - `publications`: `{ title: string, description?: string, link?: string }`
+  - `achievements`: `{ title: string, description?: string }`
+  - `self-certs`: `{ title: string, org?: string, issueDate?: string, link?: string, proofUrl?: string }`
+  - `links`: `{ platform: string, url: string }`
 
-### 1. Add Entry
-- **Trigger**: Click `+ Add` button (opens section modal), enter fields, click "Save changes".
-- **Payload**:
-  - `education`: `{ degree: string (required), specialization?: string, institution?: string, boardOrUniversity?: string, location?: string, startYear?: string, endYear?: string, isOngoing?: boolean }`
-  - `projects`: `{ title: string (required), techStack?: string[], description?: string, sourceCodeUrl?: string, demoUrl?: string, docsUrl?: string }`
-  - `publications`: `{ title: string (required), description?: string, link?: string }`
-  - `achievements`: `{ title: string (required), description?: string }`
-  - `selfCerts`: `{ title: string (required), org?: string, date?: string, link?: string, proofUrl?: string (dataUrl/photo) }`
-  - `connectedProfiles`: `{ platform: string (required), url: string (required) }`
-- **Behavior**: Generates unique client or server ID, appends to corresponding array, persists via `PATCH /api/profile/me` or collection endpoint.
+### 2. Edit Entry (`PATCH /api/v1/profile/me/:section/:itemId`)
+- Partial JSON update over the target section schema.
 
-### 2. Edit Entry
-- **Trigger**: Click `Edit` button on any row item.
-- **UI Behavior**: Opens modal pre-filled with the item's current values. Displays `Save changes`, `Cancel`, and `Delete` buttons.
-- **Save Payload**: Updated fields matching the section schema above.
-- **Cancel Behavior**: Discards in-progress edits and restores read-only row with original data.
-
-### 3. Delete Entry
-- **Trigger**: Click `Remove` / `Delete` button (either in modal footer or direct row action).
-- **UI Behavior**: Prompts user with a confirmation modal (`ConfirmDialog`): *"Remove this entry? '<Item Title>' will be permanently removed from your profile. This cannot be undone."*
-- **Confirm**: Calls delete mutation, removes from local list, persists change.
-- **Cancel**: Dismisses modal with no changes.
+### 3. Delete Entry (`DELETE /api/v1/profile/me/:section/:itemId`)
+- Deletes the row from database and purges any associated files from S3 if applicable.
 
 ---
 
-## Privacy Matrix
+## 4. Privacy Matrix for Public Profile (`/api/v1/profile/public/:slug`)
 
-All profile items are shared universally when the profile is public — there is no per-item `shared` toggle. The only gate is the top-level `isPublic` flag.
+When `isPublic: true`:
 
-| Field / Section | Private Profile (`isPublic: false`) | Public Profile (`isPublic: true`) |
-|---|---|---|
-| Avatar & Banner | Visible | Visible |
-| Full Name | Visible | Visible |
-| Headline & Org | Visible | Visible |
-| Email Address | **Hidden** (Never exposed to visitors) | **Hidden** (Never exposed to visitors) |
-| Region | Hidden | Visible |
-| Skills & Domains | Hidden | Visible |
-| Verified Certifications | Hidden | Visible |
-| Projects | Hidden | Visible (all items) |
-| Publications | Hidden | Visible (all items) |
-| External Certifications | Hidden | Visible (all items) |
-| Achievements | Hidden | Visible (all items) |
-| Connected Profiles / Links | Hidden | Visible (all items) |
-| Education | Hidden | Visible |
-| XP, Badges, Credits | Hidden | Visible |
+| Field / Section | Visibility on Public URL |
+|---|---|
+| Full Name, Headline, Org, Avatar | **Visible** |
+| Email Address & Mobile Phone | **Strictly Hidden** (Never returned by backend) |
+| Region, Bio, About | **Visible** |
+| Skills, Domains, Interests | **Visible** |
+| Education, Projects, Publications, Achievements | **Visible** |
+| Verified Platform Certificates & Self-Certs | **Visible** |
+| Connected Profiles (GitHub, LinkedIn, LeetCode) | **Visible** |
+| XP, Level, Badges | **Visible** |
+| Notification settings & private preferences | **Hidden** |

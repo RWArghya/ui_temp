@@ -1,77 +1,67 @@
-# Backend API Requirements — Dashboard, Activity & Card Workspaces
+# Backend API Requirements — Dashboard, Catalogs & Workspaces
 
-Tracks all backend endpoints, data contracts, and request/response specifications for the Dashboard (`/dashboard`), Catalogs (`/dashboard/learning`, `/dashboard/learncompete`, `/dashboard/competing`), My Activity (`/dashboard?view=activity`), and Initiative Workspaces (`/dashboard/workspace` & `/dashboard/initiative`).
-
-Mock implementations and reactive state management live in `src/dashboard/data.js` and `src/dashboard/store.js`.
-
----
-
-## Endpoints
-
-### 1. Dashboard Home & KPI Overview
-
-| Feature | UI Action | Endpoint | Method | Request Body / Query Params | Expected Response Shape | Client / Mock File |
-|---|---|---|---|---|---|---|
-| KPI Overview Metrics | Dashboard load (`/dashboard`) | `/api/dashboard/kpis` | `GET` | Headers: Bearer Token | `{ totalOngoing: number, coursesEnrolled: number, buildChallenges: number, hackathons: number, savedCount: number }` | Derived from `activeList(st)` in `src/dashboard/data.js` |
-| Active Initiatives | "Continue where you left off" single row & "View all" | `/api/initiatives/active` | `GET` | Headers: Bearer Token | `Initiative[]` (with progress %, active step label, next action) | `activeList(st)` in `src/dashboard/data.js` |
-| Recommended Initiatives | "Recommended for you" track sections | `/api/initiatives/recommended` | `GET` | Query: `?limit=12` | `Initiative[]` (sorted by matching user interests & region) | `recommendedList(st)` in `src/dashboard/data.js` |
-| Saved Initiatives | Saved page (`/dashboard?view=saved`) | `/api/initiatives/saved` | `GET` | Headers: Bearer Token | `Initiative[]` (user bookmarked initiatives) | `savedList(st)` in `src/dashboard/data.js` |
-| Bookmark Toggle | Bookmark icon click on any initiative card | `/api/initiatives/:id/save` | `POST` | Path: `id`, Body: `{ saved: boolean }` | `{ success: true, id: string, saved: boolean }` | `toggleSavedPatch(id, st)` in `src/dashboard/data.js` |
-| Recently Viewed | Recent page (`/dashboard?view=recent`) | `/api/initiatives/recent` | `GET` | Headers: Bearer Token | `Initiative[]` (last 12 viewed initiatives) | `recentViews(st)` in `src/dashboard/data.js` |
-| Record Recent View | Opening any card or workspace | `/api/initiatives/:id/recent-view` | `POST` | Path: `id` | `{ success: true, recent: string[] }` | `recordRecentPatch(id, st)` in `src/dashboard/data.js` |
+> **Module**: Initiatives, Workspace & Notifications (`internal/initiatives/`, `internal/workspace/`, `internal/notifications/`)  
+> **Route Groups**: `/api/v1/dashboard`, `/api/v1/initiatives`, `/api/v1/certificates`, `/api/v1/notifications`  
+> **Client Sources**: [`src/dashboard/Views.jsx`](file:///c:/Users/MP2KK/ui_temp/src/dashboard/Views.jsx), [`src/dashboard/Workspace.jsx`](file:///c:/Users/MP2KK/ui_temp/src/dashboard/Workspace.jsx), [`src/dashboard/PurposeViews.jsx`](file:///c:/Users/MP2KK/ui_temp/src/dashboard/PurposeViews.jsx), [`src/dashboard/Evaluate.jsx`](file:///c:/Users/MP2KK/ui_temp/src/dashboard/Evaluate.jsx), and [`src/pages/CertificateView.jsx`](file:///c:/Users/MP2KK/ui_temp/src/pages/CertificateView.jsx)  
+> **Backend Architecture Reference**: [`H2S-Innovator-Dashboard-Backend.md §3`](file:///c:/Users/MP2KK/ui_temp/H2S-Innovator-Dashboard-Backend.md#3-http-layer--chi-with-public-vs-authenticated-route-groups)
 
 ---
 
-### 2. Catalogs & Multi-Facet Filtering (Learn, Build, Compete)
+## 1. Endpoints Overview
 
-| Feature | UI Action | Endpoint | Method | Request Body / Query Params | Expected Response Shape | Client / Mock File |
-|---|---|---|---|---|---|---|
-| Filtered Catalog Grid | Changing search query or filter selects in Learn/Build/Compete | `/api/initiatives` | `GET` | Query: `purpose=learning\|learncompete\|competing&q=&area=&region=&status=&mode=` | `Initiative[]` (open & live initiatives matching filters) | `purposeOpenList(view, st, filters)` in `src/dashboard/data.js` |
-| Filter Available Areas | Filter dropdown population | `/api/initiatives/areas` | `GET` | Query: `purpose=<purpose>` | `string[]` (distinct technology/domain areas for track) | `purposeAreasList(view)` in `src/dashboard/data.js` |
-| Filter Available Formats | Filter dropdown population | `/api/initiatives/modes` | `GET` | Query: `purpose=<purpose>` | `string[]` (e.g. `Virtual`, `Hybrid`, `In-person`) | `purposeModesList(view)` in `src/dashboard/data.js` |
+### A. Dashboard Home & KPIs (`/api/v1/dashboard`)
 
----
-
-### 3. "My Activity" 4-Tab Navigation
-
-| Feature | UI Action | Endpoint | Method | Request Body / Query Params | Expected Response Shape | Client / Mock File |
-|---|---|---|---|---|---|---|
-| All In-Progress | `/dashboard?view=activity` | `/api/initiatives/active` | `GET` | `status=inprogress` | `Initiative[]` | `ActivityView.jsx` (`tab=all`) |
-| In-Progress Learn | `/dashboard?view=activity&tab=learning` | `/api/initiatives/active?purpose=learning` | `GET` | `purpose=learning` | `Initiative[]` | `ActivityView.jsx` (`tab=learning`) |
-| In-Progress Build | `/dashboard?view=activity&tab=learncompete` | `/api/initiatives/active?purpose=learncompete` | `GET` | `purpose=learncompete` | `Initiative[]` | `ActivityView.jsx` (`tab=learncompete`) |
-| In-Progress Compete | `/dashboard?view=activity&tab=competing` | `/api/initiatives/active?purpose=competing` | `GET` | `purpose=competing` | `Initiative[]` | `ActivityView.jsx` (`tab=competing`) |
+| Feature | UI Action | Endpoint | Method | Expected Response Shape |
+|---|---|---|---|---|
+| **KPI Overview Metrics** | Dashboard load | `/api/v1/dashboard/kpis` | `GET` | `{ totalOngoing: number, coursesEnrolled: number, buildChallenges: number, hackathons: number, savedCount: number }` |
 
 ---
 
-### 4. Initiative Workspace & Details
+### B. Catalogs, Listings & Filtering (`/api/v1/initiatives`)
 
-| Feature | UI Action | Endpoint | Method | Request Body / Query Params | Expected Response Shape | Client / Mock File |
-|---|---|---|---|---|---|---|
-| Initiative Details | Opening `/dashboard/initiative?id=:id` | `/api/initiatives/:id` | `GET` | Path: `id` | Full `<InitiativeDetail>` (key facts, modules syllabus, problem statements, teams) | `byId(id)` in `src/dashboard/data.js` |
-| Register Initiative | Clicking "Register" on unregistered card | `/api/initiatives/:id/register` | `POST` | Path: `id` | `{ success: true, initiativeId: string, registeredAt: string }` | State patch in `src/dashboard/Workspace.jsx` |
-| Module Syllabus & Content | Learn track module list & detail | `/api/initiatives/:id/modules` | `GET` | Path: `id` | `Module[]` (sections, concepts, resources, quiz questions) | `modules(o)` in `src/dashboard/data.js` |
-| Mark Section Complete | Clicking "Mark section complete →" | `/api/initiatives/:id/modules/:moduleKey/sections/:secId/complete` | `POST` | Path: `id`, `moduleKey`, `secId` | `{ success: true, completedSections: string[], progressPct: number }` | `moduleSectionsDone` in `src/dashboard/data.js` |
-| Submit Module Quiz | Submitting assessment in Quiz tab | `/api/initiatives/:id/modules/:moduleKey/quiz` | `POST` | Path: `id`, `moduleKey`, Body: `{ answers: Record<number, number> }` | `{ success: true, score: number, total: number, passed: boolean }` | `moduleQuizState` in `src/dashboard/data.js` |
-| Claim Capstone Certificate | Clicking "Claim certificate" upon all modules done | `/api/initiatives/:id/certificate/claim` | `POST` | Path: `id` | `{ success: true, certificateId: string, issuedAt: string, verifyUrl: string }` | Client store cert claim |
-| Select Problem Statement | Selecting problem statement radio card (Build track) | `/api/initiatives/:id/problem-statement` | `POST` | Path: `id`, Body: `{ statementCode: string }` | `{ success: true, selectedStatement: ProblemStatement }` | `Workspace.jsx` statement state |
-| Join Squad / Team | Clicking "Join squad" in Team step | `/api/initiatives/:id/teams/:teamId/join` | `POST` | Path: `id`, `teamId`, Body: `{ role: string }` | `{ success: true, team: Team }` | `Workspace.jsx` team state |
-| Submit Prototype / Build Artifacts | Submitting repository, demo link, notes & file | `/api/initiatives/:id/submissions` | `POST` | `multipart/form-data` or `{ repoUrl: string, demoUrl: string, notes: string, fileAttachment?: string }` | `{ success: true, submissionId: string, submittedAt: string }` | `BuildSubmit` in `src/dashboard/Workspace.jsx` |
-| Toggle Mentor Connect | Requesting / toggling mentor assistance | `/api/initiatives/:id/mentor-connect` | `POST` | Path: `id`, Body: `{ enabled: boolean }` | `{ success: true, mentorRequested: boolean }` | `MentorToggle` in `src/dashboard/Workspace.jsx` |
-
----
-
-### 5. Settings & Account Operations (`/dashboard?view=settings`)
-
-| Feature | UI Action | Endpoint | Method | Request Body / Query Params | Expected Response Shape | Client / Mock File |
-|---|---|---|---|---|---|---|
-| User Settings | Settings load | `/api/profile/me/settings` | `GET` | Headers: Bearer Token | `{ notifications: Record<string, boolean>, discoverable: boolean, openToTeams: boolean, landingView: string }` | `settingsFor(st)` in `src/dashboard/data.js` |
-| Update Preferences | Toggle switch / select dropdown | `/api/profile/me/settings` | `PATCH` | Partial `<Settings>` | Updated `<Settings>` | `Settings.jsx` store patch |
-| Change Password | "Change password" form submit | `/api/auth/change-password` | `POST` | `{ currentPassword: string, newPassword: string }` | `{ success: true, message: string }` | `authStore.changePassword` |
-| Delete Account | Danger Zone → "Delete account" | `/api/account/me` | `DELETE` | Headers: Bearer Token | `{ success: true }` | `authStore.clear()` & `S.reset()` |
+| Feature | UI Action | Endpoint | Method | Query Parameters | Expected Response Shape |
+|---|---|---|---|---|---|
+| **Filtered Catalog Grid** | Search & multi-facet dropdown filter | `/api/v1/initiatives` | `GET` | `purpose=learning\|learncompete\|competing&q=&area=&region=&status=&mode=` | `Initiative[]` |
+| **My Initiatives** | User's enrolled initiatives / "My Activity" | `/api/v1/initiatives/mine` | `GET` | `purpose?: string` (Optional filter for tabs) | `Initiative[]` (enrolled with progress stats) |
+| **Active / In-Progress** | "Continue where you left off" carousel | `/api/v1/initiatives/active` | `GET` | None | `Initiative[]` (top in-progress items) |
+| **Recommended Initiatives** | "Recommended for you" track section | `/api/v1/initiatives/recommended` | `GET` | `limit=12` | `Initiative[]` (matched against user interests) |
+| **Saved Initiatives** | Bookmarks page (`?view=saved`) | `/api/v1/initiatives/saved` | `GET` | None | `Initiative[]` |
+| **Toggle Save / Bookmark** | Click bookmark icon on any card | `/api/v1/initiatives/:id/save` | `POST` | Body: `{ saved: boolean }` | `{ success: true, id: string, saved: boolean }` |
+| **Recently Viewed** | Recent page (`?view=recent`) | `/api/v1/initiatives/recent` | `GET` | None | `Initiative[]` (last 12 viewed) |
+| **Record Recent View** | Opening card / workspace | `/api/v1/initiatives/:id/recent-view` | `POST` | Path: `id` | `{ success: true, recent: string[] }` |
+| **Catalog Filter Areas** | Filter dropdown population | `/api/v1/initiatives/areas` | `GET` | `purpose?: string` | `string[]` (distinct technology areas) |
+| **Catalog Filter Formats** | Filter dropdown population | `/api/v1/initiatives/modes` | `GET` | `purpose?: string` | `string[]` (e.g. `Virtual`, `Hybrid`, `In-person`) |
 
 ---
 
-## Schemas & Payloads
+### C. Workspace & Challenge Workflows (`/api/v1/initiatives/:id/...`)
+
+| Feature | UI Action | Endpoint | Method | Request Body / Params | Expected Response Shape |
+|---|---|---|---|---|---|
+| **Initiative Detail** | Opening `/dashboard/initiative?id=:id` | `/api/v1/initiatives/:id` | `GET` | Path: `id` | Full `<InitiativeDetail>` |
+| **Register Initiative** | Click "Register" on un-enrolled card | `/api/v1/initiatives/:id/register` | `POST` | Path: `id` | `{ success: true, initiativeId: string, registeredAt: string }` |
+| **Module Curriculum** | Learn track syllabus & lesson list | `/api/v1/initiatives/:id/modules` | `GET` | Path: `id` | `Module[]` (sections, resources, quizzes) |
+| **Mark Section Complete** | Click "Mark section complete →" | `/api/v1/initiatives/:id/modules/:mod/sections/:sec/complete` | `POST` | Path: `id`, `mod`, `sec` | `{ success: true, completedSections: number[], progressPct: number }` |
+| **Submit Module Quiz** | Assessment quiz submit | `/api/v1/initiatives/:id/modules/:mod/quiz` | `POST` | Body: `{ answers: Record<number, number> }` | `{ success: true, score: number, total: number, passed: boolean }` |
+| **Claim Certificate** | "Claim Certificate" upon 100% completion | `/api/v1/initiatives/:id/certificate/claim` | `POST` | Path: `id` | `{ success: true, certificateId: string, issuedAt: string, verifyUrl: string }` |
+| **Select Problem Statement** | Build track problem statement radio card | `/api/v1/initiatives/:id/problem-statement` | `POST` | Body: `{ statementCode: string }` | `{ success: true, statementCode: string }` |
+| **Join Squad / Team** | Click "Join squad" in Team step | `/api/v1/initiatives/:id/teams/:teamId/join` | `POST` | Path: `id`, `teamId`, Body: `{ role: string }` | `{ success: true, team: Team }` |
+| **Submit Prototype** | Submitting repository, demo link, notes & files | `/api/v1/initiatives/:id/submissions` | `POST` | `<SubmissionPayload>` | `{ success: true, submissionId: string, submittedAt: string }` |
+| **Self-Assessment** | Evaluator rubric review in `Evaluate.jsx` | `/api/v1/initiatives/:id/submissions/self-assessment` | `POST` | `<SelfAssessmentPayload>` | `{ success: true, scoredAt: string, averageScore: number }` |
+
+---
+
+### D. Public Certificate Verification & Notifications
+
+| Feature | UI Action | Endpoint | Method | Request Body / Params | Expected Response Shape |
+|---|---|---|---|---|---|
+| **Public Certificate View** | Visiting `/certificate/:certId` | `/api/v1/certificates/:certId` | `GET` | Path: `certId` (Public, no auth) | `<CertificateDetail>` (recipient, title, issuer, verify URL) |
+| **List Notifications** | Notification bell dropdown open | `/api/v1/notifications` | `GET` | Headers: Bearer Token | `Notification[]` |
+| **Mark Notification Read** | Click notification or "Mark all read" | `/api/v1/notifications/:id/read` | `POST` | Path: `id` | `{ success: true, id: string }` |
+
+---
+
+## 2. Schemas & Payloads
 
 ### `KPIOverview`
 ```typescript
@@ -112,7 +102,37 @@ interface SubmissionPayload {
   repoUrl: string;         // GitHub / GitLab repository URL
   demoUrl?: string;        // Live demo or Loom / YouTube walkthrough
   notes?: string;          // Architecture and evaluator notes
-  fileAttachment?: string; // Optional uploaded PDF/ZIP binary or URL (max 2MB)
+  fileAttachment?: string; // Optional uploaded PDF/ZIP binary URL
   statementCode?: string;  // e.g. "PS-138"
+}
+```
+
+### `SelfAssessmentPayload` (from `src/dashboard/Evaluate.jsx`)
+```typescript
+interface SelfAssessmentPayload {
+  initiativeId: string;
+  submissionId: string;
+  scores: {
+    problemFit: number;         // 1 - 100
+    technicalExecution: number; // 1 - 100
+    innovation: number;         // 1 - 100
+    presentation: number;       // 1 - 100
+  };
+  notes: string;                // Evaluator commentary
+}
+```
+
+### `CertificateDetail` (from `src/pages/CertificateView.jsx`)
+```typescript
+interface CertificateDetail {
+  id: string;
+  recipientName: string;
+  title: string;                // Initiative name
+  org: string;                  // Issuing organization
+  issuedAt: string;             // ISO date string
+  certType: 'completion' | 'participation' | 'winner';
+  verifyUrl: string;
+  issuerLogoUrl?: string;
+  signatureUrl?: string;
 }
 ```
