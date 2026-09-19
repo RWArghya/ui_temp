@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────
+# H2S Innovator Dashboard — Frontend Docker Compose
+# ─────────────────────────────────────────────────
+# Usage:
+#   docker compose up --build          (start frontend)
+#   docker compose down                (tear down)
+#
+# Networking:
+#   This stack joins the external "h2s-net" network so
+#   it can reach the backend container by hostname.
+#
+#   Create the shared network once (if not already):
+#     docker network create h2s-net
+#
+#   Then start the backend stack (in hms_backend/):
+#     docker compose up --build
+#
+#   Then start this frontend stack:
+#     docker compose up --build
+# ─────────────────────────────────────────────────
+
+services:
+  # ── Frontend (React / Vite → Nginx) ──────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: h2s-frontend
+    ports:
+      - "3000:80"                    # localhost:3000 → Nginx
+    networks:
+      - h2s-net
+    restart: unless-stopped
+
+# ── Shared external network ────────────────────
+# Both frontend and backend compose stacks attach to
+# this network so Nginx can proxy_pass to "backend:8080".
+networks:
+  h2s-net:
+    external: true
