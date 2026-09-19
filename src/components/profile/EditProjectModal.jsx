@@ -22,9 +22,9 @@ export default function EditProjectModal({
         setTitle(initialData.title || '')
         setDescription(initialData.description || '')
         setTechStack(Array.isArray(initialData.techStack) ? [...initialData.techStack] : [])
-        setSourceLink(initialData.sourceLink || initialData.link || '')
-        setLiveLink(initialData.liveLink || '')
-        setDocsLink(initialData.docsLink || '')
+        setSourceLink(initialData.sourceLink || initialData.sourceCodeUrl || initialData.link || '')
+        setLiveLink(initialData.liveLink || initialData.demoUrl || '')
+        setDocsLink(initialData.docsLink || initialData.docsUrl || '')
       } else {
         setTitle('')
         setDescription('')
@@ -65,8 +65,11 @@ export default function EditProjectModal({
       description: description.trim(),
       techStack,
       sourceLink: sourceLink.trim(),
+      sourceCodeUrl: sourceLink.trim(),
       liveLink: liveLink.trim(),
+      demoUrl: liveLink.trim(),
       docsLink: docsLink.trim(),
+      docsUrl: docsLink.trim(),
       link: sourceLink.trim() || liveLink.trim(),
     })
   }
