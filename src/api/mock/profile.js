@@ -1,8 +1,8 @@
 /**
- * Mock: GET /api/profile/me
+ * Mock: GET /api/v1/profile/me
  *
  * Returns the authenticated user's full profile.
- * Swap for: api.get('/profile/me').then(r => r.data)
+ * Swap for: import { getProfile } from '../client.js'
  */
 import { mockRequest } from './mockClient.js'
 
@@ -245,12 +245,12 @@ export const MOCK_PROFILE = {
   promptStreak: 7,
 }
 
-/** Simulate GET /api/profile/me */
+/** Simulate GET /api/v1/profile/me */
 export function fetchProfile() {
   return mockRequest(MOCK_PROFILE, { delay: 700 })
 }
 
-/** Simulate PATCH /api/profile/me */
+/** Simulate PATCH /api/v1/profile/me */
 export function updateProfile(patch) {
   return mockRequest({ ...MOCK_PROFILE, ...patch }, { delay: 400 })
 }
