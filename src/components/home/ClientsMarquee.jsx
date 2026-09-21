@@ -29,7 +29,7 @@ export default function ClientsMarquee() {
             {track.map((name, i) => (
               <span
                 key={`${name}-${i}`}
-                className="whitespace-nowrap font-display text-[1.28rem] font-bold tracking-tight text-[#969bb6]"
+                className="whitespace-nowrap font-display text-[1.28rem] font-bold tracking-tight text-[#8b92a5]"
               >
                 {name}
               </span>

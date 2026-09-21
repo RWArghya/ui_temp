@@ -16,7 +16,7 @@ export default function CoverBand({ src, onUpload, onClear }) {
     <div
       className="relative h-[130px] w-full bg-cover bg-center overflow-hidden group"
       style={{
-        backgroundImage: src ? `url(${src})` : 'linear-gradient(135deg, #1548b7 0%, #3f1d80 100%)',
+        backgroundImage: src ? `url(${src})` : 'linear-gradient(135deg, #2f5fe6 0%, #151a3d 100%)',
       }}
     >
       {/* Upload button affordance */}

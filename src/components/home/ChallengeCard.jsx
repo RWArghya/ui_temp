@@ -6,7 +6,7 @@ export default function ChallengeCard({ tag, title, description, href }) {
       to={href}
       className="block rounded-card border border-ink-line bg-ink-800 p-5 transition-all duration-200 hover:-translate-y-[3px] hover:border-brand-indigo"
     >
-      <span className="mb-4 inline-block rounded-btn border border-ink-line px-2 py-[3px] font-mono text-[0.62rem] uppercase tracking-[0.14em] text-[#b39bdd]">
+      <span className="mb-4 inline-block rounded-btn border border-ink-line px-2 py-[3px] font-mono text-[0.62rem] uppercase tracking-[0.14em] text-[#8fadf8]">
         {tag}
       </span>
       <h3 className="text-[0.98rem] font-bold text-white-soft">{title}</h3>

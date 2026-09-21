@@ -1348,7 +1348,7 @@ export default function Profile() {
                   className={[
                     GHOST_BTN,
                     profile.isPublic
-                      ? 'border-[#0f9d58] text-[#0f9d58] bg-[#e7f6ee]'
+                      ? 'border-dash-ok text-dash-ok bg-dash-ok-soft'
                       : '',
                   ].join(' ')}
                   title={profile.isPublic ? 'Profile is public — click to make private' : 'Profile is private — click to make public'}

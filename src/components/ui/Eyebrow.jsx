@@ -1,7 +1,7 @@
 const toneClasses = {
   paper: "text-signal",
   dark: "text-ink-dim",
-  brand: "text-[#b39bdd]",
+  brand: "text-[#8fadf8]",
 }
 
 export default function Eyebrow({ tone = "paper", className = "", children }) {

@@ -155,7 +155,7 @@ export default function EditCertModal({
                 />
                 <div className="min-w-0">
                   <span className="text-[12.5px] font-semibold text-ink-900 block truncate">Photo attached</span>
-                  <span className="text-[11px] text-[#0f9d58] font-medium">✓ Ready to save</span>
+                  <span className="text-[11px] text-dash-ok font-medium">✓ Ready to save</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -171,7 +171,7 @@ export default function EditCertModal({
                 <button
                   type="button"
                   onClick={() => setPhoto('')}
-                  className="px-2.5 py-1 text-[11.5px] font-medium text-[#c0392b] hover:bg-[#fff0f0] rounded-[2px] cursor-pointer transition-colors"
+                  className="px-2.5 py-1 text-[11.5px] font-medium text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
                 >
                   Remove
                 </button>
@@ -204,7 +204,7 @@ export default function EditCertModal({
             <button
               type="button"
               onClick={() => onDelete(initialData.id, initialData.title)}
-              className="px-3 py-1.5 text-[12px] font-semibold text-[#c0392b] hover:bg-[#fff0f0] rounded-[2px] cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-[12px] font-semibold text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
             >
               Delete
             </button>

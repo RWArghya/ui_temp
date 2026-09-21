@@ -21,7 +21,7 @@ function pwScore(v) {
 const PW_LABELS = ["Too weak", "Weak", "Okay", "Strong", "Very strong"]
 const COUNTRY_CODES = ["+91", "+1", "+44", "+65", "+971"]
 
-const ERROR_COLOR = "#c0392b"
+const ERROR_COLOR = "#c2304a"
 
 export default function Auth() {
   const [searchParams] = useSearchParams()
@@ -439,7 +439,7 @@ export default function Auth() {
                               pwStrength <= 1
                                 ? ERROR_COLOR
                                 : pwStrength === 2
-                                  ? "#d97706"
+                                  ? "#965a06"
                                   : "var(--color-status)",
                           }}
                         />

@@ -587,8 +587,8 @@ export default function ProfilePreview() {
       <div className="max-w-[800px] mx-auto px-4 sm:px-6 pt-5">
         <div className={`p-3.5 rounded-[3px] border text-[12.5px] mb-5 flex items-start gap-3 ${
           isLocked
-            ? 'bg-[#fff9e6] border-[#ffe082] text-[#7c5e10]'
-            : 'bg-[#e8f4fd] border-[#b6dcfb] text-[#135a96]'
+            ? 'bg-dash-warn-soft border-dash-warn/30 text-dash-warn'
+            : 'bg-signal-soft border-signal/25 text-signal-dark'
         }`}>
           <span className="text-base leading-none">{isLocked ? '🔒' : '👁️'}</span>
           <div>

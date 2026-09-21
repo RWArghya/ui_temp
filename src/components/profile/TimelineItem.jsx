@@ -11,8 +11,8 @@
  */
 export default function TimelineItem({ variant = 'default', title, subtitle, date }) {
   const dotColor = {
-    done:    'bg-[#0f9d58] border-[#0f9d58]',
-    now:     'bg-signal border-signal shadow-[0_0_0_4px_#e8edfa]',
+    done:    'bg-dash-ok border-dash-ok',
+    now:     'bg-signal border-signal shadow-[0_0_0_4px_var(--color-signal-soft)]',
     default: 'bg-white border-paper-line',
   }[variant] || 'bg-white border-paper-line'
 

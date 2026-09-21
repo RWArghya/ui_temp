@@ -79,7 +79,7 @@ export default function AchRow({
             className={[
               'px-2.5 py-[4px] text-[11px] font-semibold rounded-[2px] border cursor-pointer transition-colors',
               shared
-                ? 'bg-[#e7f6ee] text-[#0f9d58] border-[#a3e0bf] hover:bg-[#d4f0e1]'
+                ? 'bg-dash-ok-soft text-dash-ok border-dash-ok/30 hover:bg-dash-ok/15'
                 : 'bg-white text-graphite-dim border-paper-line hover:border-graphite-dim',
               saving ? 'opacity-50' : '',
             ].join(' ')}
@@ -113,7 +113,7 @@ export default function AchRow({
             className={[
               'px-2.5 py-[4px] text-[11.5px] font-semibold',
               'border border-paper-line rounded-[2px] bg-white text-graphite-dim',
-              'hover:border-[#c0392b] hover:text-[#c0392b] transition-colors cursor-pointer',
+              'hover:border-danger hover:text-danger transition-colors cursor-pointer',
             ].join(' ')}
           >
             Remove

@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import Icon from './Icon'
-import { InitiativeCard, ContinueCard } from './Cards'
-import { activeList, recommendedList, nextStepFor, savedList, recentViews, byId } from './data'
+import { InitiativeCard, InitiativeRow, ProfileProgress } from './Cards'
+import { activeList, recommendedList, nextStepFor, savedList, recentViews, byId, profileScore } from './data'
+import useMedia from '../hooks/useMedia'
 
 /* ============================================================================
-   Ported from prototype_v2/app.html — homeMain()/continuingMain()/
-   recommendedMain(). "View all" swaps only this main column (sidebar/rail
-   stay mounted) via `go('continuing')`/`go('recommended')`, Flipkart-style —
-   not a full route navigation with its own header.
+   Home + the list pages that hang off it.
+   Home reads top to bottom as: status band (overview + profile completion),
+   Continue (a work list), Recommended (browse cards; rows on phones).
+   "View all" swaps only the main column (sidebar stays mounted) via
+   go('activity') / go('recommended').
    ============================================================================ */
 
-function EmptyState({ ico, title, msg, cta }) {
+export function EmptyState({ ico, title, msg, cta }) {
   return (
     <div className="empty-state">
       <span className="icon-chip lg blue"><Icon name={ico} size={24} /></span>
@@ -22,8 +24,8 @@ function EmptyState({ ico, title, msg, cta }) {
 }
 
 /* One row of cards. Columns come from CSS (.dash-cards-row); this only works
-   out how many fit so the row shows exactly that many. On phones the row is a
-   swipe strip (CSS), so it gets a few more. */
+   out how many fit so the row shows exactly that many — the rest are one
+   "View all" away. */
 function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
   const containerRef = useRef(null)
   const [cols, setCols] = useState(3)
@@ -31,10 +33,9 @@ function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const phone = window.matchMedia('(max-width: 720px)')
     const update = () => {
       const w = el.clientWidth
-      if (w > 0) setCols(phone.matches ? 6 : Math.max(1, Math.floor((w + gap) / (minColWidth + gap))))
+      if (w > 0) setCols(Math.max(1, Math.floor((w + gap) / (minColWidth + gap))))
     }
     update()
     const ro = new ResizeObserver(update)
@@ -45,20 +46,22 @@ function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
   return <div ref={containerRef} className="dash-cards-row">{items.slice(0, cols).map(renderCard)}</div>
 }
 
-/* title + count + "View all" — shared by every Home section */
-function SectionHeader({ title, count, onViewAll }) {
+/* title + count + "View all" — shared by Home and every list page */
+export function SectionHeader({ title, count, icon, onViewAll, viewAllLabel = 'View all' }) {
   return (
-    <div className="card-head">
-      <div className="flex items-center gap-2 min-w-0">
+    <div className="sec-head">
+      <div className="sec-head-l">
+        {icon ? <Icon name={icon} size={18} /> : null}
         <h2>{title}</h2>
-        <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink whitespace-nowrap shrink-0">{count}</span>
+        {count != null ? <span className="sec-count">{count}</span> : null}
       </div>
-      {onViewAll ? <button type="button" className="link-more" onClick={onViewAll}>View all <Icon name="ArrowRight" size={13} /></button> : null}
+      {onViewAll ? <button type="button" className="link-more" onClick={onViewAll}>{viewAllLabel} <Icon name="ArrowRight" size={13} /></button> : null}
     </div>
   )
 }
 
 export function Home({ st, sv, go }) {
+  const phone = useMedia('(max-width: 520px)')
   const active = activeList(st)
   const recs = recommendedList(st)
 
@@ -66,35 +69,37 @@ export function Home({ st, sv, go }) {
   const buildActive = active.filter(o => o.purpose === 'learncompete')
   const competeActive = active.filter(o => o.purpose === 'competing')
 
-  /* shortcuts into My Activity — one strip, not four tiles */
+  /* shortcuts into My Activity — a quiet row of numbers, not four tiles */
   const stats = [
-    { title: 'Total Ongoing', value: active.length, subtext: 'All active tracks', icon: 'Activity', chip: 'blue', to: [] },
-    { title: 'Courses Enrolled', value: learnActive.length, subtext: 'Masterclasses & cohorts', icon: 'GraduationCap', chip: 'green', to: [null, 'learning'] },
-    { title: 'Build Challenges', value: buildActive.length, subtext: 'Prototypes in dev', icon: 'Wrench', chip: 'amber', to: [null, 'learncompete'] },
-    { title: 'Hackathons', value: competeActive.length, subtext: 'Active competitions', icon: 'Trophy', chip: 'purple', to: [null, 'competing'] },
+    { title: 'Total Ongoing', value: active.length, subtext: 'All active tracks', icon: 'Activity', to: [] },
+    { title: 'Courses Enrolled', value: learnActive.length, subtext: 'Masterclasses & cohorts', icon: 'GraduationCap', to: [null, 'learning'] },
+    { title: 'Build Challenges', value: buildActive.length, subtext: 'Prototypes in dev', icon: 'Wrench', to: [null, 'learncompete'] },
+    { title: 'Hackathons', value: competeActive.length, subtext: 'Active competitions', icon: 'Trophy', to: [null, 'competing'] },
   ]
 
   return (
     <div className="dash-home">
-      <nav className="dash-stats" aria-label="Overview">
-        {stats.map(s => (
-          <button key={s.title} type="button" className="dash-stat" onClick={() => go('activity', ...s.to)}>
-            <span className={`icon-chip round ${s.chip}`}><Icon name={s.icon} size={16} /></span>
-            <span className="dash-stat-text">
-              <span className="dash-stat-line"><b>{s.value}</b><span>{s.title}</span></span>
-              <small>{s.subtext}</small>
-            </span>
-          </button>
-        ))}
-      </nav>
+      <div className="band-w">
+        <section className={`band${profileScore(st).pct < 100 ? ' has-pz' : ''}`}>
+          <nav className="dash-stats" aria-label="Overview">
+            {stats.map(s => (
+              <button key={s.title} type="button" className="dash-stat" onClick={() => go('activity', ...s.to)}>
+                <b>{s.value}</b>
+                <span className="dash-stat-label"><Icon name={s.icon} size={14} />{s.title}</span>
+                <small>{s.subtext}</small>
+              </button>
+            ))}
+          </nav>
+          <ProfileProgress st={st} />
+        </section>
+      </div>
 
       <section aria-label="Continue where you left off">
         <SectionHeader title="Continue where you left off" count={`${active.length} ongoing`} onViewAll={active.length ? () => go('activity') : null} />
         {active.length ? (
-          <SingleRowGrid
-            items={active}
-            renderCard={o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />}
-          />
+          <div className="init-list">
+            {active.slice(0, phone ? 3 : 4).map(o => <InitiativeRow key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
+          </div>
         ) : (
           <EmptyState ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
             cta={<button type="button" className="btn btn-primary mt12" onClick={() => go('recommended')}>Explore initiatives <Icon name="ArrowRight" size={14} /></button>} />
@@ -104,10 +109,13 @@ export function Home({ st, sv, go }) {
       <section aria-label="Recommended for you">
         <SectionHeader title="Recommended for you" count={`${recs.length} available`} onViewAll={recs.length ? () => go('recommended') : null} />
         {recs.length ? (
-          <SingleRowGrid
-            items={recs}
-            renderCard={o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />}
-          />
+          phone ? (
+            <div className="init-list">
+              {recs.slice(0, 3).map(o => <InitiativeRow key={o.id} o={o} st={st} sv={sv} compact />)}
+            </div>
+          ) : (
+            <SingleRowGrid items={recs} renderCard={o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />} />
+          )
         ) : (
           <EmptyState ico="Sparkles" title="No recommendations available yet" msg="Check back soon for personalized recommendations based on your interests." />
         )}
@@ -116,14 +124,14 @@ export function Home({ st, sv, go }) {
   )
 }
 
-export function Continuing({ st, sv, go }) {
+export function Continuing({ st, sv }) {
   const active = activeList(st)
   return (
     <>
       <p className="small muted mb16">{active.length} initiative{active.length === 1 ? '' : 's'} you're actively working on.</p>
       {active.length ? (
-        <div className="grid g3">
-          {active.map(o => <ContinueCard key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
+        <div className="init-list">
+          {active.map(o => <InitiativeRow key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
         </div>
       ) : (
         <EmptyState ico="Compass" title="Nothing in progress yet" msg="Join an initiative or enrol in a course to see it here." />
@@ -131,145 +139,43 @@ export function Continuing({ st, sv, go }) {
     </>
   )
 }
+
+/* one track of the Recommended page: Learn / Build / Compete */
+const TRACKS = [
+  { key: 'learning', title: 'Learn', icon: 'BookOpen', blurb: 'Recommended masterclasses, cohorts, and skill-building programs.', empty: 'No learning recommendations at this time.', cta: 'Browse Learn catalog' },
+  { key: 'learncompete', title: 'Build', icon: 'Wrench', blurb: 'Hands-on problem statements and practical challenges to build working prototypes.', empty: 'No build recommendations at this time.', cta: 'Browse Build challenges' },
+  { key: 'competing', title: 'Compete', icon: 'Trophy', blurb: 'Competitive hackathons and prize challenges open for registration.', empty: 'No compete recommendations at this time.', cta: 'Browse Compete hackathons' },
+]
+
 export function Recommended({ st, sv, go }) {
   const recs = recommendedList(st)
-
-  const learnItems = recs.filter(o => o.purpose === 'learning')
-  const buildItems = recs.filter(o => o.purpose === 'learncompete')
-  const competeItems = recs.filter(o => o.purpose === 'competing')
-
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="small muted">
-          {(st.interests || []).length || st.region
-            ? 'Curated recommendations matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ')
-            : 'Personalized initiatives, challenges, and hackathons organized by track.'}
-        </p>
-      </div>
+    <div className="dash-home">
+      <p className="small muted">
+        {(st.interests || []).length || st.region
+          ? 'Curated recommendations matched to ' + [...(st.interests || []).slice(0, 3), st.region].filter(Boolean).join(', ')
+          : 'Personalized initiatives, challenges, and hackathons organized by track.'}
+      </p>
 
-      {/* 1. Learn Section */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between border-b border-dash-line-soft pb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">📚</span>
-            <h2 className="text-[17px] font-bold text-dash-ink">Learn</h2>
-            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
-              {learnItems.length}
-            </span>
-          </div>
-          <a
-            className="link-more text-[12.5px] cursor-pointer"
-            onClick={() => go('learning')}
-          >
-            Explore catalog <Icon name="ArrowRight" size={13} />
-          </a>
-        </div>
-        <p className="text-[12.5px] text-dash-muted">
-          Recommended masterclasses, cohorts, and skill-building programs.
-        </p>
-
-        {learnItems.length ? (
-          <div className="grid g3 mt-3">
-            {learnItems.map(o => (
-              <InitiativeCard key={o.id} o={o} st={st} sv={sv} />
-            ))}
-          </div>
-        ) : (
-          <div className="p-6 rounded-[2px] border border-dashed border-dash-line text-center bg-dash-surface/50 my-2">
-            <p className="text-[13px] text-dash-muted">No learning recommendations at this time.</p>
-            <button
-              type="button"
-              onClick={() => go('learning')}
-              className="btn btn-outline btn-sm mt-3"
-            >
-              Browse Learn catalog
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* 2. Build Section */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between border-b border-dash-line-soft pb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🛠️</span>
-            <h2 className="text-[17px] font-bold text-dash-ink">Build</h2>
-            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
-              {buildItems.length}
-            </span>
-          </div>
-          <a
-            className="link-more text-[12.5px] cursor-pointer"
-            onClick={() => go('learncompete')}
-          >
-            Explore catalog <Icon name="ArrowRight" size={13} />
-          </a>
-        </div>
-        <p className="text-[12.5px] text-dash-muted">
-          Hands-on problem statements and practical challenges to build working prototypes.
-        </p>
-
-        {buildItems.length ? (
-          <div className="grid g3 mt-3">
-            {buildItems.map(o => (
-              <InitiativeCard key={o.id} o={o} st={st} sv={sv} />
-            ))}
-          </div>
-        ) : (
-          <div className="p-6 rounded-[2px] border border-dashed border-dash-line text-center bg-dash-surface/50 my-2">
-            <p className="text-[13px] text-dash-muted">No build recommendations at this time.</p>
-            <button
-              type="button"
-              onClick={() => go('learncompete')}
-              className="btn btn-outline btn-sm mt-3"
-            >
-              Browse Build challenges
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* 3. Compete Section */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between border-b border-dash-line-soft pb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🏆</span>
-            <h2 className="text-[17px] font-bold text-dash-ink">Compete</h2>
-            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
-              {competeItems.length}
-            </span>
-          </div>
-          <a
-            className="link-more text-[12.5px] cursor-pointer"
-            onClick={() => go('competing')}
-          >
-            Explore catalog <Icon name="ArrowRight" size={13} />
-          </a>
-        </div>
-        <p className="text-[12.5px] text-dash-muted">
-          Competitive hackathons and prize challenges open for registration.
-        </p>
-
-        {competeItems.length ? (
-          <div className="grid g3 mt-3">
-            {competeItems.map(o => (
-              <InitiativeCard key={o.id} o={o} st={st} sv={sv} />
-            ))}
-          </div>
-        ) : (
-          <div className="p-6 rounded-[2px] border border-dashed border-dash-line text-center bg-dash-surface/50 my-2">
-            <p className="text-[13px] text-dash-muted">No compete recommendations at this time.</p>
-            <button
-              type="button"
-              onClick={() => go('competing')}
-              className="btn btn-outline btn-sm mt-3"
-            >
-              Browse Compete hackathons
-            </button>
-          </div>
-        )}
-      </section>
+      {TRACKS.map(t => {
+        const items = recs.filter(o => o.purpose === t.key)
+        return (
+          <section key={t.key} aria-label={t.title}>
+            <SectionHeader title={t.title} icon={t.icon} count={items.length} onViewAll={() => go(t.key)} viewAllLabel="Explore catalog" />
+            <p className="sec-blurb">{t.blurb}</p>
+            {items.length ? (
+              <div className="grid g3">
+                {items.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <p className="small muted">{t.empty}</p>
+                <button type="button" onClick={() => go(t.key)} className="btn btn-outline btn-sm mt-3">{t.cta}</button>
+              </div>
+            )}
+          </section>
+        )
+      })}
     </div>
   )
 }
@@ -280,7 +186,7 @@ export function Saved({ st, sv, go }) {
       <p className="small muted mb16">{list.length} {list.length === 1 ? 'initiative' : 'initiatives'} saved</p>
       {list.length ? (
         <div className="grid g3">
-          {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)}
+          {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}
         </div>
       ) : (
         <EmptyState ico="Bookmark" title="Nothing saved yet" msg="Tap the bookmark on any initiative to keep it here."
@@ -296,7 +202,7 @@ export function Recent({ st, sv, go }) {
       <p className="small muted mb16">Recently viewed · {list.length} {list.length === 1 ? 'initiative' : 'initiatives'}</p>
       {list.length ? (
         <div className="grid g3">
-          {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} cta="View" />)}
+          {list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)}
         </div>
       ) : (
         <EmptyState ico="Clock" title="Nothing viewed yet" msg="Initiatives you open will show up here."
