@@ -8,7 +8,6 @@ import {
   approvedChallenges, notesFor, unreadFor, byId,
 } from './data'
 import { Sidebar, Topbar } from './Shell'
-import { ProfileBar } from './Cards'
 import { Home, Continuing, Recommended, Saved, Recent } from './HomeViews'
 import { Competing, Learning, LearnCompete } from './PurposeViews'
 import Arena from './Arena'
@@ -177,8 +176,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const out = () => { reset(); authStore.clear(); navigate('/auth') }
   const loadSample = () => sv(seedDemoPatch(st))
   const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
-  /* profile completion: docked in Home's status band, a slim bar above every other innovator view (never a rail), hidden on My Profile itself */
-  const showProfileBar = !msup && view !== 'home' && view !== 'profile'
   const activeKey = view === 'continuing' || view === 'recommended' ? 'home' : view
   /* Mentor's own tab state (queue/teams/sessions/challenges/impact — an
      existing feature richer than prototype_v2's own mentor surfaces, which
@@ -233,7 +230,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
             onSignOut={out}
           />
           <div className="shell-body">
-            {showProfileBar ? <ProfileBar st={st} /> : null}
             <div className="shell-main-wrap">
               <div id="main">
                 {(() => {

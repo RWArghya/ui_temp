@@ -576,10 +576,8 @@ ul{ margin:0; padding:0; list-style:none; }
   .pz .btn{ width:100%; }
 }
 
-/* ---- Profile completion: one component, docked in the band (Home) or a slim bar (other views) ---- */
-.profile-bar{ position:relative; margin-bottom:24px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); box-shadow:var(--sh-rest); }
+/* ---- Profile completion: docked in Home's status band ---- */
 .pz{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px 16px; padding:12px 16px; border-top:1px solid var(--line-soft); }
-.profile-bar .pz{ border-top:0; }
 .pz-main{ all:unset; box-sizing:border-box; display:flex; flex-direction:column; gap:8px; min-width:0; padding:4px 6px; margin:-4px -6px; border-radius:var(--r-ctl); cursor:pointer; font:inherit; }
 .pz-main.is-static{ cursor:default; }
 button.pz-main:hover{ background:var(--surface-2); }

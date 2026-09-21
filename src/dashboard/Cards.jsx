@@ -184,9 +184,3 @@ export function ProfileProgress({ st }) {
     </div>
   )
 }
-
-/* the same component as a slim bar — mounted by the shell above every view except Home (docked in its band) and My Profile */
-export function ProfileBar({ st }) {
-  if (profileScore(st).pct >= 100) return null
-  return <section className="profile-bar" aria-label="Profile completion"><ProfileProgress st={st} /></section>
-}
