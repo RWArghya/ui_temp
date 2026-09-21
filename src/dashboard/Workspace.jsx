@@ -41,16 +41,16 @@ function ChevronSteps({ steps, cur }) {
               isFirst ? 'pl-3.5 pr-5' : isLast ? 'pl-5 pr-4' : 'pl-5 pr-5'
             } ${
               done
-                ? 'bg-[#e6f4ea] text-[#137333] hover:bg-[#daf0df]'
+                ? 'bg-dash-ok-soft text-dash-ok hover:brightness-95'
                 : active
                   ? 'bg-signal text-white shadow-sm font-bold'
-                  : 'bg-[#f1f3f4] text-[#5f6368] hover:bg-[#e8eaed]'
+                  : 'bg-dash-line-soft text-dash-muted hover:brightness-95'
             }`}
             style={{ clipPath: clip(i, steps.length) }}
             title={`Step ${i + 1}: ${s}`}
           >
             {done ? (
-              <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#10a35e] text-white text-[10px] font-bold">
+              <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-dash-ok text-white text-[10px] font-bold">
                 ✓
               </span>
             ) : active ? (
@@ -58,7 +58,7 @@ function ChevronSteps({ steps, cur }) {
                 {i + 1}
               </span>
             ) : (
-              <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#d2d6dc] text-[#4b5563] text-[11px] font-semibold">
+              <span className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-paper-line text-graphite text-[11px] font-semibold">
                 {i + 1}
               </span>
             )}

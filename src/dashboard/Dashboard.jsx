@@ -5,10 +5,9 @@ import { authStore } from '../store/auth'
 import './proto.css'
 import {
   VIEWS, initials, mentorStatus, mentorRoleLabel,
-  approvedChallenges, notesFor, unreadFor, profileScore, byId,
+  approvedChallenges, notesFor, unreadFor, byId,
 } from './data'
 import { Sidebar, Topbar } from './Shell'
-import { ProfileProgressCard } from './Cards'
 import { Home, Continuing, Recommended, Saved, Recent } from './HomeViews'
 import { Competing, Learning, LearnCompete } from './PurposeViews'
 import Arena from './Arena'
@@ -177,13 +176,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const out = () => { reset(); authStore.clear(); navigate('/auth') }
   const loadSample = () => sv(seedDemoPatch(st))
   const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
-  /* homeRail() in app.html: below 100% profile completion the rail is only
-     the profile card, on every view — there's no separate XP/"Getting
-     started" rail in the prototype. At 100% it's removed entirely (not
-     display:none) and `.shell:not(.has-rail) .grid.g3` in proto.css
-     reflows the freed width into the main column. */
-  const { pct } = profileScore(st)
-  const hasRail = pct < 100
   const activeKey = view === 'continuing' || view === 'recommended' ? 'home' : view
   /* Mentor's own tab state (queue/teams/sessions/challenges/impact — an
      existing feature richer than prototype_v2's own mentor surfaces, which
@@ -215,7 +207,7 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
 
   return (
     <div className="dash-root">
-      <div className={`shell${hasRail ? ' has-rail' : ''}${msup ? ' mode-mentor' : ''}`}>
+      <div className={`shell${msup ? ' mode-mentor' : ''}`}>
         <Sidebar
           mode={msup ? 'mentor' : 'innovator'}
           active={msup ? mentorActiveKey : activeKey}
@@ -245,11 +237,6 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
                   return <C st={st} sv={sv} go={go} mentorTab={mentorTab} setMentorTab={setMentorTab} />
                 })()}
               </div>
-              {hasRail ? (
-                <aside className="app-rail">
-                  <ProfileProgressCard st={st} />
-                </aside>
-              ) : null}
             </div>
           </div>
         </div>
@@ -257,7 +244,3 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     </div>
   )
 }
-
-/* The old "Getting started" XP journey rail lived here — removed. The
-   prototype has no such rail; every view's right column is just the profile
-   card (ProfileProgressCard, from ./Cards), gone entirely at 100%. */

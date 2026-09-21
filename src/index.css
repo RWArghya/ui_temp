@@ -12,24 +12,24 @@
   default: true;
   color-scheme: light;
   --color-base-100: #ffffff;
-  --color-base-200: #fafbfd;
-  --color-base-300: #f3f4f8;
-  --color-base-content: #101223;
-  --color-primary: #1548b7;
+  --color-base-200: #f5f6fa;
+  --color-base-300: #eceef4;
+  --color-base-content: #0f1629;
+  --color-primary: #2f5fe6;
   --color-primary-content: #ffffff;
-  --color-secondary: #3f1d80;
+  --color-secondary: #1e46c4;
   --color-secondary-content: #ffffff;
-  --color-accent: #3f1d80;
+  --color-accent: #1e46c4;
   --color-accent-content: #ffffff;
-  --color-neutral: #191135;
+  --color-neutral: #0f1629;
   --color-neutral-content: #ffffff;
-  --color-info: #1548b7;
+  --color-info: #2f5fe6;
   --color-info-content: #ffffff;
-  --color-success: #0f9d58;
+  --color-success: #0b7a45;
   --color-success-content: #ffffff;
-  --color-warning: #b26a00;
+  --color-warning: #965a06;
   --color-warning-content: #ffffff;
-  --color-error: #c0392b;
+  --color-error: #c2304a;
   --color-error-content: #ffffff;
   --radius-selector: 2px;
   --radius-field: 2px;
@@ -45,34 +45,34 @@
 
 /* ============================================================
    H2S design tokens — sampled from the logo ramp:
-   #366eb7 blue -> #393da1 indigo -> #3f1d80 violet -> #191135 deep
+   now one blue (#2f5fe6) + navy neutrals; the old logo ramp is retired from UI
    ============================================================ */
 @theme {
-  --color-brand-blue: #366eb7;
-  --color-brand-indigo: #393da1;
-  --color-brand-violet: #3f1d80;
-  --color-brand-deep: #2d1149;
+  --color-brand-blue: #2f5fe6;
+  --color-brand-indigo: #1e46c4;
+  --color-brand-violet: #1e46c4;
+  --color-brand-deep: #0f1629;
 
-  --color-ink-950: #100a22;
-  --color-ink-900: #191135;
-  --color-ink-800: #241a4a;
-  --color-ink-line: #332759;
+  --color-ink-950: #0a0f1d;
+  --color-ink-900: #0f1629;
+  --color-ink-800: #1a2238;
+  --color-ink-line: #2a3350;
   --color-white-soft: #eef0f7;
-  --color-ink-text: #cfd1e6;
-  --color-ink-dim: #a29fc0;
+  --color-ink-text: #cfd3e2;
+  --color-ink-dim: #9aa1b6;
 
-  --color-paper: #f6f7fb;
+  --color-paper: #f5f6fa;
   --color-paper-raised: #ffffff;
-  --color-paper-line: #e3e5f1;
-  --color-graphite: #4c5069;
-  --color-graphite-dim: #6b6f8a;
+  --color-paper-line: #dfe2ec;
+  --color-graphite: #384056;
+  --color-graphite-dim: #626a80;
 
-  --color-signal: #1548b7;
-  --color-signal-dark: #0f3583;
-  --color-signal-soft: #e8edfa;
-  --color-violet: #3f1d80;
-  --color-violet-soft: #f0ebfa;
-  --color-status: #4c9c86;
+  --color-signal: #2f5fe6;
+  --color-signal-dark: #1e46c4;
+  --color-signal-soft: #eaf0ff;
+  --color-violet: #1e46c4;
+  --color-violet-soft: #eaf0ff;
+  --color-status: #10a35e;
 
   --font-display: "Archivo", system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -85,19 +85,21 @@
      A separate, exact palette from the marketing site's — the dashboard is
      "a control surface, not a marketing page" (styles.css's own words).
      Values copied verbatim from the prototype's :root, not approximated. */
-  --color-dash-ink: #101223;
-  --color-dash-muted: #777986;
-  --color-dash-faint: #b3b5bd;
-  --color-dash-line: #e4e6ec;
-  --color-dash-line-soft: #f3f4f8;
+  --color-dash-ink: #0f1629;
+  --color-dash-muted: #626a80;
+  --color-dash-faint: #8b92a5;
+  --color-dash-line: #dfe2ec;
+  --color-dash-line-soft: #eceef4;
   --color-dash-bg: #ffffff;
-  --color-dash-bg-soft: #fafbfd;
-  --color-dash-ok: #0f9d58;
-  --color-dash-ok-soft: #e7f6ee;
-  --color-dash-warn: #b26a00;
-  --color-dash-warn-soft: #fff4e0;
-  --color-dash-live-bg: #ffe9e9;
-  --color-dash-live: #c0392b;
+  --color-dash-bg-soft: #f5f6fa;
+  --color-dash-ok: #0b7a45;
+  --color-dash-ok-soft: #e4f5ec;
+  --color-dash-warn: #965a06;
+  --color-dash-warn-soft: #fdf1de;
+  --color-dash-live-bg: #e4f5ec;
+  --color-dash-live: #0b7a45;
+  --color-danger: #c2304a;
+  --color-danger-soft: #fdeaee;
 
   --shadow-dash: 0 1px 2px rgba(16, 18, 35, .06), 0 8px 24px -12px rgba(16, 18, 35, .18);
   --shadow-dash-lg: 0 2px 4px rgba(16, 18, 35, .05), 0 24px 48px -24px rgba(16, 18, 35, .28);
@@ -139,7 +141,7 @@ h4 { font-size: 15px; font-weight: 700; }
    token rather than relying solely on daisyUI's theme-variable resolution
    (which any future daisyUI/Tailwind upgrade, a second competing theme, or
    a caching quirk could silently break). This is the one rule that must
-   never render as anything but the prototype's #1548b7. */
+   never render as anything but the brand blue. */
 .btn-primary {
   background-color: var(--color-signal) !important;
   border-color: var(--color-signal) !important;
@@ -152,13 +154,13 @@ h4 { font-size: 15px; font-weight: 700; }
 
 /* the one gradient, spent sparingly — CTA seams + record numerals */
 @utility bg-ramp {
-  background: linear-gradient(90deg, #366eb7 0%, #393da1 34%, #3f1d80 66%, #2d1149 100%);
+  background: linear-gradient(90deg, #5b84f5 0%, #2f5fe6 50%, #1e46c4 100%);
 }
 @utility bg-ramp-rev {
-  background: linear-gradient(270deg, #366eb7 0%, #393da1 34%, #3f1d80 66%, #2d1149 100%);
+  background: linear-gradient(270deg, #5b84f5 0%, #2f5fe6 50%, #1e46c4 100%);
 }
 @utility text-ramp-bright {
-  background: linear-gradient(90deg, #74a2e6 0%, #8286dd 34%, #9b6ee0 66%, #bb90e2 100%);
+  background: linear-gradient(90deg, #8fadf8 0%, #6f96f7 50%, #4d78ef 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

@@ -1,31 +1,29 @@
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import Icon from './Icon'
 import { daysLeft, isSaved, toggleSavedPatch, progressPctFor, PROFILE_STEPS, profileScore } from './data'
 
 /* ============================================================================
-   Ported from prototype_v2/shell.js — statusPill, purposeMeta, initiativeCard
-   /continueCard, ProfileChecklist/ProfileProgressCard. Same class names as
-   proto.css (.init-card, .check-list-row, .pring…), so visual fidelity comes
-   from the CSS itself, not a re-derivation of it.
+   Initiative presentation. Two shapes, one data model:
+     InitiativeCard — browse shape (Recommended, Learn, Compete, Build, Saved, Recent)
+     InitiativeRow  — work-list shape (Continue, My Activity); `compact` drops
+                      the progress column for browse lists on phones
+   Colour only ever means something: blue = act/progress, green = live,
+   amber = closing soon. Category is an icon + a word, never a hue.
    ============================================================================ */
 
-export function StatusPill({ status }) {
-  const map = {
-    live: ['pill-live', true, 'Live'],
-    upcoming: ['pill-upcoming', false, 'Upcoming'],
-    past: ['pill-done', false, 'Completed'],
-    inprogress: ['pill-progress', false, 'In Progress'],
-  }
-  const [cls, dot, label] = map[status] || ['pill', false, status]
-  return <span className={`pill ${cls}`}>{dot ? <span className="pill-dot" /> : null}{label}</span>
+const STATUS = {
+  live: ['st-live', 'Live'],
+  upcoming: ['', 'Upcoming'],
+  past: ['', 'Completed'],
+  inprogress: ['st-prog', 'In Progress'],
+}
+export function StatusText({ status }) {
+  const [cls, label] = STATUS[status] || ['', status]
+  return <span className={`st ${cls}`}>{label}</span>
 }
 
-const PURPOSE_META = {
-  competing: { label: 'Compete', fg: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  learning: { label: 'Learn', fg: '#0f9c7a', bg: '#ecfdf5', border: '#a7f3d0' },
-  learncompete: { label: 'Build', fg: '#d9820a', bg: '#fffbeb', border: '#fde68a' },
-}
-const purposeMeta = p => PURPOSE_META[p] || PURPOSE_META.competing
+const PURPOSE = { competing: ['Compete', 'Trophy'], learning: ['Learn', 'BookOpen'], learncompete: ['Build', 'Wrench'] }
 
 function daysLeftLabel(deadline) {
   if (!deadline) return ''
@@ -35,143 +33,154 @@ function daysLeftLabel(deadline) {
   return `Closes in ${d}d`
 }
 
-/* The one card behind both "Recommended for you" and "Continue where you
-   left off" — continueCard (below) is a thin preset, not a separate
-   component. Clicking anywhere opens the destination; the bookmark is the
-   one other control and never navigates (stopPropagation). */
-export function InitiativeCard({ o, st, sv, dest, progress, stepLabel }) {
-  const navigate = useNavigate()
+/* everything both shapes derive from an initiative */
+function useInitiative(o, dest) {
   const [sp] = useSearchParams()
-  const currentView = sp.get('view') || 'home'
-  const meta = purposeMeta(o.purpose)
+  const from = sp.get('view') || 'home'
+  const left = o.deadline ? daysLeft(o.deadline) : null
+  return {
+    href: `/dashboard/${dest}?id=${o.id}&from=${from}`,
+    category: PURPOSE[o.purpose] || PURPOSE.competing,
+    org: [o.org, o.region, o.mode].filter(Boolean).join(' · '),
+    dlLabel: daysLeftLabel(o.deadline),
+    closingSoon: left !== null && left >= 0 && left <= 7,
+  }
+}
+
+function SaveButton({ o, st, sv }) {
   const saved = isSaved(o.id, st)
-  const href = `/dashboard/${dest === 'workspace' ? 'workspace' : 'initiative'}?id=${o.id}&from=${currentView}`
-  const showProgress = !!progress
-  const pct = showProgress ? progressPctFor(o, st) : 0
-  const actionTitle = dest === 'workspace' ? 'Continue' : 'View'
-
   return (
-    <div
-      className="init-card"
-      onClick={() => navigate(href)}
-      style={{ borderTop: `3px solid ${meta.fg}` }}
+    <button
+      type="button"
+      className={`save-btn${saved ? ' is-saved' : ''}`}
+      title={saved ? 'Saved' : 'Save for later'}
+      aria-label={saved ? 'Saved' : 'Save for later'}
+      aria-pressed={saved}
+      onClick={() => sv(toggleSavedPatch(o.id, st))}
     >
-      <div className="init-body">
-        {/* Main upper content — expands to fill space so bottom section aligns */}
-        <div className="init-main-content">
-          <div className="row between gap8">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <StatusPill status={showProgress && o.status !== 'past' ? 'inprogress' : o.status} />
-              <span
-                className="pill font-semibold"
-                style={{
-                  color: meta.fg,
-                  backgroundColor: meta.bg,
-                  borderColor: meta.border,
-                  fontSize: '11px',
-                  padding: '2px 8px',
-                }}
-              >
-                {meta.label}
-              </span>
-            </div>
-            <span className="xs faint">{o.mode || ''}</span>
-          </div>
+      <Icon name="Bookmark" size={16} />
+    </button>
+  )
+}
 
-          <div className="row gap8" style={{ alignItems: 'flex-start' }}>
-            <div className="init-name grow">{o.name}</div>
-            <button
-              className={`btn-icon btn-ghost save-btn${saved ? ' is-saved' : ''}`}
-              title={saved ? 'Saved' : 'Save for later'}
-              onClick={(e) => { e.stopPropagation(); sv(toggleSavedPatch(o.id, st)) }}
-            >
-              <Icon name="Bookmark" size={15} />
-            </button>
-          </div>
-
-          <div className="init-org">{o.org} · {o.region || ''}</div>
-
-          <div className="init-meta">
-            {(o.areas || []).slice(0, 3).map(a => <span key={a} className="pill pill-outline">{a}</span>)}
-          </div>
-        </div>
-
-        {/* Lower section pinned to the bottom: progress bar sits at the exact same level across cards */}
-        <div className="init-bottom-section">
-          {showProgress ? (
-            <div className="init-progress-block" style={{ marginBottom: '8px' }}>
-              <div className="pbar">
-                <i style={{ width: pct + '%', background: meta.fg }} />
-              </div>
-              <div className="row between gap4 mt4">
-                <span className="xs faint truncate">{stepLabel || ''}</span>
-                <span className="xs faint font-semibold shrink-0">{pct}%</span>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="init-foot">
-            <span className="xs muted">{o.prize ? o.prize + ' · ' : ''}{daysLeftLabel(o.deadline)}</span>
-            <Link
-              className="init-arrow-btn"
-              to={href}
-              onClick={(e) => e.stopPropagation()}
-              title={actionTitle}
-              aria-label={actionTitle}
-              style={{ background: meta.fg }}
-            >
-              <Icon name="ArrowRight" size={13} />
-            </Link>
-          </div>
-        </div>
+/* The action link stretches over the whole card (::after in proto.css), so the
+   card is one link; the bookmark sits above it. */
+export function InitiativeCard({ o, st, sv }) {
+  const { href, category, org, dlLabel, closingSoon } = useInitiative(o, 'initiative')
+  return (
+    <div className="init-card">
+      <div className="init-top">
+        <span className="init-tag"><Icon name={category[1]} size={14} />{category[0]}</span>
+        <StatusText status={o.status} />
+        <SaveButton o={o} st={st} sv={sv} />
+      </div>
+      <div className="init-name">{o.name}</div>
+      <div className="init-org">{org}</div>
+      <div className="init-foot">
+        {/* prize over deadline: two lines, so neither is ever cut */}
+        <span className="init-when">
+          {o.prize ? <span className="init-prize">{o.prize}</span> : null}
+          <span className={`init-dl${closingSoon ? ' is-soon' : ''}`}>{dlLabel}</span>
+        </span>
+        <Link className="btn btn-outline btn-sm init-stretch" to={href} aria-label={`View ${o.name}`}>View</Link>
       </div>
     </div>
   )
 }
-/* continue-card — "Continue where you left off": same card, workspace-bound, with progress */
-export const ContinueCard = ({ o, st, sv, next }) => (
-  <InitiativeCard o={o} st={st} sv={sv} dest="workspace" progress cta="Continue" stepLabel={next ? next.step : ''} />
-)
 
-/* One canonical checklist — one "done" signal per row (a circular check), or
-   (mutually exclusive) a "Next" button in that same slot. Never both. */
-export function ProfileChecklist({ st }) {
+/* Continue rows go to the workspace and show progress; a Continue row's status
+   is only shown when Live ("In Progress" would repeat the progress bar). */
+export function InitiativeRow({ o, st, sv, next, compact }) {
+  const { href, category, org, dlLabel, closingSoon } = useInitiative(o, compact ? 'initiative' : 'workspace')
+  const action = compact ? 'View' : 'Continue'
+  const pct = compact ? 0 : progressPctFor(o, st)
+  const status = compact ? o.status : (o.status === 'live' ? 'live' : null)
   return (
-    <>
-      {PROFILE_STEPS.map(s => {
-        const prof = st.profile && typeof st.profile === 'object' && !Array.isArray(st.profile) ? st.profile : st
-        const v = prof[s.key]
-        const ok = s.test ? s.test(v) : !!(v && String(v).trim())
-        return (
-          <div key={s.key} className="check-list-row">
-            <span className="check-list-label">{s.label}</span>
-            {ok
-              ? <span className="check-list-status" aria-label="Completed"><Icon name="Check" size={12} /></span>
-              : <Link className="check-list-action" to={`/profile?focus=${s.key}`} aria-label={`Complete ${s.label}`} title={`Complete ${s.label}`}><Icon name="ArrowRight" size={12} /></Link>}
-          </div>
-        )
-      })}
-    </>
+    <div className={`init-row${compact ? ' is-compact' : ''}`}>
+      <span className="init-tile" aria-hidden="true"><Icon name={category[1]} size={17} /></span>
+      <div className="init-main">
+        <div className="init-name">{o.name}</div>
+        <div className="init-meta"><b>{category[0]}</b> · {org}</div>
+      </div>
+      {compact ? null : (
+        <div className="init-prog">
+          <div className="pbar"><i style={{ width: pct + '%' }} /></div>
+          <div className="init-prog-l"><span>{next ? next.step : ''}</span><b>{pct}%</b></div>
+        </div>
+      )}
+      <div className="init-status">
+        {status ? <StatusText status={status} /> : null}
+        <span className={`init-dl${closingSoon ? ' is-soon' : ''}`}>{compact && o.prize ? `${o.prize} · ` : ''}{dlLabel}</span>
+      </div>
+      <div className="init-actions">
+        <Link className={`btn btn-sm init-stretch ${compact ? 'btn-outline' : 'btn-go'}`} to={href} aria-label={`${action} ${o.name}`}>{action}</Link>
+        <SaveButton o={o} st={st} sv={sv} />
+      </div>
+    </div>
   )
 }
-/* homeRail() in app.html hides this entirely at 100% — returning null (not
-   display:none) so the surrounding .grid.g3 reflows into the freed column,
-   per proto.css's `.shell:not(.has-rail) .grid.g3` rule. */
-export function ProfileProgressCard({ st }) {
+
+/* Profile completion. The meter is the 8 steps, each as wide as its weight, so
+   the filled part is the percentage and the hollow segments are what is left.
+   "N steps left" opens a popover (no layout shift): missing steps by payoff,
+   plus one "Done:" line. With a single step left there is nothing to open, so
+   its name is shown inline. The button goes straight to the best next step. */
+export function ProfileProgress({ st }) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
+  const btnRef = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const away = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    const esc = (e) => { if (e.key === 'Escape') { setOpen(false); btnRef.current?.focus() } }
+    document.addEventListener('mousedown', away)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', esc) }
+  }, [open])
+
   const { pct, missing } = profileScore(st)
   if (pct >= 100) return null
+  const todo = [...missing].sort((a, b) => b.w - a.w)
+  const next = todo[0]
+  const one = todo.length === 1
+  const missingKeys = new Set(missing.map(s => s.key))
+  const stepHref = (s) => `/profile?focus=${s.key}`
+  const meter = (
+    <span className="pz-meter" aria-hidden="true">
+      {PROFILE_STEPS.map(s => {
+        const done = !missingKeys.has(s.key)
+        return <i key={s.key} className={done ? 'on' : ''} style={{ flex: s.w }} title={`${s.label} — ${done ? 'done' : '+' + s.w + '%'}`} />
+      })}
+    </span>
+  )
+
   return (
-    <div className="card card-pad">
-      <div className="row between"><h3>Your progress</h3></div>
-      <div className="row gap16" style={{ marginTop: '14px', marginBottom: '18px' }}>
-        <div className="pring" style={{ '--pct': pct }}><div className="pring-inner">{pct}%</div></div>
-        <div className="col">
-          <span className="medium small">Profile completion</span>
-          <span className="xs muted">{PROFILE_STEPS.length - missing.length} of {PROFILE_STEPS.length} steps</span>
-        </div>
+    <div className="pz-wrap" ref={wrapRef}>
+      <div className="pz">
+        {one ? (
+          <div className="pz-main is-static">
+            <span className="pz-t"><b>Profile {pct}%</b><span>1 step left:</span><Link to={stepHref(next)}>{next.label}</Link></span>
+            {meter}
+          </div>
+        ) : (
+          <button type="button" ref={btnRef} className="pz-main" aria-expanded={open} aria-controls="profile-steps" onClick={() => setOpen(o => !o)}>
+            <span className="pz-t"><b>Profile {pct}%</b><span>{todo.length} steps left</span><Icon name="ChevronDown" size={14} /></span>
+            {meter}
+          </button>
+        )}
+        <Link className="btn btn-primary btn-sm" to={stepHref(next)} title={`Next: ${next.label}`}>Complete profile</Link>
       </div>
-      <Link className="btn btn-primary btn-block btn-sm" style={{ boxSizing: 'border-box' }} to="/profile">Complete profile <Icon name="ArrowRight" size={13} /></Link>
-      <div className="mt16"><ProfileChecklist st={st} /></div>
+      {open && !one ? (
+        <div className="pz-pop" id="profile-steps" role="region" aria-label="Profile steps">
+          <div className="pz-pop-h">Still to do</div>
+          <ul>
+            {todo.map(s => (
+              <li key={s.key}><Link to={stepHref(s)}><span>{s.label}</span><b>+{s.w}%</b><Icon name="ArrowRight" size={13} /></Link></li>
+            ))}
+          </ul>
+          <p className="pz-done"><b>Done:</b>{PROFILE_STEPS.filter(s => !missingKeys.has(s.key)).map(s => s.label).join(' · ')}</p>
+        </div>
+      ) : null}
     </div>
   )
 }

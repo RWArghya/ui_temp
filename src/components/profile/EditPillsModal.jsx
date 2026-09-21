@@ -74,7 +74,7 @@ export default function EditPillsModal({
                   <button
                     type="button"
                     onClick={() => handleRemove(idx)}
-                    className="text-graphite-dim hover:text-[#c0392b] text-[13px] font-bold leading-none cursor-pointer"
+                    className="text-graphite-dim hover:text-danger text-[13px] font-bold leading-none cursor-pointer"
                     title={`Remove ${item}`}
                   >
                     ✕

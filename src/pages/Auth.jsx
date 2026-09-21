@@ -21,15 +21,7 @@ function pwScore(v) {
 const PW_LABELS = ["Too weak", "Weak", "Okay", "Strong", "Very strong"]
 const COUNTRY_CODES = ["+91", "+1", "+44", "+65", "+971"]
 
-// The reference page sources these from an unprovided app.js (landingViews()/landingKey()) —
-// TBD once that contract is available; these four are a placeholder set.
-const LANDING_VIEWS = [
-  { k: "dashboard", ico: "\u{1F3E0}", label: "My Dashboard", blurb: "Everything you're doing, in one place" },
-  { k: "compete", ico: "\u{1F3C6}", label: "Compete", blurb: "Join hackathons, build, submit, win" },
-  { k: "arena", ico: "\u{1F3AE}", label: "Arena", blurb: "PromptWars — the vibe coding arena" },
-]
-
-const ERROR_COLOR = "#c0392b"
+const ERROR_COLOR = "#c2304a"
 
 export default function Auth() {
   const [searchParams] = useSearchParams()
@@ -47,7 +39,6 @@ export default function Auth() {
   const [generatedOtp, setGeneratedOtp] = useState("")
   const [otpCountdown, setOtpCountdown] = useState(30)
   const [agreed, setAgreed] = useState(false)
-  const [selectedLanding, setSelectedLanding] = useState(null)
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState("")
 
@@ -148,11 +139,6 @@ export default function Auth() {
         navigate("/dashboard?view=mentor", { replace: true })
         return
       }
-      if (!next) {
-        setSelectedLanding(state.primary || null)
-        setStep("landing")
-        return
-      }
       navigate(next || "/dashboard", { replace: true })
       return
     }
@@ -247,13 +233,8 @@ export default function Auth() {
       created: new Date().toISOString().slice(0, 10),
     }
     authStore.save({ account: a, name: a.name, email: a.email, onboarded: true })
-    // Social providers hand back a verified account, so skip onboarding and ask where to land.
-    if (next) {
-      navigate(next, { replace: true })
-      return
-    }
-    setSelectedLanding(authStore.read().primary || null)
-    setStep("landing")
+    // Social providers hand back a verified account, so skip onboarding straight to the dashboard.
+    navigate(next || "/dashboard", { replace: true })
   }
 
   function handleOtpVerify() {
@@ -274,12 +255,6 @@ export default function Auth() {
 
   function handleForgotSubmit() {
     setStep("forgot-sent")
-  }
-
-  function handleLandingContinue() {
-    if (selectedLanding) authStore.save({ primary: selectedLanding })
-    // Carry the chosen landing view so the dashboard (once built) can route to it.
-    navigate(`/dashboard?view=${selectedLanding || ""}`, { replace: true })
   }
 
   function switchMode(newMode) {
@@ -464,7 +439,7 @@ export default function Auth() {
                               pwStrength <= 1
                                 ? ERROR_COLOR
                                 : pwStrength === 2
-                                  ? "#d97706"
+                                  ? "#965a06"
                                   : "var(--color-status)",
                           }}
                         />
@@ -699,50 +674,6 @@ export default function Auth() {
             </>
           )}
 
-          {/* ───── Step: Landing Picker ───── */}
-          {step === "landing" && (
-            <>
-              <h2 className="font-display text-[1.5rem] font-extrabold text-ink-900">
-                Where do you want to land?
-              </h2>
-              <p className="mt-2 text-[0.88rem] text-graphite">
-                Your starting screen from now on — changeable any time in Profile &rarr; Roles.
-              </p>
-
-              <div className="mt-6 space-y-2">
-                {LANDING_VIEWS.map((v) => (
-                  <button
-                    key={v.k}
-                    type="button"
-                    onClick={() => setSelectedLanding(v.k)}
-                    className={`auth-land-row flex w-full items-center gap-3 rounded-card border px-4 py-3 text-left transition-colors ${
-                      selectedLanding === v.k
-                        ? "border-signal bg-signal-soft"
-                        : "border-paper-line hover:border-ink-line"
-                    }`}
-                  >
-                    <span className="text-[1.2rem]">{v.ico}</span>
-                    <span className="flex-1">
-                      <strong className="block text-[0.88rem] text-ink-900">{v.label}</strong>
-                      <span className="text-[0.78rem] text-graphite-dim">{v.blurb}</span>
-                    </span>
-                    {selectedLanding === v.k && (
-                      <span className="text-status text-[0.9rem]">&#10003;</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleLandingContinue}
-                disabled={!selectedLanding}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-btn bg-signal px-4 py-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-signal-dark disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Continue
-              </button>
-            </>
-          )}
         </div>
 
         {/* Footer text */}

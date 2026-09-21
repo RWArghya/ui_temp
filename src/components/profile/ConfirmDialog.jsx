@@ -49,7 +49,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             className={
               confirmClass ||
-              'px-4 py-2 text-[13px] font-semibold text-white bg-[#c0392b] rounded-[2px] hover:bg-[#a93226] cursor-pointer transition-colors'
+              'px-4 py-2 text-[13px] font-semibold text-white bg-danger rounded-[2px] hover:brightness-90 cursor-pointer transition-colors'
             }
           >
             {confirmLabel}
