@@ -178,12 +178,12 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
   const loadSample = () => sv(seedDemoPatch(st))
   const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
   /* homeRail() in app.html: below 100% profile completion the rail is only
-     the profile card, on every view — there's no separate XP/"Getting
-     started" rail in the prototype. At 100% it's removed entirely (not
-     display:none) and `.shell:not(.has-rail) .grid.g3` in proto.css
-     reflows the freed width into the main column. */
+     the profile card, on every view except profile itself — there's no
+     separate XP/"Getting started" rail in the prototype. At 100% it's
+     removed entirely (not display:none) and `.shell:not(.has-rail) .grid.g3`
+     in proto.css reflows the freed width into the main column. */
   const { pct } = profileScore(st)
-  const hasRail = pct < 100
+  const hasRail = pct < 100 && view !== 'profile'
   const activeKey = view === 'continuing' || view === 'recommended' ? 'home' : view
   /* Mentor's own tab state (queue/teams/sessions/challenges/impact — an
      existing feature richer than prototype_v2's own mentor surfaces, which
@@ -257,7 +257,3 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     </div>
   )
 }
-
-/* The old "Getting started" XP journey rail lived here — removed. The
-   prototype has no such rail; every view's right column is just the profile
-   card (ProfileProgressCard, from ./Cards), gone entirely at 100%. */

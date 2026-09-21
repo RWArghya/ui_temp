@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
+import { getTheme, setTheme } from './theme'
 import { initials, mentorStatus, mentorRoleLabel, approvedChallenges, notesFor, unreadFor } from './data'
 
 /* ============================================================================
@@ -122,7 +123,7 @@ function SidePersonaPill({ active, onSwitch, onSponsor, dark }) {
           gap glitch when moving cursor between trigger and ribbon. */}
       <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 z-50 -ml-1 pl-3 py-2.5 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
         <div className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 shadow-dash-lg backdrop-blur-md ${
-          light ? 'border-dash-line bg-white/95 text-dash-ink' : 'border-white/10 bg-ink-900/95 text-white'
+          light ? 'border-dash-line bg-dash-bg text-dash-ink' : 'border-white/10 bg-ink-900/95 text-white'
         }`}>
           <span className={`px-1 font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] ${
             light ? 'text-dash-muted' : 'text-white/40'
@@ -277,8 +278,10 @@ export function Topbar({
   onSignOut,
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [theme, setThemeState] = useState(getTheme)
   const menuRef = useRef(null)
   usePopoverClose(menuOpen, setMenuOpen, menuRef)
+  const pickTheme = (t) => { setTheme(t); setThemeState(t) }
 
   return (
     <header className="app-topbar">
@@ -317,6 +320,13 @@ export function Topbar({
 
       <div className="grow" />
       <div className="topbar-actions flex items-center gap-3">
+        <div className="theme-seg" role="group" aria-label="Theme">
+          {[['light', 'Sun', 'Light'], ['dark', 'Moon', 'Dark']].map(([k, ico, label]) => (
+            <button key={k} type="button" title={label} aria-label={label} aria-pressed={theme === k} onClick={() => pickTheme(k)}>
+              <Icon name={ico} size={14} />
+            </button>
+          ))}
+        </div>
         <NotificationBell st={st} sv={sv} who={who} />
 
         {/* Profile Avatar Trigger & Dropdown Menu */}

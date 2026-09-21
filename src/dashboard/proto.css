@@ -137,8 +137,19 @@ ul{ margin:0; padding:0; list-style:none; }
   .shell:not(.has-rail) .grid.g3{ grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 @media (max-width: 900px){
-  .shell{ grid-template-columns:1fr; }
-  .app-sidebar{ position:static; width:auto; height:auto; }
+  .shell{ grid-template-columns:minmax(0,1fr); }
+  /* .shell prefix: the base .app-sidebar rule comes later and would otherwise win, leaving a sticky 252px sidebar over the content.
+     Phone layout: brand + "View as" on one row, the nav as a swipeable row underneath. */
+  .shell .app-sidebar{
+    position:static; width:auto; height:auto; flex-direction:row; flex-wrap:wrap; align-items:center;
+    padding:0 12px; border-right:0; border-bottom:1px solid var(--line);
+  }
+  .shell .brand{ order:1; flex:1; height:52px; }
+  .shell .app-sidebar > div{ order:2; margin:0; padding:0; }
+  .shell .app-sidebar > div hr{ display:none; }
+  .shell .side-nav{ order:3; flex:1 0 100%; flex-direction:row; overflow-x:auto; overflow-y:hidden; padding-bottom:8px; }
+  .shell .side-link{ white-space:nowrap; flex-shrink:0; }
+  .shell .side-nav-divider{ display:none; }
 }
 
 /* -------------------------------------------------------------- sidebar */
@@ -262,7 +273,7 @@ ul{ margin:0; padding:0; list-style:none; }
 /* -------------------------------------------------------------- topbar */
 .app-topbar{
   position:sticky; top:0; z-index:30; height:var(--topbar-h);
-  background:rgba(255,255,255,.92); backdrop-filter:blur(6px);
+  background:color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter:blur(6px);
   border-bottom:1px solid var(--line); display:flex; align-items:center;
   padding:0 28px; gap:16px;
 }
@@ -340,7 +351,7 @@ ul{ margin:0; padding:0; list-style:none; }
 .card-soft{ background:var(--canvas); border-color:var(--line-soft); box-shadow:none; }
 .card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
 .card-head h2, .card-head h3{ margin:0; }
-.link-more{ font-size:12.5px; font-weight:700; color:var(--primary); display:inline-flex; align-items:center; gap:4px; }
+.link-more{ white-space:nowrap; font-size:12.5px; font-weight:700; color:var(--primary); display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:none; border:0; padding:0; }
 .link-more:hover{ text-decoration:underline; }
 
 .grid.g2, .grid.g3, .grid.g4, .grid.g5, .grid.g2f, .proto-grid{ display:grid; gap:16px; width:100%; box-sizing:border-box; }
@@ -355,7 +366,8 @@ ul{ margin:0; padding:0; list-style:none; }
 @media (max-width:1100px){ .g4{ grid-template-columns:repeat(2,minmax(0,1fr)); } .g5{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media (max-width:720px){
   .g2,.g3,.g4,.g5{ grid-template-columns:1fr; }
-  .dash-cards-row{ grid-template-columns:1fr; }
+  .dash-cards-row{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:12px; padding-bottom:8px; }
+  .dash-cards-row > .init-card{ flex:0 0 78%; scroll-snap-align:start; }
 }
 
 /* ---- icon chip: the pastel circle behind an icon, used everywhere ---- */
@@ -448,27 +460,55 @@ ul{ margin:0; padding:0; list-style:none; }
   display:grid; place-items:center; font-weight:800; font-size:16px; color:var(--ink);
 }
 
-/* ---- Initiative card ---- */
+/* ---- Profile completion card (right rail) ----
+   Slimmer than a generic .card-pad card, and its own thinner ring (a 3px
+   stroke, not the 9px default) — a rail widget should read light, not like
+   another content card. Ring in --ok (progress reads as "on track", not a
+   generic brand blue). A done step is one quiet line with a check; a step
+   still to do is its own bordered, tappable row with a chevron — so "what's
+   left" is the only thing that looks interactive. */
+.profile-card{ padding:16px; }
+.profile-card .pring{
+  width:64px; height:64px;
+  background:conic-gradient(var(--ok) calc(var(--pct,0) * 1%), var(--line-soft) 0);
+}
+.profile-card .pring-inner{ width:56px; height:56px; font-size:14px; }
+.profile-card-head{ display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.profile-card-head h3{ font-size:14.5px; }
+.profile-steps{ display:flex; flex-direction:column; gap:6px; }
+.profile-step.is-done{ display:flex; align-items:center; gap:10px; padding:2px 2px; font-size:12.5px; color:var(--ink-soft); }
+.profile-step-link{
+  display:flex; align-items:center; gap:10px; padding:9px 10px;
+  border:1px solid var(--line); border-radius:var(--r-sm);
+  font-size:12.5px; font-weight:500; color:var(--ink); transition:border-color .12s ease, background .12s ease;
+}
+.profile-step-link:hover{ border-color:var(--primary-soft-line); background:var(--primary-soft); }
+.profile-step-dot{ width:14px; height:14px; border-radius:50%; border:1.5px solid var(--line); flex-shrink:0; }
+.profile-step-chev{ color:var(--faint); flex-shrink:0; }
+
+/* ---- Initiative card ----
+   Clean-card pass (LeetCode/HackerRank-style): generous padding, few rows,
+   one accent colour that shows up exactly twice — the purpose label and the
+   progress bar. Everything not needed to decide "is this worth a click" —
+   area tags, mode as its own row — was cut; the rest breathes instead. The
+   action link's ::after covers the whole card so the card itself is the
+   click target (bookmark sits above it, own z-index). */
 .init-card{
-  height:242px;
-  box-sizing:border-box;
-  border:1px solid var(--line); border-radius:0; background:var(--surface); overflow:hidden;
-  display:flex; flex-direction:column; transition:box-shadow .12s ease, transform .12s ease; cursor:pointer;
+  --purpose:#2563eb;
+  position:relative; box-sizing:border-box; display:flex; flex-direction:column; gap:10px;
+  min-width:0; padding:18px;
+  border:1px solid var(--line); border-radius:var(--r); background:var(--surface);
+  transition:box-shadow .15s ease, border-color .15s ease, transform .15s ease;
 }
-.init-card:hover{ box-shadow:var(--sh); transform:translateY(-1px); }
-.init-cover{
-  height:56px; display:flex; align-items:center; padding:0 14px;
-  position:relative;
-}
-/* In the prototype this button carries no class that sets a border — it
-   reads as a button at all only because the browser's native <button>
-   border was never reset there. Tailwind's global preflight (loaded for
-   the marketing site) DOES reset it, so without an explicit border here the
-   port has just a bare floating icon with no visible affordance. Declaring
-   it outright, rather than depending on an un-reset native default, is more
-   reliable anyway — it can't vary by browser. */
+.init-card:hover{ box-shadow:var(--sh); border-color:var(--faint); transform:translateY(-1px); }
+.init-card.p-competing{ --purpose:#2563eb; }
+.init-card.p-learning{ --purpose:#0f9c7a; }
+.init-card.p-learncompete{ --purpose:#d9820a; }
+.init-top{ display:flex; align-items:center; gap:8px; min-height:20px; padding-right:26px; }
+.init-tag{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--purpose); }
 .save-btn{
   all:revert;
+  position:absolute; top:16px; right:16px; z-index:2;
   width:28px; height:28px; flex-shrink:0; display:grid; place-items:center;
   border-radius:50%; border:1px solid var(--line); background:var(--surface);
   cursor:pointer; padding:0; transition:border-color .12s ease, background .12s ease;
@@ -477,35 +517,51 @@ ul{ margin:0; padding:0; list-style:none; }
 .save-btn svg{ color:var(--faint); }
 .save-btn.is-saved{ border-color:var(--primary-soft-line); background:var(--primary-soft); }
 .save-btn.is-saved svg{ color:var(--primary); fill:var(--primary); }
-.init-cover .icon-chip{ background:rgba(255,255,255,.9); }
-/* Solid cover colours — no gradients */
-.c-competing{ background:#3557d6; }
-.c-learning{ background:#0f9c7a; }
-.c-learncompete{ background:#d9820a; }
-.init-body{ padding:14px 16px 14px; display:flex; flex-direction:column; flex:1; box-sizing:border-box; overflow:hidden; }
 .init-name{
-  font-weight:700; font-size:14px; line-height:1.3;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-  overflow:hidden; height:36px;
+  font-weight:700; font-size:15px; line-height:1.35; min-height:41px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
-.init-org{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.init-meta{ display:flex; flex-wrap:nowrap; gap:6px; overflow:hidden; height:24px; }
-.init-main-content{ display:flex; flex-direction:column; gap:6px; }
-.init-bottom-section{ margin-top:auto; display:flex; flex-direction:column; justify-content:flex-end; }
-.init-foot{ padding-top:10px; border-top:1px solid var(--line-soft); display:flex; align-items:center; justify-content:space-between; }
-.init-arrow-btn{
-  width:28px; height:28px; border-radius:50%;
-  color:#fff;
-  display:grid; place-items:center; flex-shrink:0; cursor:pointer;
-  transition:transform .15s ease, filter .15s ease, box-shadow .15s ease;
-  text-decoration:none; border:none;
-  box-shadow:0 1px 2px rgba(0,0,0,0.12);
+.init-org{ font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.init-bottom-section{ margin-top:auto; padding-top:2px; display:flex; flex-direction:column; gap:12px; }
+.init-progress-block .pbar{ height:4px; }
+.init-progress-block .pbar i{ background:var(--purpose); }
+.init-foot{ padding-top:12px; border-top:1px solid var(--line-soft); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.init-when{ display:flex; gap:4px; min-width:0; font-size:12px; color:var(--muted); }
+.init-when span{ white-space:nowrap; }
+.init-when .truncate{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.init-act{
+  display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 14px; flex-shrink:0;
+  border:1px solid var(--line); border-radius:var(--r-pill); background:var(--surface);
+  font-size:12.5px; font-weight:600; color:var(--ink); text-decoration:none;
 }
-.init-arrow-btn:hover{
-  transform:scale(1.08);
-  filter:brightness(1.1);
-  box-shadow:0 2px 5px rgba(0,0,0,0.2);
-  color:#fff;
+.init-act::after{ content:""; position:absolute; inset:0; z-index:1; }
+.init-card:hover .init-act, .init-act:focus-visible{ background:var(--primary); border-color:var(--primary); color:#fff; }
+
+/* ---- Home: overview strip ---- */
+.dash-home{ display:flex; flex-direction:column; gap:28px; min-width:0; }
+.dash-stats{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); background:var(--surface); border:1px solid var(--line); border-radius:var(--r-sm); }
+.dash-stat{
+  all:revert; box-sizing:border-box; display:flex; align-items:center; gap:12px; min-width:0;
+  padding:14px 16px; border:0; border-left:1px solid var(--line-soft); background:none;
+  font-family:inherit; color:inherit; text-align:left; cursor:pointer;
+}
+.dash-stat:first-child{ border-left:0; }
+.dash-stat:hover{ background:var(--canvas); }
+.dash-stat-text{ display:flex; flex-direction:column; min-width:0; }
+.dash-stat-line{ display:flex; align-items:baseline; gap:8px; }
+.dash-stat-line b{ font-size:22px; font-weight:700; line-height:1.1; font-variant-numeric:tabular-nums; }
+.dash-stat-line span{ font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dash-stat small{ font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* narrow cells: value above label, and let the label wrap rather than truncate */
+@media (max-width:1180px){
+  .dash-stat-line{ flex-direction:column; gap:0; }
+  .dash-stat-line span, .dash-stat small{ white-space:normal; }
+}
+@media (max-width:720px){
+  .dash-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dash-stat{ padding:12px; gap:10px; }
+  .dash-stat:nth-child(3){ border-left:0; }
+  .dash-stat:nth-child(n+3){ border-top:1px solid var(--line-soft); }
 }
 
 /* ---- Tabs ---- */
@@ -806,3 +862,58 @@ hr.sep{ border:none; border-top:1px solid var(--line-soft); margin:16px 0; }
 }
 }
 
+
+
+/* ============================================================= THEME SWITCH */
+.theme-seg{ display:inline-flex; padding:2px; gap:2px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--canvas); }
+.theme-seg button{
+  all:revert; box-sizing:border-box; width:28px; height:24px; display:grid; place-items:center;
+  border:0; border-radius:4px; background:none; color:var(--muted); cursor:pointer;
+}
+.theme-seg button:hover{ color:var(--ink); }
+.theme-seg button[aria-pressed="true"]{ background:var(--surface); color:var(--primary); box-shadow:var(--sh-sm); }
+
+/* ================================================================ DARK MODE
+   Tokens are redefined, never re-authored per component. The second block
+   re-points the Tailwind theme variables the JSX utilities read
+   (text-dash-ink, border-paper-line, text-signal…) so views not built on
+   proto.css follow along. Hex/`bg-white` utilities that can't be re-pointed
+   get an explicit override below. */
+:root[data-dash-theme="dark"] .dash-root{
+  color-scheme:dark;
+  --canvas:#0e1220; --surface:#161b2e; --surface-raised:#1b2136;
+  --ink:#e8ebf5; --ink-soft:#c5cadb; --muted:#9aa1b6; --faint:#6f768c;
+  --line:#272e47; --line-soft:#1f2540;
+  --primary:#4d78ef; --primary-dark:#8aa7f7; --primary-soft:#1c2748; --primary-soft-line:#2c3d70;
+  --navy:#0a0e1c;
+  --ok:#34c987; --ok-soft:#133226; --warn:#f0a03a; --warn-soft:#3a2a12;
+  --danger:#f0607f; --danger-soft:#3a1822; --info:#7c9df5; --info-soft:#1c2748;
+  --violet:#a78bf5; --violet-soft:#2a2050; --pink:#ee78ad; --pink-soft:#3a1c2e; --teal:#2fc2bf; --teal-soft:#123433;
+  --chip-blue-bg:#1c2748; --chip-blue-fg:#8aa7f7;
+  --chip-purple-bg:#2a2050; --chip-purple-fg:#b7a1f7;
+  --chip-amber-bg:#3a2a12; --chip-amber-fg:#f0a03a;
+  --chip-green-bg:#133226; --chip-green-fg:#34c987;
+  --chip-pink-bg:#3a1c2e; --chip-pink-fg:#ee78ad;
+  --chip-slate-bg:#232a44; --chip-slate-fg:#aeb5c9;
+  --sh-sm:0 1px 2px rgba(0,0,0,.4);
+  --sh:0 1px 2px rgba(0,0,0,.3), 0 10px 24px -14px rgba(0,0,0,.6);
+  --sh-lg:0 16px 40px -16px rgba(0,0,0,.7);
+
+  --color-dash-ink:#e8ebf5; --color-dash-muted:#9aa1b6; --color-dash-faint:#6f768c;
+  --color-dash-line:#272e47; --color-dash-line-soft:#1f2540; --color-dash-bg:#161b2e; --color-dash-bg-soft:#131829;
+  --color-dash-ok:#34c987; --color-dash-ok-soft:#133226; --color-dash-warn:#f0a03a; --color-dash-warn-soft:#3a2a12;
+  --color-dash-live:#f28b7d; --color-dash-live-bg:#3a1c1c;
+  --color-paper:#0e1220; --color-paper-raised:#161b2e; --color-paper-line:#272e47;
+  --color-graphite:#c5cadb; --color-graphite-dim:#9aa1b6; --color-ink-900:#e8ebf5;
+  --color-signal:#4d78ef; --color-signal-dark:#8aa7f7; --color-signal-soft:#1c2748;
+
+  .init-card.p-competing{ --purpose:#6c97f2; }
+  .init-card.p-learning{ --purpose:#2fc4a1; }
+  .init-card.p-learncompete{ --purpose:#f0a03a; }
+  .bg-white{ background-color:var(--surface); }
+  .border-white{ border-color:var(--surface); }
+  .bg-ink-900{ background-color:var(--line); }
+  .bg-ink-900\/40{ background-color:rgba(0,0,0,.6); }
+  .bg-\[\#e7f6ee\]{ background-color:var(--ok-soft); }
+  .hover\:bg-\[\#fff0f0\]:hover{ background-color:var(--danger-soft); }
+}

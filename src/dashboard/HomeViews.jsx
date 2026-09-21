@@ -21,6 +21,9 @@ function EmptyState({ ico, title, msg, cta }) {
   )
 }
 
+/* One row of cards. Columns come from CSS (.dash-cards-row); this only works
+   out how many fit so the row shows exactly that many. On phones the row is a
+   swipe strip (CSS), so it gets a few more. */
 function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
   const containerRef = useRef(null)
   const [cols, setCols] = useState(3)
@@ -28,12 +31,10 @@ function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
+    const phone = window.matchMedia('(max-width: 720px)')
     const update = () => {
       const w = el.clientWidth
-      if (w > 0) {
-        const calculated = Math.max(1, Math.floor((w + gap) / (minColWidth + gap)))
-        setCols(calculated)
-      }
+      if (w > 0) setCols(phone.matches ? 6 : Math.max(1, Math.floor((w + gap) / (minColWidth + gap))))
     }
     update()
     const ro = new ResizeObserver(update)
@@ -41,47 +42,18 @@ function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
     return () => ro.disconnect()
   }, [minColWidth, gap])
 
-  const visible = items.slice(0, cols)
-
-  return (
-    <div
-      ref={containerRef}
-      className="dash-cards-row"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-        gap: `${gap}px`,
-        width: '100%',
-        boxSizing: 'border-box',
-      }}
-    >
-      {visible.map(renderCard)}
-    </div>
-  )
+  return <div ref={containerRef} className="dash-cards-row">{items.slice(0, cols).map(renderCard)}</div>
 }
 
-function MetricCard({ title, value, subtext, icon, colorClass, bgClass, onClick }) {
+/* title + count + "View all" — shared by every Home section */
+function SectionHeader({ title, count, onViewAll }) {
   return (
-    <div
-      onClick={onClick}
-      className="p-3.5 bg-white border border-dash-line rounded-[6px] shadow-sm hover:shadow-md hover:border-signal/50 transition-all duration-150 cursor-pointer flex flex-col justify-between group"
-      style={{ minHeight: '96px' }}
-    >
-      <div className="flex items-center justify-between">
-        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${bgClass} ${colorClass}`}>
-          <Icon name={icon} size={16} />
-        </span>
-        <span className="text-gray-400 group-hover:text-signal group-hover:translate-x-0.5 transition-all">
-          <Icon name="ArrowRight" size={13} />
-        </span>
+    <div className="card-head">
+      <div className="flex items-center gap-2 min-w-0">
+        <h2>{title}</h2>
+        <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink whitespace-nowrap shrink-0">{count}</span>
       </div>
-      <div className="mt-2.5">
-        <div className="flex items-baseline gap-2">
-          <span className="text-[22px] font-bold text-dash-ink leading-tight font-display">{value}</span>
-          <span className="text-[12.5px] font-semibold text-dash-ink truncate">{title}</span>
-        </div>
-        <p className="text-[11px] text-dash-muted mt-0.5 truncate">{subtext}</p>
-      </div>
+      {onViewAll ? <button type="button" className="link-more" onClick={onViewAll}>View all <Icon name="ArrowRight" size={13} /></button> : null}
     </div>
   )
 }
@@ -94,58 +66,30 @@ export function Home({ st, sv, go }) {
   const buildActive = active.filter(o => o.purpose === 'learncompete')
   const competeActive = active.filter(o => o.purpose === 'competing')
 
-  return (
-    <>
-      {/* KPI Overview Tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <MetricCard
-          title="Total Ongoing"
-          value={active.length}
-          subtext="All active tracks"
-          icon="Activity"
-          colorClass="text-[#2563eb]"
-          bgClass="bg-blue-50"
-          onClick={() => go('activity')}
-        />
-        <MetricCard
-          title="Courses Enrolled"
-          value={learnActive.length}
-          subtext="Masterclasses & cohorts"
-          icon="GraduationCap"
-          colorClass="text-[#0f9c7a]"
-          bgClass="bg-emerald-50"
-          onClick={() => go('activity', null, 'learning')}
-        />
-        <MetricCard
-          title="Build Challenges"
-          value={buildActive.length}
-          subtext="Prototypes in dev"
-          icon="Wrench"
-          colorClass="text-[#d9820a]"
-          bgClass="bg-amber-50"
-          onClick={() => go('activity', null, 'learncompete')}
-        />
-        <MetricCard
-          title="Hackathons"
-          value={competeActive.length}
-          subtext="Active competitions"
-          icon="Trophy"
-          colorClass="text-[#7c4dea]"
-          bgClass="bg-purple-50"
-          onClick={() => go('activity', null, 'competing')}
-        />
-      </div>
+  /* shortcuts into My Activity — one strip, not four tiles */
+  const stats = [
+    { title: 'Total Ongoing', value: active.length, subtext: 'All active tracks', icon: 'Activity', chip: 'blue', to: [] },
+    { title: 'Courses Enrolled', value: learnActive.length, subtext: 'Masterclasses & cohorts', icon: 'GraduationCap', chip: 'green', to: [null, 'learning'] },
+    { title: 'Build Challenges', value: buildActive.length, subtext: 'Prototypes in dev', icon: 'Wrench', chip: 'amber', to: [null, 'learncompete'] },
+    { title: 'Hackathons', value: competeActive.length, subtext: 'Active competitions', icon: 'Trophy', chip: 'purple', to: [null, 'competing'] },
+  ]
 
-      <div>
-        <div className="card-head">
-          <div className="flex items-center gap-2">
-            <h2>Continue where you left off</h2>
-            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
-              {active.length} ongoing
+  return (
+    <div className="dash-home">
+      <nav className="dash-stats" aria-label="Overview">
+        {stats.map(s => (
+          <button key={s.title} type="button" className="dash-stat" onClick={() => go('activity', ...s.to)}>
+            <span className={`icon-chip round ${s.chip}`}><Icon name={s.icon} size={16} /></span>
+            <span className="dash-stat-text">
+              <span className="dash-stat-line"><b>{s.value}</b><span>{s.title}</span></span>
+              <small>{s.subtext}</small>
             </span>
-          </div>
-          {active.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('activity')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
-        </div>
+          </button>
+        ))}
+      </nav>
+
+      <section aria-label="Continue where you left off">
+        <SectionHeader title="Continue where you left off" count={`${active.length} ongoing`} onViewAll={active.length ? () => go('activity') : null} />
         {active.length ? (
           <SingleRowGrid
             items={active}
@@ -153,20 +97,12 @@ export function Home({ st, sv, go }) {
           />
         ) : (
           <EmptyState ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
-            cta={<a className="btn btn-primary mt12" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>Explore initiatives <Icon name="ArrowRight" size={14} /></a>} />
+            cta={<button type="button" className="btn btn-primary mt12" onClick={() => go('recommended')}>Explore initiatives <Icon name="ArrowRight" size={14} /></button>} />
         )}
-      </div>
+      </section>
 
-      <div className="mt24">
-        <div className="card-head">
-          <div className="flex items-center gap-2">
-            <h2>Recommended for you</h2>
-            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-dash-line-soft text-dash-ink">
-              {recs.length} available
-            </span>
-          </div>
-          {recs.length ? <a className="link-more" style={{ cursor: 'pointer' }} onClick={() => go('recommended')}>View all <Icon name="ArrowRight" size={13} /></a> : null}
-        </div>
+      <section aria-label="Recommended for you">
+        <SectionHeader title="Recommended for you" count={`${recs.length} available`} onViewAll={recs.length ? () => go('recommended') : null} />
         {recs.length ? (
           <SingleRowGrid
             items={recs}
@@ -175,8 +111,8 @@ export function Home({ st, sv, go }) {
         ) : (
           <EmptyState ico="Sparkles" title="No recommendations available yet" msg="Check back soon for personalized recommendations based on your interests." />
         )}
-      </div>
-    </>
+      </section>
+    </div>
   )
 }
 
