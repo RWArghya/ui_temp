@@ -1112,25 +1112,45 @@ export default function Profile() {
           </span>
         }
       >
-        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Issued automatically the moment an initiative closes — read-only, never editable.
-        </p>
         {earnedCerts.length > 0 ? (
-          earnedCerts.map(o => (
-            <AchRow
-              key={o.id}
-              icon=""
-              title={o.name}
-              subtitle={`${o.org} · Verifiable ID ${o.verifiableId}`}
-              onView={() => navigate(`/profile/certificate/${o.id}`, {
-                state: {
-                  cert: o,
-                  userName: profile.name,
-                  returnTo: { path: '/profile', state: { tab: 'certificates' } },
-                },
-              })}
-            />
-          ))
+          <div className="divide-y divide-paper-line">
+            {earnedCerts.map(o => (
+              <div
+                key={o.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/profile/certificate/${o.id}`, {
+                  state: {
+                    cert: o,
+                    userName: profile.name,
+                    returnTo: { path: '/profile', state: { tab: 'certificates' } },
+                  },
+                })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(`/profile/certificate/${o.id}`, {
+                      state: {
+                        cert: o,
+                        userName: profile.name,
+                        returnTo: { path: '/profile', state: { tab: 'certificates' } },
+                      },
+                    })
+                  }
+                }}
+                className="py-3.5 flex items-center justify-between gap-3 group cursor-pointer hover:bg-paper/60 -mx-3 px-3 rounded-[2px] transition-colors"
+              >
+                <span className="text-[13.5px] font-semibold text-ink-900 group-hover:text-signal transition-colors truncate">
+                  {o.name}
+                </span>
+                <span className="text-graphite-dim group-hover:text-signal group-hover:translate-x-0.5 transition-all text-xs flex-none">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </span>
+              </div>
+            ))}
+          </div>
         ) : (
           <p className="text-[13px] text-graphite-dim py-4">
             Nothing yet — certificates appear automatically when an initiative closes.
