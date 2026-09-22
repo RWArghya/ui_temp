@@ -37,6 +37,7 @@ import EditEducationModal from '../components/profile/EditEducationModal.jsx'
 import EditProjectModal from '../components/profile/EditProjectModal.jsx'
 import EditItemModal from '../components/profile/EditItemModal.jsx'
 import EditCertModal from '../components/profile/EditCertModal.jsx'
+import ViewCertModal from '../components/profile/ViewCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
@@ -170,6 +171,8 @@ export default function Profile() {
   const [editItemModal, setEditItemModal] = useState(null)
   // editCertModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editCertModal, setEditCertModal] = useState(null)
+  // viewCertModal: cert object | null — read-only view modal for self-added certs
+  const [viewCertModal, setViewCertModal] = useState(null)
   // editLinkModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editLinkModal, setEditLinkModal] = useState(null)
   // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
@@ -1000,7 +1003,7 @@ export default function Profile() {
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Credentials and certificates earned from external organizations and learning platforms.
+        Certificates earned from external organizations
       </p>
       {(() => {
         const sortedSelfCerts = [...(profile.selfCerts ?? [])].sort((a, b) => {
@@ -1014,81 +1017,53 @@ export default function Profile() {
         return sortedSelfCerts.length > 0 ? (
           <div className="mt-4 divide-y divide-paper-line">
             {sortedSelfCerts.map(c => (
-            <div key={c.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
-              <div className="flex items-start gap-3 min-w-0">
-                <span className="text-[20px] flex-none mt-0.5">📜</span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
-                      {c.title}
-                    </h4>
+            <div
+              key={c.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setViewCertModal(c)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewCertModal(c) } }}
+              className="py-3.5 first:pt-1 last:pb-1 flex items-start gap-3 group cursor-pointer hover:bg-paper/60 -mx-3 px-3 rounded-[2px] transition-colors"
+            >
+              <span className="text-[20px] flex-none mt-0.5">📜</span>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                  {c.title}
+                </h4>
+
+                {(c.org || c.issueDate || c.date) && (
+                  <p className="text-[12.5px] text-graphite-dim mt-0.5">
+                    {[c.org, c.issueDate || c.date].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+
+                {(c.photo || c.proofUrl) && (
+                  <div
+                    className="mt-2 rounded-[2px] border border-paper-line overflow-hidden w-20 h-14 bg-paper"
+                    title="Click to view certificate"
+                  >
+                    <img
+                      src={c.photo || c.proofUrl}
+                      alt={c.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-
-                  {(c.org || c.issueDate || c.date) && (
-                    <p className="text-[12.5px] text-graphite-dim mt-0.5">
-                      {[c.org, c.issueDate || c.date].filter(Boolean).join(' · ')}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-3 mt-1.5 text-[12px] flex-wrap">
-                    {c.link && (
-                      <a
-                        href={c.link.startsWith('http') ? c.link : `https://${c.link}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
-                      >
-                        <span>Credential link ↗</span>
-                      </a>
-                    )}
-                    {(c.photo || c.proofUrl) && (
-                      <button
-                        type="button"
-                        onClick={() => setViewingPhoto({ title: c.title, url: c.photo || c.proofUrl })}
-                        className="text-signal hover:underline inline-flex items-center gap-1 font-medium cursor-pointer"
-                      >
-                        <span>🖼️ View certificate image</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {(c.photo || c.proofUrl) && (
-                    <button
-                      type="button"
-                      onClick={() => setViewingPhoto({ title: c.title, url: c.photo || c.proofUrl })}
-                      className="mt-2 block rounded-[2px] border border-paper-line overflow-hidden w-20 h-14 bg-paper hover:opacity-90 cursor-pointer"
-                      title="Click to view certificate photo"
-                    >
-                      <img
-                        src={c.photo || c.proofUrl}
-                        alt={c.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-1.5 flex-none">
-                <button
-                  type="button"
-                  onClick={() => setEditCertModal({ mode: 'edit', item: c })}
-                  className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-                  title={`Edit ${c.title}`}
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                    <path d="m15 5 4 4" />
-                  </svg>
-                </button>
-              </div>
+              {/* Chevron hint */}
+              <span className="text-graphite-dim group-hover:text-signal group-hover:translate-x-0.5 transition-all flex-none mt-1">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </span>
             </div>
           ))}
         </div>
       ) : (
         <div className="py-8 text-center">
           <p className="text-[14px] text-graphite-dim">No certificates added yet.</p>
-          <p className="text-[12px] text-graphite-dim mt-1.5">Add external licenses or certificates you have earned.</p>
+          <p className="text-[12px] text-graphite-dim mt-1.5">Add external certificates you have earned.</p>
           <button
             type="button"
             onClick={() => setEditCertModal({ mode: 'add', item: null })}
@@ -1113,7 +1088,7 @@ export default function Profile() {
         }
       >
         {earnedCerts.length > 0 ? (
-          <div className="divide-y divide-paper-line">
+          <div className="mt-4 divide-y divide-paper-line">
             {earnedCerts.map(o => (
               <div
                 key={o.id}
@@ -1568,6 +1543,16 @@ export default function Profile() {
             requestDelete(field, idToDelete, label || (editItemModal.type === 'publication' ? 'Publication' : 'Achievement'))
           }}
           onClose={() => setEditItemModal(null)}
+        />
+      )}
+
+      {/* View (read-only) Self-Added Certificate Modal */}
+      {viewCertModal && (
+        <ViewCertModal
+          isOpen={!!viewCertModal}
+          cert={viewCertModal}
+          onEdit={(cert) => setEditCertModal({ mode: 'edit', item: cert })}
+          onClose={() => setViewCertModal(null)}
         />
       )}
 
