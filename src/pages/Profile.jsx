@@ -1247,11 +1247,15 @@ export default function Profile() {
       {/* Badges */}
       <SectionCard title="Badges">
         {badges.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          <div className="flex flex-wrap gap-3 mt-4">
             {badges.map(b => (
-              <div key={b.id} className="text-center border border-paper-line rounded-[2px] p-3.5">
-                <div className="text-[20px]">{b.ico}</div>
-                <p className="text-[11px] text-graphite-dim mt-2">{b.label}</p>
+              <div
+                key={b.id}
+                className="w-24 h-28 flex flex-col items-center justify-center gap-2 border border-paper-line rounded-[4px] bg-paper hover:border-signal/40 hover:bg-signal-soft/20 transition-colors flex-none"
+                title={b.label}
+              >
+                <span className="text-[28px] leading-none">{b.ico}</span>
+                <p className="text-[10.5px] text-graphite-dim font-medium text-center leading-tight px-2 w-full break-words">{b.label}</p>
               </div>
             ))}
           </div>
