@@ -22,6 +22,10 @@ import SectionCard from '../components/profile/SectionCard.jsx'
 import Pill from '../components/profile/Pill.jsx'
 import KVRow from '../components/profile/KVRow.jsx'
 import Modal from '../components/profile/Modal.jsx'
+import IconChip from '../components/profile/IconChip.jsx'
+import '../dashboard/proto.css'
+import Button from '../components/profile/Button.jsx'
+import Icon from '../dashboard/Icon.jsx'
 import TimelineItem from '../components/profile/TimelineItem.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
 /* ---- TEAMMATE BOUNDARY END ---- */
@@ -33,7 +37,7 @@ const TABS = [
   { key: 'education',     label: 'Education'     },
   { key: 'projects',      label: 'Projects'      },
   { key: 'certificates',  label: 'Certificates'  },
-  { key: 'links',         label: 'Links'         },
+  { key: 'accounts',      label: 'Accounts'      },
   { key: 'rewards',       label: 'Rewards'       },
 ]
 
@@ -112,7 +116,7 @@ export default function ProfilePreview() {
       {/* About */}
       {profile.about && (
         <SectionCard title="About">
-          <p className="mt-3 text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
+          <p className="text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
             {profile.about}
           </p>
         </SectionCard>
@@ -122,8 +126,8 @@ export default function ProfilePreview() {
 
       {/* Skills & Domains */}
       {((profile.skills && profile.skills.length > 0) || (profile.domains && profile.domains.length > 0)) && (
-        <SectionCard title="Skills & Domains">
-          <div className="mt-3 space-y-3">
+        <SectionCard title="Skills & domains">
+          <div className="space-y-3">
             {profile.skills && profile.skills.length > 0 && (
               <div>
                 <span className="text-[11px] font-mono uppercase text-graphite-dim font-medium tracking-wider">
@@ -154,8 +158,8 @@ export default function ProfilePreview() {
       )}
 
       {/* Personal Details Card at the very bottom */}
-      <SectionCard title="Personal Details">
-        <div className="mt-3 space-y-0">
+      <SectionCard title="Personal details">
+        <div className="space-y-0">
           {[
             { label: 'Full Name', value: profile.name },
             { label: 'Headline', value: profile.headline },
@@ -179,19 +183,13 @@ export default function ProfilePreview() {
   const journeyTimeline = buildPlatformJourney(profile, initiatives, 'recent')
   const JourneyTab = (
     <div className="space-y-4">
-      <SectionCard
-        title="Your Platform Journey"
-        action={
-          <span className="text-[11px] font-mono text-graphite-dim font-medium bg-paper border border-paper-line px-2 py-0.5 rounded-[2px] inline-flex items-center gap-1">
-            <span>⚡</span> Most recent on top
-          </span>
-        }
-      >
-        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Verified platform journey — ordered with most recent milestones and active initiatives at the top, down to profile creation at the bottom.
+      <SectionCard title="Journey">
+        <p className="text-[13px] text-graphite-dim mt-1 mb-5">
+          Verified platform journey, newest first — from the most recent milestones and
+          active initiatives down to profile creation.
         </p>
         {journeyTimeline.length > 0 ? (
-          <div className="relative pl-6 before:content-[''] before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-paper-line space-y-1">
+          <div className="relative pl-6 before:content-[''] before:absolute before:left-[4px] before:top-[10px] before:bottom-[10px] before:w-[2px] before:bg-paper-line">
             {journeyTimeline.map(item => (
               <TimelineItem
                 key={item.id}
@@ -199,11 +197,12 @@ export default function ProfilePreview() {
                 title={item.title}
                 subtitle={item.subtitle}
                 date={item.date}
+                icon={item.icon}
               />
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No platform journey milestones recorded yet.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No platform journey milestones recorded yet.</p>
         )}
       </SectionCard>
     </div>
@@ -214,7 +213,7 @@ export default function ProfilePreview() {
     <div className="space-y-4">
       <SectionCard title="Education">
         {profile.education && profile.education.length > 0 ? (
-          <div className="mt-3 space-y-3">
+          <div className="space-y-3">
             {[...profile.education]
               .sort((a, b) => {
                 if (a.isOngoing && !b.isOngoing) return -1
@@ -241,7 +240,7 @@ export default function ProfilePreview() {
               })}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No education history listed.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No education history listed.</p>
         )}
       </SectionCard>
     </div>
@@ -250,9 +249,9 @@ export default function ProfilePreview() {
   // 4. PROJECTS
   const ProjectsTab = (
     <div className="space-y-4">
-      <SectionCard title="Featured Projects">
+      <SectionCard title="Projects">
         {publicProjects.length > 0 ? (
-          <div className="mt-3 space-y-3">
+          <div className="space-y-3">
             {publicProjects.map(p => (
               <div
                 key={p.id}
@@ -268,7 +267,7 @@ export default function ProfilePreview() {
                         rel="noopener noreferrer"
                         className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
                       >
-                        <span>Source ↗</span>
+                        <span>Source</span><Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                       </a>
                     )}
                     {p.liveLink && (
@@ -278,7 +277,7 @@ export default function ProfilePreview() {
                         rel="noopener noreferrer"
                         className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
                       >
-                        <span>Live demo ↗</span>
+                        <span>Live demo</span><Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                       </a>
                     )}
                     {p.docsLink && (
@@ -288,7 +287,7 @@ export default function ProfilePreview() {
                         rel="noopener noreferrer"
                         className="text-signal hover:underline inline-flex items-center gap-0.5 font-medium"
                       >
-                        <span>Docs ↗</span>
+                        <span>Docs</span><Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                       </a>
                     )}
                   </div>
@@ -316,14 +315,14 @@ export default function ProfilePreview() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No public projects shared yet.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No public projects shared yet.</p>
         )}
       </SectionCard>
 
       {/* Publications */}
       {publicPubs.length > 0 && (
-        <SectionCard title="Publications & Research">
-          <div className="mt-3 divide-y divide-paper-line">
+        <SectionCard title="Publications">
+          <div className="divide-y divide-paper-line">
             {publicPubs.map(pub => (
               <div key={pub.id} className="py-2.5 first:pt-0 last:pb-0">
                 <div className="flex items-center justify-between gap-2">
@@ -335,7 +334,7 @@ export default function ProfilePreview() {
                       rel="noopener noreferrer"
                       className="text-[11.5px] text-signal hover:underline whitespace-nowrap font-medium"
                     >
-                      Paper ↗
+                      <span className="inline-flex items-center gap-1">Paper <Icon name="ExternalLink" size={11} className="flex-none opacity-80" /></span>
                     </a>
                   )}
                 </div>
@@ -356,7 +355,7 @@ export default function ProfilePreview() {
   const CertificatesTab = (
     <div className="space-y-4">
       {/* Verified Hack2skill Certificates */}
-      <SectionCard title="Verified Hack2skill Certificates">
+      <SectionCard title="Verified certificates">
         <p className="text-[13px] text-graphite-dim mt-1 mb-3">
           Earned credentials verified cryptographically and issued by Hack2skill.
         </p>
@@ -391,12 +390,9 @@ export default function ProfilePreview() {
                     title="View certificate"
                     aria-label="View certificate"
                   >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
+                    <Icon name="Eye" size={14} />
                   </button>
-                  <span className="text-xl">🏆</span>
+                  <IconChip name="BadgeCheck" tone="green" size="sm" />
                 </div>
               </div>
             ))}
@@ -408,12 +404,12 @@ export default function ProfilePreview() {
 
       {/* External Certifications & Honors */}
       {(publicAchievements.length > 0 || publicSelfCerts.length > 0) && (
-        <SectionCard title="Honors & External Certifications">
-          <div className="mt-3 divide-y divide-paper-line">
+        <SectionCard title="Other certificates">
+          <div className="divide-y divide-paper-line">
             {publicAchievements.map(a => (
               <div key={a.id} className="py-2.5 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[14px]">🏅</span>
+                  <Icon name="Trophy" size={15} className="text-dash-warn flex-none" />
                   <span className="text-[13px] font-bold text-ink-900">{a.title}</span>
                 </div>
                 {a.description && (
@@ -427,7 +423,7 @@ export default function ProfilePreview() {
               <div key={sc.id} className="py-2.5 first:pt-0 last:pb-0">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[14px]">📜</span>
+                    <Icon name="Award" size={15} className="text-graphite flex-none" />
                     <span className="text-[13px] font-bold text-ink-900">{sc.title}</span>
                   </div>
                   <div className="flex items-center gap-3 text-[11.5px]">
@@ -438,7 +434,7 @@ export default function ProfilePreview() {
                         rel="noopener noreferrer"
                         className="text-signal hover:underline whitespace-nowrap font-medium"
                       >
-                        Verify ↗
+                        <span className="inline-flex items-center gap-1">Verify <Icon name="ExternalLink" size={11} className="flex-none opacity-80" /></span>
                       </a>
                     )}
                     {(sc.photo || sc.proofUrl) && (
@@ -447,7 +443,7 @@ export default function ProfilePreview() {
                         onClick={() => setViewingPhoto({ title: sc.title, url: sc.photo || sc.proofUrl })}
                         className="text-signal hover:underline whitespace-nowrap font-medium cursor-pointer inline-flex items-center gap-0.5"
                       >
-                        <span>View certificate ↗</span>
+                        <span>View certificate</span><Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                       </button>
                     )}
                   </div>
@@ -480,10 +476,10 @@ export default function ProfilePreview() {
   )
 
   // 6. LINKS
-  const LinksTab = (
+  const AccountsTab = (
     <div className="space-y-4">
-      <SectionCard title="Connected Profiles">
-        <div className="mt-3 divide-y divide-paper-line">
+      <SectionCard title="Connected accounts">
+        <div className="divide-y divide-paper-line">
           {publicLinks.length > 0 ? (
             publicLinks.map(item => (
               <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
@@ -495,7 +491,7 @@ export default function ProfilePreview() {
                   className="text-[12.5px] text-signal hover:underline inline-flex items-center gap-1 truncate max-w-[240px] sm:max-w-xs"
                 >
                   <span className="truncate">{item.url?.replace(/^https?:\/\//i, '')}</span>
-                  <span className="text-[12px]">↗</span>
+                  <Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                 </a>
               </div>
             ))
@@ -510,26 +506,26 @@ export default function ProfilePreview() {
   // 7. REWARDS
   const RewardsTab = (
     <div className="space-y-4">
-      <SectionCard title="Earned Badges">
+      <SectionCard title="Badges">
         {badges.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {badges.map(b => (
               <div
                 key={b.id}
                 className="p-3.5 border border-paper-line rounded-[2px] bg-paper text-center flex flex-col items-center justify-center"
               >
-                <div className="text-3xl mb-1.5">{b.ico}</div>
+                <IconChip name={b.ico} tone="blue" size="lg" className="mb-1.5" />
                 <strong className="text-[12.5px] text-ink-900 font-semibold">{b.label}</strong>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No badges earned yet.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No badges earned yet.</p>
         )}
       </SectionCard>
 
-      <SectionCard title="Credit Points">
-        <div className="flex items-center gap-3 mt-3">
+      <SectionCard title="Credit points">
+        <div className="flex items-center gap-3">
           <strong className="text-[26px] text-ink-900">{credits}</strong>
           <span className="text-[14px] text-graphite-dim">credits</span>
         </div>
@@ -546,7 +542,7 @@ export default function ProfilePreview() {
     education:     EducationTab,
     projects:      ProjectsTab,
     certificates:  CertificatesTab,
-    links:         LinksTab,
+    accounts:      AccountsTab,
     rewards:       RewardsTab,
   }
 
@@ -562,23 +558,30 @@ export default function ProfilePreview() {
               onClick={() => navigate('/profile', { state: { profile, avatar, initiatives } })}
               className="inline-flex items-center gap-1.5 font-semibold text-signal hover:underline cursor-pointer"
             >
-              ← Back to profile editor
+              <Icon name="ArrowLeft" size={14} /> Back to profile editor
             </button>
             <span className="text-graphite-dim">|</span>
             <span className="text-graphite-dim">
-              Previewing visitor view ({profile.isPublic ? '🌐 Public Mode' : '🔒 Locked / Private Mode'})
+              Previewing visitor view (
+              <span className="inline-flex items-center gap-1 align-middle">
+                <Icon name={profile.isPublic ? 'Globe' : 'Lock'} size={12} />
+                {profile.isPublic ? 'Public Mode' : 'Locked / Private Mode'}
+              </span>
+              )
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
               id="btn-copy-preview-link"
-              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleCopy}
-              className="px-2.5 py-1 text-[11.5px] font-medium border border-paper-line rounded-[2px] bg-white hover:border-signal cursor-pointer"
             >
-              {copied ? '✓ Copied URL' : 'Copy link'}
-            </button>
+              {copied
+                ? <span className="inline-flex items-center gap-1"><Icon name="Check" size={12} /> Copied URL</span>
+                : 'Copy link'}
+            </Button>
           </div>
         </div>
       </header>
@@ -590,7 +593,7 @@ export default function ProfilePreview() {
             ? 'bg-dash-warn-soft border-dash-warn/30 text-dash-warn'
             : 'bg-signal-soft border-signal/25 text-signal-dark'
         }`}>
-          <span className="text-base leading-none">{isLocked ? '🔒' : '👁️'}</span>
+          <Icon name={isLocked ? 'Lock' : 'Eye'} size={16} className="flex-none mt-px" />
           <div>
             <strong>{isLocked ? 'Profile is currently Private (Locked)' : 'Public Profile Active'}</strong>
             <p className="mt-0.5 opacity-90 text-[12px]">
@@ -626,7 +629,9 @@ export default function ProfilePreview() {
                 {profile.org ? <> · {profile.org}</> : null}
               </p>
               {profile.region && (
-                <p className="text-[12px] text-graphite-dim mt-1">📍 {profile.region}</p>
+                <p className="text-[12px] text-graphite-dim mt-1 inline-flex items-center gap-1">
+                  <Icon name="MapPin" size={12} /> {profile.region}
+                </p>
               )}
             </div>
 
@@ -651,8 +656,8 @@ export default function ProfilePreview() {
         {isLocked ? (
           <SectionCard>
             <div className="py-10 text-center space-y-3">
-              <div className="w-14 h-14 bg-paper rounded-full flex items-center justify-center text-2xl mx-auto border border-paper-line">
-                🔒
+              <div className="w-14 h-14 bg-paper rounded-full flex items-center justify-center mx-auto border border-paper-line text-graphite-dim">
+                <Icon name="Lock" size={24} />
               </div>
               <h2 className="text-[17px] font-display font-bold text-ink-900">
                 {profile.name}&apos;s profile is private
@@ -685,7 +690,6 @@ export default function ProfilePreview() {
         <Modal
           isOpen={!!viewingPhoto}
           title={viewingPhoto.title || 'Certificate document'}
-          subtitle="Certificate image or credential scan."
           onClose={() => setViewingPhoto(null)}
           maxWidth="max-w-2xl"
         >
@@ -698,13 +702,7 @@ export default function ProfilePreview() {
               />
             </div>
             <div className="mt-4 flex items-center justify-end w-full pt-3 border-t border-paper-line">
-              <button
-                type="button"
-                onClick={() => setViewingPhoto(null)}
-                className="px-5 py-1.5 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
-              >
-                Close
-              </button>
+              <Button variant="primary" onClick={() => setViewingPhoto(null)}>Close</Button>
             </div>
           </div>
         </Modal>

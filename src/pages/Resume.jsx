@@ -15,12 +15,16 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile.js'
 import ResumeCustomizer from '../components/profile/ResumeCustomizer.jsx'
 import { generateLatexResume, downloadLatexFile } from '../utils/latexGenerator.js'
+import Icon from '../dashboard/Icon.jsx'
+import '../dashboard/proto.css'
+import PageToolbar from '../components/profile/PageToolbar.jsx'
+import SaveMenu from '../components/profile/SaveMenu.jsx'
+import Button from '../components/profile/Button.jsx'
 
 export default function Resume() {
   const navigate = useNavigate()
   const location = useLocation()
   const resumeRef = useRef(null)
-  const saveDropdownRef = useRef(null)
 
   // Use passed state if available, else fetch via hook
   const { profile: fetchedProfile, initiatives } = useProfile()
@@ -43,24 +47,6 @@ export default function Resume() {
 
   // View mode: default to 'preview' (per user requirement)
   const [viewMode, setViewMode] = useState('preview')
-  // Dropdown state for Save button (PDF / LaTeX)
-  const [saveDropdownOpen, setSaveDropdownOpen] = useState(false)
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (saveDropdownRef.current && !saveDropdownRef.current.contains(event.target)) {
-        setSaveDropdownOpen(false)
-      }
-    }
-    if (saveDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [saveDropdownOpen])
-
   // Initialize customItems if not provided in location.state
   useEffect(() => {
     if (profile && (!config.customItems || Object.keys(config.customItems).length === 0)) {
@@ -100,7 +86,7 @@ export default function Resume() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center p-8">
+      <div className="doc-root min-h-screen bg-paper flex items-center justify-center p-8">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-signal border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-[13px] text-graphite-dim">Loading profile and resume builder...</p>
@@ -122,8 +108,18 @@ export default function Resume() {
   // If in customize mode, show the configuration and reorder card screen
   if (viewMode === 'customize') {
     return (
-      <div className="min-h-screen bg-paper pb-20">
-        <div className="max-w-[800px] mx-auto px-3 sm:px-4 pt-6">
+      <div className="doc-root min-h-screen bg-paper pb-20">
+        <PageToolbar
+          onBack={() => setViewMode('preview')}
+          backLabel="Resume"
+          title="Edit layout"
+          maxWidth="max-w-[800px]"
+        >
+          <Button variant="primary" onClick={() => setViewMode('preview')}>
+            <Icon name="Check" size={14} /> Done
+          </Button>
+        </PageToolbar>
+        <div className="max-w-[800px] mx-auto px-4 sm:px-6 pt-6">
           <ResumeCustomizer
             profile={profile}
             initiatives={inits}
@@ -159,7 +155,7 @@ export default function Resume() {
     })
 
   return (
-    <div className="min-h-screen bg-[#525659] text-[#111] antialiased pb-20">
+    <div className="doc-root min-h-screen bg-paper text-ink-900 antialiased pb-20">
       {/* ── Print & Font Style Tag (Times New Roman throughout) ── */}
       <style>{`
         .resume-sheet {
@@ -207,93 +203,31 @@ export default function Resume() {
         }
       `}</style>
 
-      {/* ── Top Floating Toolbar (Hidden when printing) ── */}
-      <div className="no-print sticky top-0 z-40 bg-[#323639] border-b border-[#212529] px-4 py-2.5 shadow-md text-white font-sans">
-        <div className="max-w-[800px] mx-auto flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2.5">
-            <button
-              id="btn-edit-structure"
-              type="button"
-              onClick={() => setViewMode('customize')}
-              className="inline-flex items-center gap-1 px-3.5 py-1.5 text-[12px] font-semibold rounded-[3px] bg-[#424649] hover:bg-[#4f5357] text-gray-100 transition-colors cursor-pointer"
-            >
-              Edit
-            </button>
-            <button
-              id="btn-back-to-profile"
-              type="button"
-              onClick={() => navigate('/profile')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium rounded-[3px] bg-[#424649] hover:bg-[#4f5357] text-gray-100 transition-colors cursor-pointer"
-            >
-              Profile
-            </button>
-            <span className="text-[11.5px] text-gray-400 hidden sm:inline ml-1">
-              FAANG Standard 11pt Template
-            </span>
-          </div>
-
-          {/* ── Single Save Button with Dropdown ── */}
-          <div className="relative inline-block text-left" ref={saveDropdownRef}>
-            <button
-              id="btn-save-dropdown"
-              type="button"
-              onClick={() => setSaveDropdownOpen(prev => !prev)}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-semibold rounded-[3px] bg-signal hover:bg-signal-dark text-white transition-colors shadow-sm cursor-pointer"
-            >
-              <span>Save</span>
-              <svg
-                className={`w-3.5 h-3.5 transition-transform duration-150 ${saveDropdownOpen ? 'rotate-180' : ''}`}
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-
-            {saveDropdownOpen && (
-              <div className="absolute right-0 mt-1.5 w-44 rounded-[4px] bg-white shadow-xl border border-gray-200 py-1 z-50 text-ink-900 font-sans animate-in fade-in zoom-in-95 duration-100">
-                <button
-                  id="btn-save-pdf"
-                  type="button"
-                  onClick={() => {
-                    setSaveDropdownOpen(false)
-                    handlePrint()
-                  }}
-                  className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
-                >
-                  <span className="text-[14px]">📄</span>
-                  <div>
-                    <div className="font-semibold text-[12px] text-ink-900">PDF</div>
-                    <div className="text-[10px] text-graphite-dim">Save / Print as PDF</div>
-                  </div>
-                </button>
-                <div className="border-t border-paper-line my-0.5" />
-                <button
-                  id="btn-save-latex"
-                  type="button"
-                  onClick={() => {
-                    setSaveDropdownOpen(false)
-                    handleExportLatex()
-                  }}
-                  className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
-                >
-                  <span className="text-[14px]">📝</span>
-                  <div>
-                    <div className="font-semibold text-[12px] text-ink-900">LaTeX</div>
-                    <div className="text-[10px] text-graphite-dim">Download .tex code</div>
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* ── Toolbar (hidden when printing) ── */}
+      <PageToolbar
+        onBack={() => navigate('/profile')}
+        backLabel="Profile"
+        title="Resume"
+        maxWidth="max-w-[800px]"
+      >
+        {/* Edit keeps its label: it changes the whole document's structure,
+            not one entry, so the bare pencil used for rows would be wrong here. */}
+        <Button variant="secondary" id="btn-edit-structure" onClick={() => setViewMode('customize')}>
+          <Icon name="Edit3" size={14} /> Edit layout
+        </Button>
+        <SaveMenu
+          items={[
+            { icon: 'FileText', label: 'PDF', hint: 'Print or save as PDF', onSelect: handlePrint },
+            { icon: 'Code2', label: 'LaTeX', hint: 'Download .tex source', onSelect: handleExportLatex },
+          ]}
+        />
+      </PageToolbar>
 
       {/* ── Printable Paper Sheet Container ── */}
-      <div className="max-w-[800px] mx-auto px-2 sm:px-4 pt-5">
+      <div className="max-w-[800px] mx-auto px-4 sm:px-6 pt-5">
         <div
           ref={resumeRef}
-          className="resume-sheet bg-white mx-auto shadow-xl px-8 py-7 sm:px-10 sm:py-9 border border-gray-300 min-h-[1050px]"
+          className="resume-sheet doc-sheet bg-white mx-auto shadow-2xl rounded-[4px] px-8 py-7 sm:px-10 sm:py-9 border border-paper-line min-h-[1050px]"
         >
           {/* 1. Header — Name, Location, Mail/Phone/Links */}
           <header className="mb-2.5">

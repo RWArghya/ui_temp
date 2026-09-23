@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import Icon from '../../dashboard/Icon.jsx'
+import Button from './Button.jsx'
 
 export default function EditCertModal({
   isOpen,
@@ -62,7 +64,7 @@ export default function EditCertModal({
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!link.trim() && !photo) {
-      setValidationError('Please provide at least a certificate link or an image.')
+      setValidationError('Add a certificate link or an image — at least one is needed.')
       return
     }
     setValidationError('')
@@ -81,11 +83,10 @@ export default function EditCertModal({
     <Modal
       isOpen={isOpen}
       title={initialData ? 'Edit certificate' : 'Add certificate'}
-      subtitle="Add external certificates earned elsewhere."
       onClose={onClose}
-      maxWidth="max-w-md"
+      maxWidth="max-w-lg"
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-3.5">
+      <form onSubmit={handleSubmit} className="p-6 space-y-3.5 max-h-[75vh] overflow-y-auto">
         {/* Certificate title */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
@@ -104,10 +105,11 @@ export default function EditCertModal({
         {/* Issuing Organization */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Issuing organization
+            Issuing organization <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={org}
             onChange={e => setOrg(e.target.value)}
             placeholder="e.g. Amazon Web Services, Coursera, Google"
@@ -118,10 +120,11 @@ export default function EditCertModal({
         {/* Issue Date */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Issue date
+            Issue date <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={issueDate}
             onChange={e => setIssueDate(e.target.value)}
             placeholder="e.g. 2024, or May 2024"
@@ -129,16 +132,16 @@ export default function EditCertModal({
           />
         </div>
 
-        {/* ── At least one of link or image is required ── */}
+        {/* Proof of the certificate: a link, an image, or both — enforced on submit */}
         <div className="pt-0.5">
-          <p className="text-[11.5px] text-graphite-dim mb-3 leading-relaxed">
-            <span className="font-semibold text-ink-900">At least one of the following is required</span>
-            {' '}— a link to your certificate or an image of it.
-          </p>
+          <label className="block text-[12.5px] font-semibold text-ink-900 mb-2.5">
+            Proof of certificate <span className="text-signal">*</span>
+            <span className="font-normal text-graphite-dim"> — a link, an image, or both</span>
+          </label>
 
           {/* Certificate link */}
           <div className="mb-3">
-            <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
+            <label className="block text-[12px] font-medium text-graphite-dim mb-1">
               Certificate link
             </label>
             <input
@@ -159,40 +162,41 @@ export default function EditCertModal({
 
           {/* Certificate image */}
           <div>
-            <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
+            <label className="block text-[12px] font-medium text-graphite-dim mb-1">
               Certificate image
             </label>
 
             {photo ? (
-              <div className="border border-paper-line rounded-[2px] p-2.5 bg-paper flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
+              <div className="border border-paper-line rounded-[2px] bg-paper overflow-hidden">
+                <div className="flex items-center justify-center p-2">
                   <img
                     src={photo}
                     alt="Certificate document"
-                    className="w-14 h-11 object-cover rounded-[2px] border border-paper-line bg-white flex-none"
+                    className="max-w-full max-h-56 object-contain rounded-[2px] bg-white"
                   />
-                  <div className="min-w-0">
-                    <span className="text-[12.5px] font-semibold text-ink-900 block truncate">Photo attached</span>
-                    <span className="text-[11px] text-dash-ok font-medium">✓ Ready to save</span>
-                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="px-2.5 py-1 text-[11.5px] font-medium border border-paper-line bg-white hover:bg-paper rounded-[2px] text-ink-900 cursor-pointer transition-colors">
-                    Change
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => { setPhoto(''); setValidationError('') }}
-                    className="px-2.5 py-1 text-[11.5px] font-medium text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
-                  >
-                    Remove
-                  </button>
+                <div className="flex items-center justify-between gap-3 border-t border-paper-line bg-white px-2.5 py-2">
+                  <span className="text-[11px] text-dash-ok font-medium inline-flex items-center gap-1">
+                    <Icon name="Check" size={12} /> Image attached
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <label className="px-2.5 py-1 text-[11.5px] font-medium border border-paper-line bg-white hover:bg-paper rounded-[2px] text-ink-900 cursor-pointer transition-colors">
+                      Change
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <Button
+                      variant="dangerQuiet"
+                      size="sm"
+                      onClick={() => { setPhoto(''); setValidationError('') }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -225,29 +229,28 @@ export default function EditCertModal({
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-3 border-t border-paper-line">
           {initialData && onDelete ? (
-            <button
-              type="button"
+            <Button
+              variant="dangerQuiet"
+              size="sm"
               onClick={() => onDelete(initialData.id, initialData.title)}
-              className="px-3 py-1.5 text-[12px] font-semibold text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
             >
               Delete
-            </button>
+            </Button>
           ) : <div />}
 
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-4 py-2 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               type="submit"
-              className="px-5 py-2 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
             >
               Save changes
-            </button>
+            </Button>
           </div>
         </div>
       </form>

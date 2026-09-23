@@ -12,7 +12,11 @@
  * @param {object} profile
  * @param {object} initiatives
  * @param {string} order - 'recent' (newest first, default) or 'oldest' (oldest first)
- * @returns {Array<{ id: string, title: string, subtitle: string, date: string, variant: string, timestamp: number }>}
+ * Each item carries an `icon` name from the dashboard icon set (dashboard/Icon.jsx)
+ * rather than an emoji baked into its title, so the timeline can style and
+ * recolour the glyph like every other icon in the app.
+ *
+ * @returns {Array<{ id: string, title: string, subtitle: string, date: string, icon: string, variant: string, timestamp: number }>}
  */
 export function buildPlatformJourney(profile, initiatives, order = 'recent') {
   if (!profile) return []
@@ -30,7 +34,8 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
   const createdTimestamp = new Date(profile.createdAt || '2026-01-15').getTime()
   items.push({
     id: 'platform-joined',
-    title: '🌱 Joined Hack2skill & Profile Created',
+    title: 'Joined Hack2skill & Profile Created',
+    icon: 'UserPlus',
     subtitle: 'Started innovation journey on Hack2skill · Initial profile established',
     date: createdDate,
     variant: 'done',
@@ -46,7 +51,8 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
     // Participation event
     items.push({
       id: `participated-${c.id}`,
-      title: isHackathon ? `🏆 Competed in ${c.name}` : `📚 Completed ${c.name}`,
+      title: isHackathon ? `Competed in ${c.name}` : `Completed ${c.name}`,
+      icon: isHackathon ? 'Trophy' : 'BookOpen',
       subtitle: `${c.org || 'Hack2skill'} · ${isHackathon ? 'Hackathon participant' : 'Learning initiative'}`,
       date: displayDate,
       variant: 'done',
@@ -57,7 +63,8 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
     if (c.submitted || submittedIds.includes(c.id)) {
       items.push({
         id: `submission-${c.id}`,
-        title: `🚀 Submitted Project Solution — ${c.name}`,
+        title: `Submitted Project Solution — ${c.name}`,
+        icon: 'Rocket',
         subtitle: `Project repository and build artifacts formally submitted for jury review`,
         date: displayDate,
         variant: 'done',
@@ -68,7 +75,8 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
     // Verified Certificate Issued
     items.push({
       id: `cert-${c.id}`,
-      title: `📜 Earned H2S Certificate — ${c.name}`,
+      title: `Earned H2S Certificate — ${c.name}`,
+      icon: 'BadgeCheck',
       subtitle: `Verified credential issued · ID: ${c.verifiableId || 'H2S-VERIFIED'}`,
       date: displayDate,
       variant: 'done',
@@ -90,7 +98,8 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
 
     items.push({
       id: `badge-${b.id}`,
-      title: `${b.ico || '🏅'} Unlocked Platform Badge — ${b.label}`,
+      title: `Unlocked Platform Badge — ${b.label}`,
+      icon: b.ico || 'Award',
       subtitle: `Achievement unlocked across Hack2skill programs`,
       date: badgeDate,
       variant: 'done',
@@ -106,7 +115,8 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
 
     items.push({
       id: `pending-${p.id}`,
-      title: isHackathon ? `⚔️ Participated in ${p.name}` : `☁️ Completed ${p.name}`,
+      title: isHackathon ? `Participated in ${p.name}` : `Completed ${p.name}`,
+      icon: isHackathon ? 'Trophy' : 'BookOpen',
       subtitle: `${p.org || 'Hack2skill'} · Initiative closed — evaluation & certificate generation in review`,
       date: displayDate,
       variant: 'done',
@@ -124,7 +134,8 @@ export function buildPlatformJourney(profile, initiatives, order = 'recent') {
 
     items.push({
       id: `active-${a.id}`,
-      title: `⚡ Ongoing: ${a.name}`,
+      title: `Ongoing: ${a.name}`,
+      icon: 'Zap',
       subtitle: `${a.org || 'Hack2skill'} · ${progressText}`,
       date: 'Ongoing',
       variant: 'now',

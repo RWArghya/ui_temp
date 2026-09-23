@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import Button from './Button.jsx'
 
 export default function EditEducationModal({
   isOpen,
@@ -65,7 +66,6 @@ export default function EditEducationModal({
     <Modal
       isOpen={isOpen}
       title={initialData ? 'Edit education' : 'Add education'}
-      subtitle="School, college, degree, board/university, and duration."
       onClose={onClose}
       maxWidth="max-w-lg"
     >
@@ -88,10 +88,11 @@ export default function EditEducationModal({
         {/* Specialization / Field of Study */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Specialization / Stream
+            Specialization / Stream <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={specialization}
             onChange={e => setSpecialization(e.target.value)}
             placeholder="e.g. Computer Science, Science (PCM), Commerce"
@@ -117,10 +118,11 @@ export default function EditEducationModal({
         {/* Board or University */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Board or University
+            Board or University <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={boardOrUniversity}
             onChange={e => setBoardOrUniversity(e.target.value)}
             placeholder="e.g. MAKAUT, CBSE, ICSE, University of Mumbai"
@@ -131,10 +133,11 @@ export default function EditEducationModal({
         {/* Location */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Location
+            Location <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={location}
             onChange={e => setLocation(e.target.value)}
             placeholder="e.g. New Delhi, India"
@@ -146,10 +149,11 @@ export default function EditEducationModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              Start year
+              Start year <span className="text-signal">*</span>
             </label>
             <input
               type="text"
+              required
               value={startYear}
               onChange={e => setStartYear(e.target.value)}
               placeholder="e.g. 2022"
@@ -159,10 +163,11 @@ export default function EditEducationModal({
 
           <div>
             <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              End year
+              End year <span className="text-signal">*</span>
             </label>
             <input
               type="text"
+              required={!isOngoing}
               disabled={isOngoing}
               value={isOngoing ? 'Present' : endYear}
               onChange={e => setEndYear(e.target.value)}
@@ -188,29 +193,28 @@ export default function EditEducationModal({
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-3 border-t border-paper-line">
           {initialData && onDelete ? (
-            <button
-              type="button"
+            <Button
+              variant="dangerQuiet"
+              size="sm"
               onClick={() => onDelete(initialData.id, initialData.degree || initialData.title || initialData.institution || 'Education')}
-              className="px-3 py-1.5 text-[12px] font-semibold text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
             >
               Delete
-            </button>
+            </Button>
           ) : <div />}
 
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-4 py-2 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               type="submit"
-              className="px-5 py-2 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
             >
               Save changes
-            </button>
+            </Button>
           </div>
         </div>
       </form>

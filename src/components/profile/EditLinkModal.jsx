@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import Button from './Button.jsx'
 
 const POPULAR_PLATFORMS = [
   'GitHub',
@@ -55,7 +56,6 @@ export default function EditLinkModal({
     <Modal
       isOpen={isOpen}
       title={modalTitle}
-      subtitle="Connect your developer profiles, repositories, coding accounts, and portfolio."
       onClose={onClose}
       maxWidth="max-w-md"
     >
@@ -113,29 +113,28 @@ export default function EditLinkModal({
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-3 border-t border-paper-line">
           {initialData && onDelete ? (
-            <button
-              type="button"
+            <Button
+              variant="dangerQuiet"
+              size="sm"
               onClick={() => onDelete(initialData.id, initialData.platform || initialData.title)}
-              className="px-3 py-1.5 text-[12px] font-semibold text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
             >
               Delete
-            </button>
+            </Button>
           ) : <div />}
 
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-4 py-2 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               type="submit"
-              className="px-5 py-2 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
             >
               Save changes
-            </button>
+            </Button>
           </div>
         </div>
       </form>

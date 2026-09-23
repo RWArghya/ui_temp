@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import Pill from './Pill.jsx'
+import Icon from '../../dashboard/Icon.jsx'
+import Button from './Button.jsx'
 
 export default function EditPillsModal({
   isOpen,
   title = 'Edit items',
-  subtitle = 'Add or remove tags.',
   initialItems = [],
   variant = 'default',
   placeholder = 'Add a tag and press Enter...',
@@ -53,7 +54,6 @@ export default function EditPillsModal({
     <Modal
       isOpen={isOpen}
       title={title}
-      subtitle={subtitle}
       onClose={onClose}
       maxWidth="max-w-md"
     >
@@ -74,10 +74,11 @@ export default function EditPillsModal({
                   <button
                     type="button"
                     onClick={() => handleRemove(idx)}
-                    className="text-graphite-dim hover:text-danger text-[13px] font-bold leading-none cursor-pointer"
+                    className="text-graphite-dim hover:text-danger leading-none cursor-pointer inline-flex"
                     title={`Remove ${item}`}
+                    aria-label={`Remove ${item}`}
                   >
-                    ✕
+                    <Icon name="X" size={13} />
                   </button>
                 </span>
               ))}
@@ -103,33 +104,26 @@ export default function EditPillsModal({
               placeholder={placeholder}
               className="flex-1 px-3.5 py-2 text-[13px] border border-paper-line rounded-[2px] focus:outline-none focus:border-signal text-ink-900 bg-white"
             />
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={!inputVal.trim()}
-              className="px-4 py-2 text-[12.5px] font-semibold border border-paper-line rounded-[2px] bg-white text-ink-900 hover:bg-paper disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-            >
-              + Add
-            </button>
+            <Button variant="secondary" onClick={handleAdd} disabled={!inputVal.trim()}>
+              Add
+            </Button>
           </div>
-          <p className="text-[11px] text-graphite-dim mt-1">Press Enter or click "+ Add" to add to list.</p>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 pt-3 border-t border-paper-line">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={onClose}
-            className="px-4 py-2 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             type="submit"
-            className="px-5 py-2 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
           >
             Save changes
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
