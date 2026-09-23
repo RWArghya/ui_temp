@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import SectionCard from './SectionCard.jsx'
-import Button from './Button.jsx'
 
 export default function ResumeCustomizer({
   profile,
@@ -150,16 +149,6 @@ export default function ResumeCustomizer({
     <SectionCard
       title="Resume Structure & Preview"
       subtitle="Drag the handle to reorder sections or items; use the checkboxes to include or exclude entries."
-      action={
-        <Button
-          id="btn-save-customizer"
-          variant="primary"
-          size="sm"
-          onClick={onSave || onGenerate || onBack}
-        >
-          Save
-        </Button>
-      }
     >
       {/* ── HEADER LINKS PANEL ── */}
       <div className="mb-3 border border-paper-line rounded-[2px]">

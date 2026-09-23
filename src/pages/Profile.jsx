@@ -1068,7 +1068,6 @@ export default function Profile() {
                   <span className="text-[13.5px] font-semibold text-ink-900 group-hover:text-signal transition-colors truncate">
                     {o.name}
                   </span>
-                  <Pill variant="ok" className="flex-none">Verified</Pill>
                 </span>
                 <span className="text-graphite-dim group-hover:text-signal group-hover:translate-x-0.5 transition-all text-xs flex-none">
                   <ChevronIcon />
