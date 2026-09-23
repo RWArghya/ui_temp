@@ -83,9 +83,9 @@ export default function EditCertModal({
       title={initialData ? 'Edit certificate' : 'Add certificate'}
       subtitle="Add external certificates earned elsewhere."
       onClose={onClose}
-      maxWidth="max-w-md"
+      maxWidth="max-w-lg"
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-3.5">
+      <form onSubmit={handleSubmit} className="p-6 space-y-3.5 max-h-[75vh] overflow-y-auto">
         {/* Certificate title */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
@@ -164,35 +164,34 @@ export default function EditCertModal({
             </label>
 
             {photo ? (
-              <div className="border border-paper-line rounded-[2px] p-2.5 bg-paper flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
+              <div className="border border-paper-line rounded-[2px] bg-paper overflow-hidden">
+                <div className="flex items-center justify-center p-2">
                   <img
                     src={photo}
                     alt="Certificate document"
-                    className="w-14 h-11 object-cover rounded-[2px] border border-paper-line bg-white flex-none"
+                    className="max-w-full max-h-56 object-contain rounded-[2px] bg-white"
                   />
-                  <div className="min-w-0">
-                    <span className="text-[12.5px] font-semibold text-ink-900 block truncate">Photo attached</span>
-                    <span className="text-[11px] text-dash-ok font-medium">✓ Ready to save</span>
-                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="px-2.5 py-1 text-[11.5px] font-medium border border-paper-line bg-white hover:bg-paper rounded-[2px] text-ink-900 cursor-pointer transition-colors">
-                    Change
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => { setPhoto(''); setValidationError('') }}
-                    className="px-2.5 py-1 text-[11.5px] font-medium text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
-                  >
-                    Remove
-                  </button>
+                <div className="flex items-center justify-between gap-3 border-t border-paper-line bg-white px-2.5 py-2">
+                  <span className="text-[11px] text-dash-ok font-medium">✓ Image attached</span>
+                  <div className="flex items-center gap-2">
+                    <label className="px-2.5 py-1 text-[11.5px] font-medium border border-paper-line bg-white hover:bg-paper rounded-[2px] text-ink-900 cursor-pointer transition-colors">
+                      Change
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => { setPhoto(''); setValidationError('') }}
+                      className="px-2.5 py-1 text-[11.5px] font-medium text-danger hover:bg-danger-soft rounded-[2px] cursor-pointer transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (

@@ -37,7 +37,6 @@ import EditEducationModal from '../components/profile/EditEducationModal.jsx'
 import EditProjectModal from '../components/profile/EditProjectModal.jsx'
 import EditItemModal from '../components/profile/EditItemModal.jsx'
 import EditCertModal from '../components/profile/EditCertModal.jsx'
-import ViewCertModal from '../components/profile/ViewCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
@@ -138,6 +137,91 @@ const GHOST_BTN = [
   'disabled:opacity-50',
 ].join(' ')
 
+// ---- shared inline icons ----
+const PencilIcon = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    <path d="m15 5 4 4" />
+  </svg>
+)
+
+const PlusIcon = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+)
+
+const ChevronIcon = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+)
+
+/**
+ * CardAction — the small icon button that sits in a SectionCard's header slot.
+ * Same 28px target everywhere, so 'add' and 'edit' read as one control family.
+ */
+function CardAction({ id, onClick, label, children }) {
+  return (
+    <button
+      type="button"
+      id={id}
+      onClick={onClick}
+      className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
+      title={label}
+      aria-label={label}
+    >
+      {children}
+    </button>
+  )
+}
+
+/**
+ * EditableRow — one row of self-authored profile content.
+ *
+ * The pencil's hit area is stretched over the whole row (after:absolute
+ * after:inset-0 against the row's `relative`), so a click anywhere opens the
+ * editor while the row stays a single control with a single accessible name —
+ * no nested buttons, no duplicated key handler. This is the dashboard's own
+ * pattern (.init-stretch::after in proto.css).
+ *
+ * Inner links must carry `relative z-[1]` to sit above the overlay and stay
+ * clickable; without it the row swallows them.
+ *
+ * The pencil stays visible on purpose. The row click is the fast path; the
+ * pencil is the signage that says "this entry is yours and you can change it".
+ */
+function EditableRow({ label, onEdit, align = 'start', children }) {
+  return (
+    <div
+      className={[
+        'relative py-3.5 first:pt-1 last:pb-1 -mx-3 px-3 rounded-[2px]',
+        'flex justify-between gap-3 group cursor-pointer',
+        'hover:bg-paper/60 transition-colors',
+        align === 'center' ? 'items-center' : 'items-start',
+      ].join(' ')}
+    >
+      {children}
+      <div className="flex items-center gap-1.5 flex-none">
+        <button
+          type="button"
+          onClick={onEdit}
+          className={[
+            'p-1 rounded-[4px] inline-flex items-center justify-center cursor-pointer',
+            'text-graphite-dim group-hover:text-signal hover:bg-paper transition-colors',
+            "after:content-[''] after:absolute after:inset-0",
+          ].join(' ')}
+          title={`Edit ${label}`}
+          aria-label={`Edit ${label}`}
+        >
+          <PencilIcon />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ===================================================================
 //  PROFILE PAGE
 // ===================================================================
@@ -171,8 +255,6 @@ export default function Profile() {
   const [editItemModal, setEditItemModal] = useState(null)
   // editCertModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editCertModal, setEditCertModal] = useState(null)
-  // viewCertModal: cert object | null — read-only view modal for self-added certs
-  const [viewCertModal, setViewCertModal] = useState(null)
   // editLinkModal: { mode: 'add' } | { mode: 'edit', item } | null
   const [editLinkModal, setEditLinkModal] = useState(null)
   // viewingPhoto: { title: string, url: string } | null — image viewer modal for certificates
@@ -423,19 +505,13 @@ export default function Profile() {
       <SectionCard
         title="Personal details"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-edit-personal-details"
             onClick={() => setEditDetailsOpen(true)}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Edit personal details"
-            aria-label="Edit personal details"
+            label="Edit personal details"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              <path d="m15 5 4 4" />
-            </svg>
-          </button>
+            <PencilIcon />
+          </CardAction>
         }
       >
         <div className="mt-4 space-y-0">
@@ -452,19 +528,13 @@ export default function Profile() {
       <SectionCard
         title="About"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-edit-about"
             onClick={() => setEditAboutOpen(true)}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Edit about"
-            aria-label="Edit about"
+            label="Edit about"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              <path d="m15 5 4 4" />
-            </svg>
-          </button>
+            <PencilIcon />
+          </CardAction>
         }
       >
         <div className="mt-4">
@@ -486,23 +556,17 @@ export default function Profile() {
       <SectionCard
         title="Interests"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-edit-interests"
             onClick={() => setEditPillsConfig({
               field: 'interests',
               title: 'Edit interests',
               subtitle: 'Add or remove topics you are curious about.',
             })}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Edit interests"
-            aria-label="Edit interests"
+            label="Edit interests"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              <path d="m15 5 4 4" />
-            </svg>
-          </button>
+            <PencilIcon />
+          </CardAction>
         }
       >
         <div className="flex flex-wrap gap-2 mt-4">
@@ -517,23 +581,17 @@ export default function Profile() {
       <SectionCard
         title="Skills"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-edit-skills"
             onClick={() => setEditPillsConfig({
               field: 'skills',
               title: 'Edit skills',
               subtitle: 'Add or remove your technical and practical skills.',
             })}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Edit skills"
-            aria-label="Edit skills"
+            label="Edit skills"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              <path d="m15 5 4 4" />
-            </svg>
-          </button>
+            <PencilIcon />
+          </CardAction>
         }
       >
         <div className="flex flex-wrap gap-2 mt-4">
@@ -548,23 +606,17 @@ export default function Profile() {
       <SectionCard
         title="Domains"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-edit-domains"
             onClick={() => setEditPillsConfig({
               field: 'domains',
               title: 'Edit domains',
               subtitle: 'Add or remove industry domains you focus on.',
             })}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Edit domains"
-            aria-label="Edit domains"
+            label="Edit domains"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              <path d="m15 5 4 4" />
-            </svg>
-          </button>
+            <PencilIcon />
+          </CardAction>
         }
       >
         <div className="flex flex-wrap gap-2 mt-4">
@@ -626,19 +678,13 @@ export default function Profile() {
     <SectionCard
       title="Education"
       action={
-        <button
-          type="button"
+        <CardAction
           id="btn-add-education"
           onClick={() => setEditEducationModal({ mode: 'add', item: null })}
-          className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-          title="Add education"
-          aria-label="Add education"
+          label="Add education"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+          <PlusIcon />
+        </CardAction>
       }
     >
       {sortedEducation.length > 0 ? (
@@ -652,11 +698,15 @@ export default function Profile() {
             ].filter(Boolean).join(' · ')
 
             return (
-              <div key={e.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+              <EditableRow
+                key={e.id}
+                label={degreeText || 'education'}
+                onEdit={() => setEditEducationModal({ mode: 'edit', item: e })}
+              >
                 <div className="flex items-start gap-3 min-w-0">
                   <span className="text-[20px] flex-none mt-0.5">🎓</span>
                   <div className="min-w-0">
-                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
                       {degreeText || 'Education'}
                     </h4>
                     {instText && (
@@ -671,21 +721,7 @@ export default function Profile() {
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1.5 flex-none">
-                  <button
-                    type="button"
-                    onClick={() => setEditEducationModal({ mode: 'edit', item: e })}
-                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-                    title={`Edit ${degreeText || 'education'}`}
-                  >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              </EditableRow>
             )
           })}
         </div>
@@ -713,30 +749,28 @@ export default function Profile() {
       <SectionCard
         title="Projects"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-add-project"
             onClick={() => setEditProjectModal({ mode: 'add', item: null })}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Add project"
-            aria-label="Add project"
+            label="Add project"
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
+            <PlusIcon />
+          </CardAction>
         }
       >
         {(profile.projects ?? []).length > 0 ? (
           <div className="mt-4 divide-y divide-paper-line">
             {(profile.projects ?? []).map(p => (
-              <div key={p.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+              <EditableRow
+                key={p.id}
+                label={p.title}
+                onEdit={() => setEditProjectModal({ mode: 'edit', item: p })}
+              >
                 <div className="flex items-start gap-3 min-w-0">
                   <span className="text-[20px] flex-none mt-0.5">📁</span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
                         {p.title}
                       </h4>
                     </div>
@@ -769,7 +803,8 @@ export default function Profile() {
                             href={(p.sourceLink || p.link).startsWith('http') ? (p.sourceLink || p.link) : `https://${p.sourceLink || p.link}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                            className="relative z-[1] text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                            onClick={e => e.stopPropagation()}
                           >
                             <span>Source code ↗</span>
                           </a>
@@ -779,7 +814,8 @@ export default function Profile() {
                             href={p.liveLink.startsWith('http') ? p.liveLink : `https://${p.liveLink}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                            className="relative z-[1] text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                            onClick={e => e.stopPropagation()}
                           >
                             <span>Live demo ↗</span>
                           </a>
@@ -789,7 +825,8 @@ export default function Profile() {
                             href={p.docsLink.startsWith('http') ? p.docsLink : `https://${p.docsLink}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                            className="relative z-[1] text-signal hover:underline inline-flex items-center gap-1 font-medium"
+                            onClick={e => e.stopPropagation()}
                           >
                             <span>Docs ↗</span>
                           </a>
@@ -798,21 +835,7 @@ export default function Profile() {
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1.5 flex-none">
-                  <button
-                    type="button"
-                    onClick={() => setEditProjectModal({ mode: 'edit', item: p })}
-                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-                    title={`Edit ${p.title}`}
-                  >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              </EditableRow>
             ))}
           </div>
         ) : (
@@ -834,30 +857,28 @@ export default function Profile() {
       <SectionCard
         title="Publications"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-add-publication"
             onClick={() => setEditItemModal({ type: 'publication', mode: 'add', item: null })}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Add publication"
-            aria-label="Add publication"
+            label="Add publication"
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
+            <PlusIcon />
+          </CardAction>
         }
       >
         {(profile.publications ?? []).length > 0 ? (
           <div className="mt-4 divide-y divide-paper-line">
             {(profile.publications ?? []).map(p => (
-              <div key={p.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+              <EditableRow
+                key={p.id}
+                label={p.title}
+                onEdit={() => setEditItemModal({ type: 'publication', mode: 'edit', item: p })}
+              >
                 <div className="flex items-start gap-3 min-w-0">
                   <span className="text-[20px] flex-none mt-0.5">📄</span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
                         {p.title}
                       </h4>
                     </div>
@@ -873,28 +894,15 @@ export default function Profile() {
                         href={p.link.startsWith('http') ? p.link : `https://${p.link}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-signal hover:underline text-[12px] mt-1.5 inline-block font-medium"
+                        className="relative z-[1] text-signal hover:underline text-[12px] mt-1.5 inline-block font-medium"
+                        onClick={e => e.stopPropagation()}
                       >
                         Paper / Link ↗
                       </a>
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1.5 flex-none">
-                  <button
-                    type="button"
-                    onClick={() => setEditItemModal({ type: 'publication', mode: 'edit', item: p })}
-                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-                    title={`Edit ${p.title}`}
-                  >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              </EditableRow>
             ))}
           </div>
         ) : (
@@ -916,19 +924,13 @@ export default function Profile() {
       <SectionCard
         title="Achievements"
         action={
-          <button
-            type="button"
+          <CardAction
             id="btn-add-achievement"
             onClick={() => setEditItemModal({ type: 'achievement', mode: 'add', item: null })}
-            className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-            title="Add achievement"
-            aria-label="Add achievement"
+            label="Add achievement"
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
+            <PlusIcon />
+          </CardAction>
         }
       >
         <p className="text-[13px] text-graphite-dim mt-1 mb-4">
@@ -937,12 +939,16 @@ export default function Profile() {
         {(profile.achievements ?? []).length > 0 ? (
           <div className="mt-4 divide-y divide-paper-line">
             {[...(profile.achievements ?? [])].reverse().map(a => (
-              <div key={a.id} className="py-3.5 first:pt-1 last:pb-1 flex items-start justify-between gap-3 group">
+              <EditableRow
+                key={a.id}
+                label={a.title}
+                onEdit={() => setEditItemModal({ type: 'achievement', mode: 'edit', item: a })}
+              >
                 <div className="flex items-start gap-3 min-w-0">
                   <span className="text-[20px] flex-none mt-0.5">🏅</span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
                         {a.title}
                       </h4>
                     </div>
@@ -954,21 +960,7 @@ export default function Profile() {
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1.5 flex-none">
-                  <button
-                    type="button"
-                    onClick={() => setEditItemModal({ type: 'achievement', mode: 'edit', item: a })}
-                    className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-                    title={`Edit ${a.title}`}
-                  >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              </EditableRow>
             ))}
           </div>
         ) : (
@@ -987,19 +979,13 @@ export default function Profile() {
     <SectionCard
       title="Other certificates added by you"
       action={
-        <button
-          type="button"
+        <CardAction
           id="btn-add-cert"
           onClick={() => setEditCertModal({ mode: 'add', item: null })}
-          className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-          title="Add certificate"
-          aria-label="Add certificate"
+          label="Add certificate"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+          <PlusIcon />
+        </CardAction>
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
@@ -1017,47 +1003,36 @@ export default function Profile() {
         return sortedSelfCerts.length > 0 ? (
           <div className="mt-4 divide-y divide-paper-line">
             {sortedSelfCerts.map(c => (
-            <div
+            <EditableRow
               key={c.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setViewCertModal(c)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewCertModal(c) } }}
-              className="py-3.5 first:pt-1 last:pb-1 flex items-start gap-3 group cursor-pointer hover:bg-paper/60 -mx-3 px-3 rounded-[2px] transition-colors"
+              label={c.title}
+              onEdit={() => setEditCertModal({ mode: 'edit', item: c })}
             >
-              <span className="text-[20px] flex-none mt-0.5">📜</span>
-              <div className="min-w-0 flex-1">
-                <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
-                  {c.title}
-                </h4>
+              <div className="flex items-start gap-3 min-w-0">
+                <span className="text-[20px] flex-none mt-0.5">📜</span>
+                <div className="min-w-0">
+                  <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                    {c.title}
+                  </h4>
 
-                {(c.org || c.issueDate || c.date) && (
-                  <p className="text-[12.5px] text-graphite-dim mt-0.5">
-                    {[c.org, c.issueDate || c.date].filter(Boolean).join(' · ')}
-                  </p>
-                )}
+                  {(c.org || c.issueDate || c.date) && (
+                    <p className="text-[12.5px] text-graphite-dim mt-0.5">
+                      {[c.org, c.issueDate || c.date].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
 
-                {(c.photo || c.proofUrl) && (
-                  <div
-                    className="mt-2 rounded-[2px] border border-paper-line overflow-hidden w-20 h-14 bg-paper"
-                    title="Click to view certificate"
-                  >
-                    <img
-                      src={c.photo || c.proofUrl}
-                      alt={c.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+                  {(c.photo || c.proofUrl) && (
+                    <div className="mt-2 rounded-[2px] border border-paper-line overflow-hidden w-20 h-14 bg-paper">
+                      <img
+                        src={c.photo || c.proofUrl}
+                        alt={c.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {/* Chevron hint */}
-              <span className="text-graphite-dim group-hover:text-signal group-hover:translate-x-0.5 transition-all flex-none mt-1">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </span>
-            </div>
+            </EditableRow>
           ))}
         </div>
       ) : (
@@ -1115,13 +1090,14 @@ export default function Profile() {
                 }}
                 className="py-3.5 flex items-center justify-between gap-3 group cursor-pointer hover:bg-paper/60 -mx-3 px-3 rounded-[2px] transition-colors"
               >
-                <span className="text-[13.5px] font-semibold text-ink-900 group-hover:text-signal transition-colors truncate">
-                  {o.name}
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="text-[13.5px] font-semibold text-ink-900 group-hover:text-signal transition-colors truncate">
+                    {o.name}
+                  </span>
+                  <Pill variant="ok" className="flex-none">Verified</Pill>
                 </span>
                 <span className="text-graphite-dim group-hover:text-signal group-hover:translate-x-0.5 transition-all text-xs flex-none">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <ChevronIcon />
                 </span>
               </div>
             ))}
@@ -1143,19 +1119,13 @@ export default function Profile() {
     <SectionCard
       title="Connected Profiles"
       action={
-        <button
-          type="button"
+        <CardAction
           id="btn-add-link"
           onClick={() => setEditLinkModal({ mode: 'add', item: null })}
-          className="p-1 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-          title="Add connected profile"
-          aria-label="Add connected profile"
+          label="Add connected profile"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+          <PlusIcon />
+        </CardAction>
       }
     >
       <p className="text-[13px] text-graphite-dim mt-1 mb-4">
@@ -1165,14 +1135,19 @@ export default function Profile() {
       {(profile.connectedProfiles ?? []).length > 0 ? (
         <div className="mt-4 divide-y divide-paper-line">
           {(profile.connectedProfiles ?? []).map(item => (
-            <div key={item.id} className="py-3.5 first:pt-1 last:pb-1 flex items-center justify-between gap-3 group">
+            <EditableRow
+              key={item.id}
+              label={item.platform}
+              align="center"
+              onEdit={() => setEditLinkModal({ mode: 'edit', item })}
+            >
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-9 h-9 rounded-[2px] bg-paper border border-paper-line flex items-center justify-center text-ink-900 flex-none group-hover:border-signal/40 transition-colors">
                   {getPlatformIcon(item.platform)}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
+                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
                       {item.platform}
                     </h4>
                   </div>
@@ -1180,7 +1155,8 @@ export default function Profile() {
                     href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[12px] text-signal hover:underline inline-flex items-center gap-1 mt-0.5 max-w-[260px] sm:max-w-md truncate"
+                    className="relative z-[1] text-[12px] text-signal hover:underline inline-flex items-center gap-1 mt-0.5 max-w-[260px] sm:max-w-md truncate"
+                    onClick={e => e.stopPropagation()}
                   >
                     <span className="truncate">{item.url?.replace(/^https?:\/\//i, '')}</span>
                     <svg className="w-3 h-3 flex-none opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1191,21 +1167,7 @@ export default function Profile() {
                   </a>
                 </div>
               </div>
-
-              <div className="flex items-center gap-1.5 flex-none">
-                <button
-                  type="button"
-                  onClick={() => setEditLinkModal({ mode: 'edit', item })}
-                  className="p-1.5 rounded-[4px] text-graphite-dim hover:text-ink-900 hover:bg-paper cursor-pointer transition-colors inline-flex items-center justify-center"
-                  title={`Edit ${item.platform}`}
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                    <path d="m15 5 4 4" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            </EditableRow>
           ))}
         </div>
       ) : (
@@ -1547,16 +1509,6 @@ export default function Profile() {
             requestDelete(field, idToDelete, label || (editItemModal.type === 'publication' ? 'Publication' : 'Achievement'))
           }}
           onClose={() => setEditItemModal(null)}
-        />
-      )}
-
-      {/* View (read-only) Self-Added Certificate Modal */}
-      {viewCertModal && (
-        <ViewCertModal
-          isOpen={!!viewCertModal}
-          cert={viewCertModal}
-          onEdit={(cert) => setEditCertModal({ mode: 'edit', item: cert })}
-          onClose={() => setViewCertModal(null)}
         />
       )}
 
