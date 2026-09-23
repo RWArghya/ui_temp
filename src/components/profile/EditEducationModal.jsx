@@ -66,7 +66,6 @@ export default function EditEducationModal({
     <Modal
       isOpen={isOpen}
       title={initialData ? 'Edit education' : 'Add education'}
-      subtitle="School, college, degree, board/university, and duration."
       onClose={onClose}
       maxWidth="max-w-lg"
     >

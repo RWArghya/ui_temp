@@ -64,7 +64,7 @@ export default function EditCertModal({
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!link.trim() && !photo) {
-      setValidationError('Please provide at least a certificate link or an image.')
+      setValidationError('Add a certificate link or an image — at least one is needed.')
       return
     }
     setValidationError('')
@@ -83,7 +83,6 @@ export default function EditCertModal({
     <Modal
       isOpen={isOpen}
       title={initialData ? 'Edit certificate' : 'Add certificate'}
-      subtitle="Add external certificates earned elsewhere."
       onClose={onClose}
       maxWidth="max-w-lg"
     >
@@ -131,13 +130,8 @@ export default function EditCertModal({
           />
         </div>
 
-        {/* ── At least one of link or image is required ── */}
+        {/* Proof of the certificate: a link, an image, or both — enforced on submit */}
         <div className="pt-0.5">
-          <p className="text-[11.5px] text-graphite-dim mb-3 leading-relaxed">
-            <span className="font-semibold text-ink-900">At least one of the following is required</span>
-            {' '}— a link to your certificate or an image of it.
-          </p>
-
           {/* Certificate link */}
           <div className="mb-3">
             <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">

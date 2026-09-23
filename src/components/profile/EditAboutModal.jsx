@@ -23,7 +23,6 @@ export default function EditAboutModal({
     <Modal
       isOpen={isOpen}
       title="Edit about"
-      subtitle="Summarize your professional background, interests, and aspirations."
       onClose={onClose}
       maxWidth="max-w-lg"
     >

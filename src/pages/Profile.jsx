@@ -129,7 +129,7 @@ const TABS = [
   { key: 'education',     label: 'Education'     },
   { key: 'projects',      label: 'Projects'      },
   { key: 'certificates',  label: 'Certificates'  },
-  { key: 'links',         label: 'Links'         },
+  { key: 'accounts',      label: 'Accounts'      },
   { key: 'rewards',       label: 'Rewards'       },
 ]
 
@@ -554,7 +554,6 @@ export default function Profile() {
             onClick={() => setEditPillsConfig({
               field: 'interests',
               title: 'Edit interests',
-              subtitle: 'Add or remove topics you are curious about.',
             })}
             label="Edit interests"
           >
@@ -579,7 +578,6 @@ export default function Profile() {
             onClick={() => setEditPillsConfig({
               field: 'skills',
               title: 'Edit skills',
-              subtitle: 'Add or remove your technical and practical skills.',
             })}
             label="Edit skills"
           >
@@ -604,7 +602,6 @@ export default function Profile() {
             onClick={() => setEditPillsConfig({
               field: 'domains',
               title: 'Edit domains',
-              subtitle: 'Add or remove industry domains you focus on.',
             })}
             label="Edit domains"
           >
@@ -626,8 +623,8 @@ export default function Profile() {
   const journeyTimeline = buildPlatformJourney(profile, inits, 'recent')
   const JourneyTab = (
     <SectionCard
-      title="Your journey"
-      subtitle="Everything you have done on Hack2skill, newest first — from your latest milestones and active initiatives down to the day you created your profile."
+      title="Journey"
+      subtitle="Newest first, down to the day you joined."
     >
       {journeyTimeline.length > 0 ? (
         <div className="relative pl-6 before:content-[''] before:absolute before:left-[4px] before:top-[10px] before:bottom-[10px] before:w-[2px] before:bg-paper-line">
@@ -695,7 +692,7 @@ export default function Profile() {
                 <div className="flex items-start gap-3 min-w-0">
                   <IconChip name="GraduationCap" tone="blue" className="mt-0.5" />
                   <div className="min-w-0">
-                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                       {degreeText || 'Education'}
                     </h4>
                     {instText && (
@@ -754,7 +751,7 @@ export default function Profile() {
                   <IconChip name="Code2" tone="blue" className="mt-0.5" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {p.title}
                       </h4>
                     </div>
@@ -857,7 +854,7 @@ export default function Profile() {
                   <IconChip name="FileText" tone="slate" className="mt-0.5" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {p.title}
                       </h4>
                     </div>
@@ -898,7 +895,6 @@ export default function Profile() {
       {/* Achievements */}
       <SectionCard
         title="Achievements"
-        subtitle="Hackathon wins, honors and milestones."
         action={
           <CardAction
             id="btn-add-achievement"
@@ -921,7 +917,7 @@ export default function Profile() {
                   <IconChip name="Trophy" tone="amber" className="mt-0.5" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                      <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                         {a.title}
                       </h4>
                     </div>
@@ -956,8 +952,7 @@ export default function Profile() {
   // Reusable Self-added certificates SectionCard for both preview and expanded views
   const SelfAddedCertsSection = (
     <SectionCard
-      title="Other certificates added by you"
-      subtitle="Certificates you earned from organizations outside Hack2skill."
+      title="Other certificates"
       action={
         <CardAction
           id="btn-add-cert"
@@ -988,7 +983,7 @@ export default function Profile() {
               <div className="flex items-start gap-3 min-w-0">
                 <IconChip name="Award" tone="slate" className="mt-0.5" />
                 <div className="min-w-0">
-                  <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                  <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                     {c.title}
                   </h4>
 
@@ -1030,8 +1025,8 @@ export default function Profile() {
       <SectionCard
         title={
           <span className="flex items-center gap-2 flex-wrap">
-            H2S Verified Certificates
-            <span className="font-normal text-[13px] text-ink-900">({totalEarned})</span>
+            Verified certificates
+            <span className="font-normal text-[13px] text-graphite-dim">({totalEarned})</span>
           </span>
         }
       >
@@ -1065,7 +1060,7 @@ export default function Profile() {
               >
                 <span className="flex items-center gap-3 min-w-0">
                   <IconChip name="BadgeCheck" tone="green" size="sm" />
-                  <span className="text-[13.5px] font-semibold text-ink-900 group-hover:text-signal transition-colors truncate">
+                  <span className="text-[13.5px] font-semibold text-ink-900 truncate">
                     {o.name}
                   </span>
                 </span>
@@ -1091,10 +1086,9 @@ export default function Profile() {
   )
 
   // ---- LINKS & CONNECTED PROFILES ----
-  const LinksTab = (
+  const AccountsTab = (
     <SectionCard
-      title="Connected Profiles"
-      subtitle="Your developer accounts, coding profiles and online presence."
+      title="Connected accounts"
       action={
         <CardAction
           id="btn-add-link"
@@ -1115,12 +1109,12 @@ export default function Profile() {
               onEdit={() => setEditLinkModal({ mode: 'edit', item })}
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <IconChip tone="slate" className="group-hover:border-signal/40 transition-colors">
+                <IconChip tone="slate">
                   {getPlatformIcon(item.platform)}
                 </IconChip>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
+                    <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug">
                       {item.platform}
                     </h4>
                   </div>
@@ -1216,8 +1210,7 @@ export default function Profile() {
     education:     EducationTab,
     projects:      ProjectsTab,
     certificates:  CertificatesTab,
-    links:         LinksTab,
-    contributions: LinksTab,
+    accounts:      AccountsTab,
     rewards:       RewardsTab,
   }
 
@@ -1540,7 +1533,6 @@ export default function Profile() {
         <Modal
           isOpen={!!viewingPhoto}
           title={viewingPhoto.title || 'Certificate document'}
-          subtitle="Uploaded certificate image or credential scan."
           onClose={() => setViewingPhoto(null)}
           maxWidth="max-w-2xl"
         >

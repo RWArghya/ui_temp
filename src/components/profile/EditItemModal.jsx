@@ -48,7 +48,6 @@ export default function EditItemModal({
     <Modal
       isOpen={isOpen}
       title={modalTitle}
-      subtitle={isPub ? 'Share research papers, articles, and preprints.' : 'Highlight hackathon placements, honors, or awards.'}
       onClose={onClose}
       maxWidth="max-w-md"
     >

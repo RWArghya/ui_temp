@@ -23,6 +23,7 @@ import Pill from '../components/profile/Pill.jsx'
 import KVRow from '../components/profile/KVRow.jsx'
 import Modal from '../components/profile/Modal.jsx'
 import IconChip from '../components/profile/IconChip.jsx'
+import '../dashboard/proto.css'
 import Button from '../components/profile/Button.jsx'
 import Icon from '../dashboard/Icon.jsx'
 import TimelineItem from '../components/profile/TimelineItem.jsx'
@@ -36,7 +37,7 @@ const TABS = [
   { key: 'education',     label: 'Education'     },
   { key: 'projects',      label: 'Projects'      },
   { key: 'certificates',  label: 'Certificates'  },
-  { key: 'links',         label: 'Links'         },
+  { key: 'accounts',      label: 'Accounts'      },
   { key: 'rewards',       label: 'Rewards'       },
 ]
 
@@ -125,7 +126,7 @@ export default function ProfilePreview() {
 
       {/* Skills & Domains */}
       {((profile.skills && profile.skills.length > 0) || (profile.domains && profile.domains.length > 0)) && (
-        <SectionCard title="Skills & Domains">
+        <SectionCard title="Skills & domains">
           <div className="space-y-3">
             {profile.skills && profile.skills.length > 0 && (
               <div>
@@ -157,7 +158,7 @@ export default function ProfilePreview() {
       )}
 
       {/* Personal Details Card at the very bottom */}
-      <SectionCard title="Personal Details">
+      <SectionCard title="Personal details">
         <div className="space-y-0">
           {[
             { label: 'Full Name', value: profile.name },
@@ -182,7 +183,7 @@ export default function ProfilePreview() {
   const journeyTimeline = buildPlatformJourney(profile, initiatives, 'recent')
   const JourneyTab = (
     <div className="space-y-4">
-      <SectionCard title="Your Platform Journey">
+      <SectionCard title="Journey">
         <p className="text-[13px] text-graphite-dim mt-1 mb-5">
           Verified platform journey, newest first — from the most recent milestones and
           active initiatives down to profile creation.
@@ -248,7 +249,7 @@ export default function ProfilePreview() {
   // 4. PROJECTS
   const ProjectsTab = (
     <div className="space-y-4">
-      <SectionCard title="Featured Projects">
+      <SectionCard title="Projects">
         {publicProjects.length > 0 ? (
           <div className="space-y-3">
             {publicProjects.map(p => (
@@ -320,7 +321,7 @@ export default function ProfilePreview() {
 
       {/* Publications */}
       {publicPubs.length > 0 && (
-        <SectionCard title="Publications & Research">
+        <SectionCard title="Publications">
           <div className="divide-y divide-paper-line">
             {publicPubs.map(pub => (
               <div key={pub.id} className="py-2.5 first:pt-0 last:pb-0">
@@ -354,7 +355,7 @@ export default function ProfilePreview() {
   const CertificatesTab = (
     <div className="space-y-4">
       {/* Verified Hack2skill Certificates */}
-      <SectionCard title="Verified Hack2skill Certificates">
+      <SectionCard title="Verified certificates">
         <p className="text-[13px] text-graphite-dim mt-1 mb-3">
           Earned credentials verified cryptographically and issued by Hack2skill.
         </p>
@@ -403,7 +404,7 @@ export default function ProfilePreview() {
 
       {/* External Certifications & Honors */}
       {(publicAchievements.length > 0 || publicSelfCerts.length > 0) && (
-        <SectionCard title="Honors & External Certifications">
+        <SectionCard title="Other certificates">
           <div className="divide-y divide-paper-line">
             {publicAchievements.map(a => (
               <div key={a.id} className="py-2.5 first:pt-0 last:pb-0">
@@ -475,9 +476,9 @@ export default function ProfilePreview() {
   )
 
   // 6. LINKS
-  const LinksTab = (
+  const AccountsTab = (
     <div className="space-y-4">
-      <SectionCard title="Connected Profiles">
+      <SectionCard title="Connected accounts">
         <div className="divide-y divide-paper-line">
           {publicLinks.length > 0 ? (
             publicLinks.map(item => (
@@ -505,7 +506,7 @@ export default function ProfilePreview() {
   // 7. REWARDS
   const RewardsTab = (
     <div className="space-y-4">
-      <SectionCard title="Earned Badges">
+      <SectionCard title="Badges">
         {badges.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {badges.map(b => (
@@ -523,7 +524,7 @@ export default function ProfilePreview() {
         )}
       </SectionCard>
 
-      <SectionCard title="Credit Points">
+      <SectionCard title="Credit points">
         <div className="flex items-center gap-3">
           <strong className="text-[26px] text-ink-900">{credits}</strong>
           <span className="text-[14px] text-graphite-dim">credits</span>
@@ -541,7 +542,7 @@ export default function ProfilePreview() {
     education:     EducationTab,
     projects:      ProjectsTab,
     certificates:  CertificatesTab,
-    links:         LinksTab,
+    accounts:      AccountsTab,
     rewards:       RewardsTab,
   }
 
@@ -689,7 +690,6 @@ export default function ProfilePreview() {
         <Modal
           isOpen={!!viewingPhoto}
           title={viewingPhoto.title || 'Certificate document'}
-          subtitle="Certificate image or credential scan."
           onClose={() => setViewingPhoto(null)}
           maxWidth="max-w-2xl"
         >

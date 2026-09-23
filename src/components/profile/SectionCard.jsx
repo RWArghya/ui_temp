@@ -12,6 +12,12 @@
  * between sections and between the two pages. Pass `subtitle` instead of
  * writing a paragraph, and give `children` no top margin.
  *
+ * Surface, border, radius and shadow are the same declarations ui.jsx's Card
+ * uses across Arena, Evaluate, Mentor and Workspace — same tokens, same
+ * values — so the profile's cards and the dashboard's are one card with two
+ * APIs. Only the heading size (15px here, 18px there) and 2px of vertical
+ * padding still differ.
+ *
  * @param {ReactNode} title      Card heading
  * @param {ReactNode} subtitle   One line under the heading, explaining the section
  * @param {ReactNode} action     Control in the top right (see CardAction)
@@ -25,7 +31,7 @@ export default function SectionCard({ title, subtitle, action, children, classNa
     <div
       className={[
         'bg-white border border-paper-line rounded-card',
-        'p-[18px] shadow-[0_1px_2px_rgba(16,18,35,.06),0_8px_24px_-12px_rgba(16,18,35,.18)]',
+        'p-[18px] shadow-dash',
         className,
       ].join(' ')}
     >

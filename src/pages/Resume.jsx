@@ -16,6 +16,7 @@ import { useProfile } from '../hooks/useProfile.js'
 import ResumeCustomizer from '../components/profile/ResumeCustomizer.jsx'
 import { generateLatexResume, downloadLatexFile } from '../utils/latexGenerator.js'
 import Icon from '../dashboard/Icon.jsx'
+import '../dashboard/proto.css'
 import PageToolbar from '../components/profile/PageToolbar.jsx'
 import SaveMenu from '../components/profile/SaveMenu.jsx'
 import Button from '../components/profile/Button.jsx'
@@ -85,7 +86,7 @@ export default function Resume() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center p-8">
+      <div className="doc-root min-h-screen bg-paper flex items-center justify-center p-8">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-signal border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-[13px] text-graphite-dim">Loading profile and resume builder...</p>
@@ -107,7 +108,7 @@ export default function Resume() {
   // If in customize mode, show the configuration and reorder card screen
   if (viewMode === 'customize') {
     return (
-      <div className="min-h-screen bg-paper pb-20">
+      <div className="doc-root min-h-screen bg-paper pb-20">
         <PageToolbar
           onBack={() => setViewMode('preview')}
           backLabel="Resume"
@@ -154,7 +155,7 @@ export default function Resume() {
     })
 
   return (
-    <div className="min-h-screen bg-paper text-ink-900 antialiased pb-20">
+    <div className="doc-root min-h-screen bg-paper text-ink-900 antialiased pb-20">
       {/* ── Print & Font Style Tag (Times New Roman throughout) ── */}
       <style>{`
         .resume-sheet {
@@ -226,7 +227,7 @@ export default function Resume() {
       <div className="max-w-[800px] mx-auto px-2 sm:px-4 pt-5">
         <div
           ref={resumeRef}
-          className="resume-sheet bg-white mx-auto shadow-2xl rounded-[4px] px-8 py-7 sm:px-10 sm:py-9 border border-paper-line min-h-[1050px]"
+          className="resume-sheet doc-sheet bg-white mx-auto shadow-2xl rounded-[4px] px-8 py-7 sm:px-10 sm:py-9 border border-paper-line min-h-[1050px]"
         >
           {/* 1. Header — Name, Location, Mail/Phone/Links */}
           <header className="mb-2.5">

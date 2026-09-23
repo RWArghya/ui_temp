@@ -954,3 +954,44 @@ hr.sep{ border:none; border-top:1px solid var(--line-soft); margin:16px 0; }
   .bg-ink-900{ background-color:var(--line); }
   .bg-ink-900\/40{ background-color:rgba(0,0,0,.6); }
 }
+
+/* ============================================================================
+   Document / standalone pages — /profile/resume, /profile/certificate/:id and
+   /profile/preview render outside .dash-root, so until now they stayed light
+   while the rest of the app followed the theme.
+
+   They cannot simply BE .dash-root: that carries the prototype's typography
+   reset, and `.dash-root h1 { color: var(--ink) }` outspecifies the Tailwind
+   colour utilities the certificate and resume sheets rely on. So .doc-root
+   re-points only the colour tokens the JSX reads — no type, no layout.
+
+   .doc-sheet is the exception inside the exception: a resume and a certificate
+   are printed documents. The chrome around them goes dark; the paper does not.
+   Re-declaring the light tokens on the sheet makes it a light-mode island, so
+   ink-900 text stays dark on white in either theme — and prints correctly.
+   ============================================================================ */
+:root[data-dash-theme="dark"] .doc-root{
+  color-scheme:dark;
+
+  --color-paper:#0d111d; --color-paper-raised:#141a2b; --color-paper-line:#262e48;
+  --color-graphite:#c2c8da; --color-graphite-dim:#98a0b5; --color-ink-900:#e8ebf5;
+  --color-signal:#4d78ef; --color-signal-dark:#8fadf8; --color-signal-soft:#1b2748;
+  --color-dash-ok:#4fd08f; --color-dash-ok-soft:#12301f;
+  --color-dash-warn:#f0b04f; --color-dash-warn-soft:#33260f;
+  --color-danger:#f2788f; --color-danger-soft:#381620;
+
+  background:var(--color-paper);
+
+  .bg-white{ background-color:var(--color-paper-raised); }
+  .bg-ink-900\/40{ background-color:rgba(0,0,0,.6); }
+
+  .doc-sheet{
+    color-scheme:light;
+    --color-paper:#f5f6fa; --color-paper-raised:#ffffff; --color-paper-line:#dfe2ec;
+    --color-graphite:#384056; --color-graphite-dim:#626a80; --color-ink-900:#0f1629;
+    --color-signal:#2f5fe6; --color-signal-dark:#1e46c4; --color-signal-soft:#eaf0ff;
+    background-color:#ffffff;
+  }
+  .doc-sheet .bg-white{ background-color:#ffffff; }
+  .doc-sheet .bg-paper{ background-color:#f5f6fa; }
+}

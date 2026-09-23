@@ -56,7 +56,6 @@ export default function EditLinkModal({
     <Modal
       isOpen={isOpen}
       title={modalTitle}
-      subtitle="Connect your developer profiles, repositories, coding accounts, and portfolio."
       onClose={onClose}
       maxWidth="max-w-md"
     >

@@ -10,6 +10,7 @@
 
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { MOCK_USER_INITIATIVES } from '../api/mock/initiatives.js'
+import '../dashboard/proto.css'
 import PageToolbar from '../components/profile/PageToolbar.jsx'
 import SaveMenu from '../components/profile/SaveMenu.jsx'
 import EmptyState from '../components/profile/EmptyState.jsx'
@@ -218,7 +219,7 @@ export default function CertificateView() {
 
   if (!activeCert) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center p-8">
+      <div className="doc-root min-h-screen bg-paper flex items-center justify-center p-8">
         <EmptyState
           icon="AlertTriangle"
           tone="amber"
@@ -231,7 +232,7 @@ export default function CertificateView() {
   }
 
   return (
-    <div className="min-h-screen bg-paper pb-16">
+    <div className="doc-root min-h-screen bg-paper pb-16">
       {/* Print styles */}
       <style>{`
         @media print {
@@ -264,7 +265,7 @@ export default function CertificateView() {
       {/* ── Certificate Sheet ── */}
       <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-8">
         <div
-          className="cert-sheet bg-white shadow-2xl rounded-[4px] overflow-hidden"
+          className="cert-sheet doc-sheet bg-white shadow-2xl rounded-[4px] overflow-hidden"
           style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
         >
           {/* Top accent stripe */}

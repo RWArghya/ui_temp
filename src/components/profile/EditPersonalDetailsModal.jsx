@@ -36,7 +36,6 @@ export default function EditPersonalDetailsModal({
     <Modal
       isOpen={isOpen}
       title="Edit personal details"
-      subtitle="Update your basic identity and display info."
       onClose={onClose}
       maxWidth="max-w-lg"
     >

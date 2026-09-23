@@ -80,7 +80,6 @@ export default function EditProjectModal({
     <Modal
       isOpen={isOpen}
       title={initialData ? 'Edit project' : 'Add project'}
-      subtitle="Showcase your technical work, repository, demo, and stack."
       onClose={onClose}
       maxWidth="max-w-lg"
     >
