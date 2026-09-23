@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Icon from './Icon'
-import { InitiativeCard, InitiativeRow, ProfileProgress } from './Cards'
-import { activeList, recommendedList, nextStepFor, savedList, recentViews, byId, profileScore } from './data'
+import { InitiativeCard, InitiativeRow } from './Cards'
+import { activeList, recommendedList, nextStepFor, savedList, recentViews, byId } from './data'
 import useMedia from '../hooks/useMedia'
 
 /* ============================================================================
@@ -80,7 +80,7 @@ export function Home({ st, sv, go }) {
   return (
     <div className="dash-home">
       <div className="band-w">
-        <section className={`band${profileScore(st).pct < 100 ? ' has-pz' : ''}`}>
+        <section className="band">
           <nav className="dash-stats" aria-label="Overview">
             {stats.map(s => (
               <button key={s.title} type="button" className="dash-stat" onClick={() => go('activity', ...s.to)}>
@@ -90,19 +90,27 @@ export function Home({ st, sv, go }) {
               </button>
             ))}
           </nav>
-          <ProfileProgress st={st} />
         </section>
       </div>
 
       <section aria-label="Continue where you left off">
-        <SectionHeader title="Continue where you left off" count={`${active.length} ongoing`} onViewAll={active.length ? () => go('activity') : null} />
         {active.length ? (
           <div className="init-list">
+            <div className="init-list-head">
+              <div className="sec-head-l">
+                <h2>Continue where you left off</h2>
+                <span className="sec-count">{active.length} ongoing</span>
+              </div>
+              <button type="button" className="link-more" onClick={() => go('activity')}>View all</button>
+            </div>
             {active.slice(0, phone ? 3 : 4).map(o => <InitiativeRow key={o.id} o={o} st={st} sv={sv} next={nextStepFor(o, st)} />)}
           </div>
         ) : (
-          <EmptyState ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
-            cta={<button type="button" className="btn btn-primary mt12" onClick={() => go('recommended')}>Explore initiatives <Icon name="ArrowRight" size={14} /></button>} />
+          <>
+            <SectionHeader title="Continue where you left off" count={`${active.length} ongoing`} onViewAll={null} />
+            <EmptyState ico="Compass" title="No data yet" msg="It looks like there's nothing here right now. Start exploring, join an initiative or enroll in a course to get started."
+              cta={<button type="button" className="btn btn-primary mt12" onClick={() => go('recommended')}>Explore initiatives <Icon name="ArrowRight" size={14} /></button>} />
+          </>
         )}
       </section>
 

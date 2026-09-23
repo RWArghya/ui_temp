@@ -1,0 +1,284 @@
+/* ============================================================================
+   Settings page — recreated from design_handoff_settings_redesign/README.md
+   (high-fidelity spec) + Settings Page.dc.html (interactive reference).
+   Scoped entirely under .settings-page so it never leaks onto proto.css or
+   any other view — this page intentionally uses its own token set (colors,
+   type scale, radii) as specified, not the shared dashboard's --primary/--ink
+   tokens. Font: Public Sans, per spec.
+   ============================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap');
+
+@keyframes settingsRiseIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Renders inside the app's normal Sidebar+Topbar shell, like every other
+   dashboard view — the app's own left nav and topbar (theme toggle, bell,
+   avatar, profile-completion card) stay exactly as they are on every other
+   page. navLayout defaults to "tabs" here (not the handoff's default
+   "sidebar") specifically so this page's own section switcher doesn't sit
+   as a second, competing sidebar next to the app's real one. */
+.settings-page {
+  --sp-surface: #ffffff;
+  --sp-surface-subtle: #fbfcfd;
+  --sp-border: #e4e7ec;
+  --sp-border-panel: #dde2ea;
+  --sp-border-input: #d7dbe2;
+  --sp-divider: #eef0f3;
+  --sp-ink: #1c2230;
+  --sp-ink-muted: #5d6675;
+  --sp-ink-soft: #7b838f;
+  --sp-ink-faint: #9aa3b2;
+  --sp-accent: #2f62d8;
+  --sp-accent-hover: #2551bb;
+  --sp-accent-wash: #eef2fb;
+  --sp-success: #1f7a5a;
+  --sp-success-wash: #e8f4ee;
+  --sp-warn: #9a6408;
+  --sp-warn-wash: #fdf3e3;
+  --sp-danger: #c2372b;
+  --sp-danger-ink: #a82f22;
+  --sp-danger-border: #e2b7b1;
+  --sp-danger-wash: #fdf7f6;
+  --sp-danger-wash-border: #e9c6c0;
+  --sp-toast-bg: #1c2230;
+  --sp-toast-dot: #5fd0a0;
+  --sp-str-weak: #d9584a;
+  --sp-str-fair: #e0a21e;
+  --sp-str-good: #3fa07a;
+  --sp-str-strong: #1f7a5a;
+  --sp-str-empty: #e7eaf0;
+
+  font-family: 'Public Sans', system-ui, -apple-system, sans-serif;
+  color: var(--sp-ink);
+}
+.settings-page * { box-sizing: border-box; }
+.settings-page a { color: var(--sp-accent); text-decoration: none; }
+.settings-page a:hover { color: var(--sp-accent-hover); }
+.settings-page input, .settings-page select, .settings-page button { font-family: inherit; }
+.settings-page button:focus-visible,
+.settings-page a:focus-visible {
+  outline: none; border-color: var(--sp-accent); box-shadow: 0 0 0 3px rgba(47, 98, 216, .12);
+}
+
+.sp-body { max-width: 1060px; margin: 0 auto; }
+
+/* ---- header ---- */
+
+/* ---- top tabs nav (navLayout: "tabs") ---- */
+.sp-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--sp-border); margin: 0 0 28px; overflow: auto; }
+.sp-tab {
+  padding: 12px 16px; background: none; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; color: var(--sp-ink-muted);
+}
+.sp-tab:hover { color: var(--sp-ink); }
+.sp-tab.is-active { border-bottom-color: var(--sp-accent); color: var(--sp-accent); }
+
+/* ---- columns ---- */
+.sp-columns { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+
+/* ---- sidebar nav (navLayout: "sidebar", default) ---- */
+.sp-nav { flex: 0 0 204px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 24px; }
+.sp-nav-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 12px; border: none; border-radius: 7px; cursor: pointer;
+  font-size: 14px; font-weight: 500; background: transparent; color: var(--sp-ink-muted);
+}
+.sp-nav-item:hover { background: #eef0f4; }
+.sp-nav-item.is-active { background: var(--sp-accent-wash); color: var(--sp-accent); }
+.sp-nav-bar { width: 3px; height: 16px; border-radius: 2px; flex: none; background: transparent; }
+.sp-nav-item.is-active .sp-nav-bar { background: var(--sp-accent); }
+.sp-signedin { margin: 18px 12px 0; font-size: 12px; line-height: 1.6; color: var(--sp-ink-faint); }
+.sp-signedin b { display: block; color: var(--sp-ink-muted); font-weight: 500; }
+
+/* ---- content column ---- */
+.sp-content { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+
+/* ---- card ---- */
+.sp-card { background: var(--sp-surface); border: 1px solid var(--sp-border); border-radius: 12px; padding: 22px 26px 8px; }
+.sp-card--full { padding: 22px 26px 26px; }
+.sp-card h2 { margin: 0 0 2px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--sp-ink); }
+.sp-card-desc { margin: 0 0 4px; font-size: 13.5px; line-height: 1.5; color: var(--sp-ink-soft); max-width: 58ch; }
+.sp-card-headrow { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+/* ---- badges ---- */
+.sp-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.sp-badge--success { background: var(--sp-success-wash); color: var(--sp-success); }
+
+/* ---- rows ---- */
+.sp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 17px 0; border-top: 1px solid var(--sp-divider); }
+.sp-row--notif { gap: 20px; padding: 15px 0; }
+/* rows that can expand an inline panel underneath: the divider/padding lives
+   on the wrapper so the panel stays inside it, the grid is a plain child */
+.sp-row-wrap { padding: 18px 0; border-top: 1px solid var(--sp-divider); }
+.sp-row-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+.sp-row-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.sp-row-value-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sp-row-value { font-size: 14px; color: var(--sp-ink-muted); }
+.sp-row-desc { font-size: 13px; line-height: 1.5; color: var(--sp-ink-soft); }
+.sp-row-action { justify-self: end; }
+
+/* ---- buttons ---- */
+.sp-btn { border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 15px; white-space: nowrap; }
+.sp-btn:disabled { opacity: .45; cursor: not-allowed; }
+.sp-btn--primary { border: none; background: var(--sp-accent); color: #fff; padding: 9px 17px; }
+.sp-btn--primary:hover:not(:disabled) { background: var(--sp-accent-hover); }
+.sp-btn--secondary { border: 1px solid var(--sp-border-input); background: #fff; color: var(--sp-ink); }
+.sp-btn--secondary:hover:not(:disabled) { border-color: #9aa3b2; background: #fafbfc; }
+.sp-btn--row { padding: 7px 14px; border-radius: 7px; font-weight: 500; }
+.sp-btn--cancel { border: 1px solid var(--sp-border-input); background: #fff; color: var(--sp-ink-muted); font-weight: 500; padding: 9px 15px; }
+.sp-btn--cancel:hover { border-color: #c3c9d4; color: var(--sp-ink); }
+.sp-btn--danger-outline { border: 1px solid var(--sp-danger-border); background: #fff; color: var(--sp-danger-ink); font-weight: 600; }
+.sp-btn--danger-outline:hover:not(:disabled) { background: #fdf2f0; border-color: #c96e60; }
+.sp-btn--danger-fill { border: none; background: var(--sp-danger); color: #fff; padding: 9px 16px; border-radius: 7px; }
+.sp-link { font-size: 13px; font-weight: 600; white-space: nowrap; background: none; border: none; cursor: pointer; padding: 0; }
+
+/* ---- inline panel (change email / change password) ---- */
+.sp-panel {
+  margin-top: 16px; border: 1px solid var(--sp-border-panel); border-radius: 12px; background: var(--sp-surface);
+  box-shadow: 0 1px 2px rgba(28, 34, 48, .04); max-width: 470px; overflow: hidden; animation: settingsRiseIn .16s ease-out;
+}
+.sp-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 15px 20px; border-bottom: 1px solid var(--sp-divider); background: var(--sp-surface-subtle); }
+.sp-panel-title { font-size: 14px; font-weight: 600; }
+.sp-panel-step { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--sp-ink-faint); }
+.sp-panel-body { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.sp-panel-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--sp-divider); background: var(--sp-surface-subtle); }
+
+/* ---- fields ---- */
+.sp-field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+.sp-input {
+  width: 100%; padding: 11px 13px; border: 1px solid var(--sp-border-input); border-radius: 9px;
+  font-size: 14.5px; color: var(--sp-ink); outline: none; background: #fff;
+}
+.sp-input:focus { border-color: var(--sp-accent); box-shadow: 0 0 0 3px rgba(47, 98, 216, .12); }
+.sp-help { margin: 9px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--sp-ink-soft); }
+
+/* password field: border/radius on the frame, input itself is bare */
+.sp-pwfield { display: flex; align-items: center; border: 1px solid var(--sp-border-input); border-radius: 9px; background: #fff; overflow: hidden; }
+.sp-pwfield:focus-within { border-color: var(--sp-accent); box-shadow: 0 0 0 3px rgba(47, 98, 216, .12); }
+.sp-pwfield.is-mismatch { border-color: var(--sp-str-weak); }
+.sp-pwfield input { flex: 1; min-width: 0; border: none; outline: none; padding: 11px 13px; font-size: 14.5px; color: var(--sp-ink); background: transparent; }
+.sp-pwfield-toggle { border: none; background: none; padding: 0 13px; font-size: 12px; font-weight: 600; color: var(--sp-ink-muted); cursor: pointer; white-space: nowrap; }
+.sp-pwfield-toggle:hover { color: var(--sp-accent); }
+.sp-forgot { display: inline-block; margin-top: 8px; font-size: 12.5px; font-weight: 600; }
+.sp-mismatch-msg { margin: 8px 0 0; font-size: 12.5px; font-weight: 500; color: var(--sp-danger); }
+
+/* ---- 6-digit code ---- */
+.sp-code-row { display: flex; gap: 8px; }
+.sp-code-input {
+  width: 44px; height: 52px; text-align: center; border: 1px solid var(--sp-border-input); border-radius: 9px;
+  font-size: 20px; font-weight: 600; color: var(--sp-ink); outline: none; background: #fff;
+}
+.sp-code-input:focus { border-color: var(--sp-accent); box-shadow: 0 0 0 3px rgba(47, 98, 216, .12); }
+
+/* ---- password strength ---- */
+.sp-strength { display: flex; align-items: center; gap: 10px; margin-top: 11px; }
+.sp-strength-bars { display: flex; gap: 4px; flex: 1; min-width: 0; }
+.sp-strength-bars i { flex: 1; height: 4px; border-radius: 3px; background: var(--sp-str-empty); transition: background .18s; }
+.sp-strength-label { font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+/* ---- requirements checklist ---- */
+.sp-reqs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 16px; margin-top: 11px; }
+.sp-reqs li { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--sp-ink-faint); }
+.sp-reqs li.is-met { color: var(--sp-success); }
+.sp-reqs .dot {
+  width: 14px; height: 14px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: #fff; background: #dfe3e9;
+}
+.sp-reqs li.is-met .dot { background: var(--sp-success); }
+
+/* ---- success state ---- */
+.sp-success { display: flex; gap: 12px; align-items: flex-start; }
+.sp-success-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--sp-success-wash); color: var(--sp-success); font-size: 14px; font-weight: 700; flex: none; }
+.sp-success-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.sp-success-body { margin: 0; font-size: 13px; line-height: 1.55; color: var(--sp-ink-soft); }
+
+/* ---- group label ---- */
+.sp-group-label { margin: 22px 0 2px; font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--sp-ink-faint); }
+.sp-group-label:first-child { margin-top: 0; }
+
+/* ---- toggle ---- */
+.sp-toggle { width: 40px; height: 23px; border-radius: 20px; border: none; cursor: pointer; padding: 0; position: relative; transition: background .16s; justify-self: end; background: #d3d8e0; }
+.sp-toggle.is-on { background: var(--sp-accent); }
+.sp-toggle i { position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .16s; }
+.sp-toggle.is-on i { transform: translateX(17px); }
+
+/* ---- delivery segmented control ---- */
+.sp-delivery-head { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--sp-divider); }
+.sp-segmented { display: inline-flex; gap: 2px; padding: 3px; background: #f0f2f5; border-radius: 9px; margin-top: 10px; }
+.sp-segmented button { padding: 7px 14px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; background: transparent; color: var(--sp-ink-soft); }
+.sp-segmented button.is-on { background: #fff; color: var(--sp-ink); box-shadow: 0 1px 2px rgba(28, 34, 48, .14); }
+
+/* ---- delete confirm ---- */
+.sp-delete-confirm { margin-top: 16px; padding: 18px; border: 1px solid var(--sp-danger-wash-border); border-radius: 10px; background: var(--sp-danger-wash); max-width: 440px; animation: settingsRiseIn .16s ease-out; }
+.sp-delete-confirm p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.55; color: #7a2e23; }
+.sp-delete-confirm label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--sp-ink); }
+.sp-delete-confirm code { font-family: ui-monospace, Menlo, monospace; }
+.sp-delete-input {
+  width: 180px; padding: 9px 12px; border: 1px solid var(--sp-border-input); border-radius: 8px;
+  font-size: 14px; color: var(--sp-ink); outline: none; background: #fff;
+}
+.sp-delete-input:focus { border-color: var(--sp-danger-ink); box-shadow: 0 0 0 3px rgba(168, 47, 34, .12); }
+.sp-delete-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+/* ---- toast ---- */
+.sp-toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+  padding: 11px 18px; background: var(--sp-toast-bg); color: #fff; border-radius: 9px; font-size: 13.5px; font-weight: 500;
+  box-shadow: 0 6px 20px rgba(28, 34, 48, .22); animation: settingsRiseIn .18s ease-out; z-index: 50;
+}
+.sp-toast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sp-toast-dot); flex: none; }
+
+/* ---- responsive: wrapping flex row is the whole strategy, no breakpoints
+   needed except to keep the sidebar readable once it wraps above content ---- */
+@media (max-width: 760px) {
+  .sp-nav { flex: 1 1 100%; position: static; flex-direction: row; flex-wrap: wrap; }
+  .sp-nav-item { width: auto; }
+  .sp-signedin { display: none; }
+}
+
+/* ---- dark mode — same data-dash-theme attribute the rest of the dashboard
+   uses (see theme.js), so the Theme control on this page also affects it and
+   vice versa. Only the token values change; every rule above reads through
+   var(--sp-*), so nothing else needs touching. A few one-off literal greys
+   (segmented track, toggle-off track, unmet requirement dot, nav hover) get
+   their own override since they were never tokens to begin with. */
+:root[data-dash-theme="dark"] .settings-page {
+  --sp-surface: #161b2e;
+  --sp-surface-subtle: #131829;
+  --sp-border: #272e47;
+  --sp-border-panel: #2c3352;
+  --sp-border-input: #323a5c;
+  --sp-divider: #232a44;
+  --sp-ink: #e8ebf5;
+  --sp-ink-muted: #aab0c4;
+  --sp-ink-soft: #8891a8;
+  --sp-ink-faint: #6f768c;
+  --sp-accent: #5b86ea;
+  --sp-accent-hover: #7aa0f8;
+  --sp-accent-wash: #1c2748;
+  --sp-success: #34c987;
+  --sp-success-wash: #12301f;
+  --sp-warn: #f0a03a;
+  --sp-warn-wash: #33260f;
+  --sp-danger: #f2607f;
+  --sp-danger-ink: #f2788f;
+  --sp-danger-border: #5c2a34;
+  --sp-danger-wash: #241318;
+  --sp-danger-wash-border: #4a2129;
+  --sp-toast-bg: #2a3152;
+  --sp-toast-dot: #34c987;
+  --sp-str-weak: #e4685a;
+  --sp-str-fair: #f0b04f;
+  --sp-str-good: #4fd0a0;
+  --sp-str-strong: #34c987;
+  --sp-str-empty: #2a3152;
+}
+:root[data-dash-theme="dark"] .sp-nav-item:hover { background: #1c2340; }
+:root[data-dash-theme="dark"] .sp-segmented { background: #10142280; }
+:root[data-dash-theme="dark"] .sp-toggle { background: #323a5c; }
+:root[data-dash-theme="dark"] .sp-reqs .dot { background: #323a5c; }
+:root[data-dash-theme="dark"] .sp-input,
+:root[data-dash-theme="dark"] .sp-pwfield,
+:root[data-dash-theme="dark"] .sp-code-input,
+:root[data-dash-theme="dark"] .sp-delete-input { background: var(--sp-surface); }
+:root[data-dash-theme="dark"] .sp-btn--primary { color: #0e1220; }
+:root[data-dash-theme="dark"] .sp-toast { color: #e8ebf5; }
