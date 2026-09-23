@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
-import { getTheme, setTheme } from './theme'
 import { initials, mentorStatus, mentorRoleLabel, approvedChallenges, notesFor, unreadFor } from './data'
 
 /* ============================================================================
@@ -15,7 +14,6 @@ const NAV_INNOVATOR = [
   { k: 'learning', label: 'Learn', ico: 'BookOpen' },
   { k: 'competing', label: 'Compete', ico: 'Trophy' },
   { k: 'learncompete', label: 'Build', ico: 'Wrench' },
-  { k: 'arena', label: 'Arena', ico: 'Gamepad2' },
 ]
 const NAV_INNOVATOR_UTILITY = [
   { k: 'saved', label: 'Saved', ico: 'Bookmark' },
@@ -278,10 +276,8 @@ export function Topbar({
   onSignOut,
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [theme, setThemeState] = useState(getTheme)
   const menuRef = useRef(null)
   usePopoverClose(menuOpen, setMenuOpen, menuRef)
-  const pickTheme = (t) => { setTheme(t); setThemeState(t) }
 
   return (
     <header className="app-topbar">
@@ -320,13 +316,6 @@ export function Topbar({
 
       <div className="grow" />
       <div className="topbar-actions flex items-center gap-3">
-        <div className="theme-seg" role="group" aria-label="Theme">
-          {[['light', 'Sun', 'Light'], ['dark', 'Moon', 'Dark']].map(([k, ico, label]) => (
-            <button key={k} type="button" title={label} aria-label={label} aria-pressed={theme === k} onClick={() => pickTheme(k)}>
-              <Icon name={ico} size={14} />
-            </button>
-          ))}
-        </div>
         <NotificationBell st={st} sv={sv} who={who} />
 
         {/* Profile Avatar Trigger & Dropdown Menu */}

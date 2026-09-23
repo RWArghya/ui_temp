@@ -125,6 +125,17 @@ ul{ margin:0; padding:0; list-style:none; }
 .shell-body{ padding:24px 28px 56px; width:100%; box-sizing:border-box; }
 .shell-main-wrap{ width:100%; min-width:0; }
 #main{ min-width:0; width:100%; }
+.shell.has-rail .shell-main-wrap{
+  display:grid; grid-template-columns:minmax(0,1fr) var(--rail-w); align-items:start; gap:28px; width:100%;
+}
+.app-rail{
+  width:var(--rail-w); max-width:100%; position:sticky; top:calc(var(--topbar-h) + 24px);
+  flex-shrink:0; box-sizing:border-box; display:flex; flex-direction:column; gap:16px; min-width:0;
+}
+@media (max-width:1024px){
+  .shell.has-rail .shell-main-wrap{ grid-template-columns:minmax(0,1fr); }
+  .app-rail{ order:-1; position:static; width:100%; max-width:100%; }
+}
 
 @media (max-width: 900px){
   .shell{ grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); }
@@ -455,7 +466,6 @@ ul{ margin:0; padding:0; list-style:none; }
 .sec-head-l{ display:flex; align-items:center; gap:10px; min-width:0; }
 .sec-head h2{ font-size:17px; font-weight:650; letter-spacing:-.012em; line-height:1.25; text-wrap:balance; }
 .sec-head-l svg{ color:var(--muted); flex-shrink:0; }
-.pz-wrap{ display:contents; }
 .sec-count{ padding:2px 9px; font-size:11.5px; font-weight:600; border-radius:var(--r-pill); background:var(--line-soft); color:var(--ink-soft); white-space:nowrap; flex-shrink:0; }
 .sec-blurb{ margin:-6px 0 12px; font-size:12.5px; color:var(--muted); }
 
@@ -478,8 +488,6 @@ ul{ margin:0; padding:0; list-style:none; }
 .save-btn.is-saved{ color:var(--primary-text); }
 .save-btn.is-saved svg{ fill:currentColor; }
 .init-stretch::after{ content:""; position:absolute; inset:0; z-index:1; }
-.btn-go{ background:var(--primary-soft); border-color:var(--primary-soft-line); color:var(--primary-text); }
-.btn-go:hover{ background:var(--primary); border-color:var(--primary); color:#fff; }
 
 /* ---- Initiative card: browse shape (Recommended, Learn, Compete, Build, Saved, Recent) ----
    Category is an icon + word, never a hue. Level-1 facts only: category, status, name,
@@ -502,26 +510,35 @@ ul{ margin:0; padding:0; list-style:none; }
 .init-dl{ white-space:nowrap; }
 .init-dl.is-soon{ color:var(--warn-text); font-weight:600; }
 
-/* ---- Initiative row: work-list shape (Continue, My Activity) ---- */
+/* ---- Initiative row: work-list shape (Continue, My Activity) ----
+   Non-compact rows are deliberately shallow: icon, title + org on one line,
+   "Next <step>" on the next, then the deadline and one primary action —
+   no progress bar, no separate status badge, nothing to parse before you
+   can decide whether to click Continue. */
 .init-list{ container-type:inline-size; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); box-shadow:var(--sh-rest); overflow:hidden; }
+.init-list-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; border-bottom:1px solid var(--line-soft); }
+.init-list-head h2{ font-size:16px; }
 .init-row{
-  position:relative; display:grid; grid-template-columns:36px minmax(0,1.5fr) minmax(150px,.85fr) 112px auto;
-  align-items:center; gap:0 18px; padding:13px 14px 13px 16px; transition:background .12s ease;
+  position:relative; display:grid; grid-template-columns:38px minmax(0,1fr) auto;
+  align-items:center; gap:14px; padding:14px 18px; transition:background .12s ease;
 }
 .init-row + .init-row{ border-top:1px solid var(--line-soft); }
 .init-row:hover{ background:var(--surface-2); }
-.init-tile{ width:36px; height:36px; border-radius:var(--r-card); background:var(--canvas); border:1px solid var(--line-soft); display:grid; place-items:center; color:var(--ink-soft); }
-.init-main{ min-width:0; display:flex; flex-direction:column; gap:1px; }
+.init-tile{ width:36px; height:36px; border-radius:var(--r-card); background:var(--canvas); border:1px solid var(--line-soft); display:grid; place-items:center; color:var(--ink-soft); flex-shrink:0; }
+.init-main{ min-width:0; display:flex; flex-direction:column; gap:2px; }
 .init-row .init-name{ font-size:14.5px; }
+.init-title-line{ display:flex; align-items:baseline; gap:8px; min-width:0; flex-wrap:wrap; }
+.init-title-line .init-name{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.init-title-line .init-org{ font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.init-next{ font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.init-next-label{ color:var(--faint); font-weight:600; margin-right:6px; }
 .init-meta{ font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .init-meta b{ font-weight:600; color:var(--ink-soft); }
-.init-prog{ display:flex; flex-direction:column; gap:6px; min-width:0; }
-.init-prog .pbar{ height:6px; }
-.init-prog-l{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
-.init-prog-l b{ font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
 .init-status{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; font-size:12.5px; color:var(--muted); min-width:0; }
 .init-actions{ display:flex; align-items:center; gap:6px; }
-/* compact rows have no progress column: tile | main | save, then status | action */
+.init-row-end{ display:flex; align-items:center; gap:16px; flex-shrink:0; }
+.init-row:not(.is-compact) .init-dl{ font-size:12.5px; white-space:nowrap; }
+/* compact rows keep the older tile | main | save / status | action layout */
 .init-row.is-compact{ grid-template-columns:36px minmax(0,1fr) auto; grid-template-areas:"tile main save" "tile status go"; gap:6px 12px; padding:13px 12px 13px 14px; }
 .init-row.is-compact .init-tile{ grid-area:tile; align-self:start; }
 .init-row.is-compact .init-main{ grid-area:main; }
@@ -530,23 +547,14 @@ ul{ margin:0; padding:0; list-style:none; }
 .init-row.is-compact .init-actions{ display:contents; }
 .init-row.is-compact .save-btn{ grid-area:save; align-self:start; }
 .init-row.is-compact .btn{ grid-area:go; }
-@container (max-width:860px){
-  .init-row:not(.is-compact){ grid-template-columns:36px minmax(0,1fr) auto; grid-template-areas:"tile main act" "tile prog status"; gap:8px 14px; padding:13px 12px 13px 14px; }
+@container (max-width:520px){
+  .init-row:not(.is-compact){ grid-template-columns:38px minmax(0,1fr); grid-template-areas:"tile main" "end end"; row-gap:10px; }
   .init-row:not(.is-compact) .init-tile{ grid-area:tile; align-self:start; }
   .init-row:not(.is-compact) .init-main{ grid-area:main; }
-  .init-row:not(.is-compact) .init-prog{ grid-area:prog; }
-  .init-row:not(.is-compact) .init-status{ grid-area:status; flex-direction:row; align-items:center; gap:10px; justify-self:end; }
-  .init-row:not(.is-compact) .init-actions{ grid-area:act; align-self:start; }
-}
-@container (max-width:520px){
-  .init-row:not(.is-compact){ grid-template-areas:"tile main save" "prog prog prog" "status status go"; gap:10px 12px; }
-  .init-row:not(.is-compact) .init-actions{ display:contents; }
-  .init-row:not(.is-compact) .save-btn{ grid-area:save; align-self:start; }
-  .init-row:not(.is-compact) .btn{ grid-area:go; }
-  .init-row:not(.is-compact) .init-status{ justify-self:start; flex-direction:column; align-items:flex-start; gap:0; }
+  .init-row:not(.is-compact) .init-row-end{ grid-area:end; justify-content:space-between; }
 }
 
-/* ---- Home: status band = overview + profile completion, one container ---- */
+/* ---- Home: overview strip ---- */
 .dash-home{ display:flex; flex-direction:column; gap:32px; min-width:0; }
 .band-w{ container-type:inline-size; }
 .band{ position:relative; display:grid; grid-template-columns:minmax(0,1fr); background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); box-shadow:var(--sh-rest); }
@@ -563,44 +571,37 @@ ul{ margin:0; padding:0; list-style:none; }
 .dash-stat-label{ display:flex; align-items:center; gap:6px; margin-top:2px; font-size:12.5px; font-weight:600; color:var(--ink); }
 .dash-stat-label svg{ color:var(--muted); }
 .dash-stat small{ font-size:11.5px; line-height:1.35; color:var(--muted); }
-@container (min-width:1040px){
-  .band.has-pz{ grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); }
-  .band.has-pz .pz{ border-top:0; border-left:1px solid var(--line-soft); }
-}
 @container (max-width:640px){
   .dash-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .dash-stat:nth-child(3){ border-left:0; }
   .dash-stat:nth-child(n+3){ border-top:1px solid var(--line-soft); }
   .dash-stat:first-child{ border-radius:var(--r-card) 0 0 0; }
-  .pz{ grid-template-columns:minmax(0,1fr); }
-  .pz .btn{ width:100%; }
 }
 
-/* ---- Profile completion: docked in Home's status band ---- */
-.pz{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px 16px; padding:12px 16px; border-top:1px solid var(--line-soft); }
-.pz-main{ all:unset; box-sizing:border-box; display:flex; flex-direction:column; gap:8px; min-width:0; padding:4px 6px; margin:-4px -6px; border-radius:var(--r-ctl); cursor:pointer; font:inherit; }
-.pz-main.is-static{ cursor:default; }
-button.pz-main:hover{ background:var(--surface-2); }
-.pz-main:focus-visible{ outline:2px solid var(--primary-text); outline-offset:1px; }
-.pz-t{ display:flex; align-items:baseline; gap:8px; white-space:nowrap; font-size:13px; }
-.pz-t b{ font-weight:700; font-variant-numeric:tabular-nums; }
-.pz-t span{ color:var(--muted); }
-.pz-t a{ color:var(--primary-text); font-weight:600; overflow:hidden; text-overflow:ellipsis; }
-.pz-t a:hover{ text-decoration:underline; }
-.pz-t svg{ align-self:center; color:var(--muted); transition:transform .15s ease; }
-.pz-main[aria-expanded="true"] .pz-t svg{ transform:rotate(180deg); }
-.pz-meter{ display:flex; gap:2px; max-width:340px; }
-.pz-meter i{ display:block; height:6px; border-radius:3px; background:var(--line); }
-.pz-meter i.on{ background:var(--primary); }
-.pz-pop{ position:absolute; z-index:30; top:calc(100% + 6px); right:0; width:min(440px,100%); padding:6px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card); box-shadow:var(--sh-lg); }
-.pz-pop-h{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:8px 10px 4px; }
-.pz-pop li a{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--r-ctl); font-size:13px; font-weight:500; }
-.pz-pop li a:hover{ background:var(--primary-soft); }
-.pz-pop li a > span{ flex:1; min-width:0; }
-.pz-pop li a b{ font-size:12px; font-weight:700; color:var(--ok-text); font-variant-numeric:tabular-nums; }
-.pz-pop li a svg{ color:var(--faint); }
-.pz-done{ margin:4px 4px 2px; padding:9px 6px 6px; border-top:1px solid var(--line-soft); font-size:12px; line-height:1.5; color:var(--muted); }
-.pz-done b{ font-weight:600; color:var(--ink-soft); margin-right:4px; }
+/* ---- Profile completion card (right rail) ----
+   Slim rail widget, not another content card: small padding, a thin ring
+   (a 4px stroke, not .pring's 9px default), --ok green so "progress" and
+   "on track" read as the same colour. A done step is one quiet line with a
+   check; a step still to do is its own bordered, tappable row with a
+   chevron — so "what's left" is the only thing that looks interactive. */
+.profile-card{ padding:16px; }
+.profile-card .pring{
+  width:64px; height:64px;
+  background:conic-gradient(var(--ok) calc(var(--pct,0) * 1%), var(--line-soft) 0);
+}
+.profile-card .pring-inner{ width:56px; height:56px; font-size:14px; }
+.profile-card-head{ display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.profile-card-head h3{ font-size:14.5px; }
+.profile-steps{ display:flex; flex-direction:column; gap:6px; }
+.profile-step.is-done{ display:flex; align-items:center; gap:10px; padding:2px 2px; font-size:12.5px; color:var(--ink-soft); }
+.profile-step-link{
+  display:flex; align-items:center; gap:10px; padding:9px 10px;
+  border:1px solid var(--line); border-radius:var(--r-ctl);
+  font-size:12.5px; font-weight:500; color:var(--ink); transition:border-color .12s ease, background .12s ease;
+}
+.profile-step-link:hover{ border-color:var(--primary-soft-line); background:var(--primary-soft); }
+.profile-step-dot{ width:14px; height:14px; border-radius:50%; border:1.5px solid var(--line); flex-shrink:0; }
+.profile-step-chev{ color:var(--faint); flex-shrink:0; }
 
 /* ---- Tabs ---- */
 .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); }
@@ -852,6 +853,9 @@ button.pz-main:hover{ background:var(--surface-2); }
   width:38px; height:21px; border-radius:var(--r-pill); background:var(--line); border:none;
   position:relative; cursor:pointer; flex-shrink:0; padding:0;
 }
+/* invisible hit-area: keeps the 38x21 track visual but pads the click/tap
+   target out to ~44px so the control meets the min touch-target guideline */
+.switch::before{ content:''; position:absolute; inset:-12px; }
 .switch::after{
   content:''; position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%;
   background:#fff; transition:transform .15s ease; box-shadow:0 1px 2px rgba(0,0,0,.2);
@@ -901,15 +905,6 @@ hr.sep{ border:none; border-top:1px solid var(--line-soft); margin:16px 0; }
 }
 
 
-
-/* ============================================================= THEME SWITCH */
-.theme-seg{ display:inline-flex; padding:2px; gap:2px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--canvas); }
-.theme-seg button{
-  all:revert; box-sizing:border-box; width:28px; height:24px; display:grid; place-items:center;
-  border:0; border-radius:4px; background:none; color:var(--muted); cursor:pointer;
-}
-.theme-seg button:hover{ color:var(--ink); }
-.theme-seg button[aria-pressed="true"]{ background:var(--surface); color:var(--primary-text); box-shadow:var(--sh-sm); }
 
 /* ================================================================ DARK MODE
    Tokens are redefined, never re-authored per component. The second block

@@ -505,94 +505,6 @@ export function nextStepFor(o, st) {
   return { step: label, hint, idx: i, total: steps.length }
 }
 
-/* ---- PromptWars ---- */
-const PW_ANCHOR = new Date('2026-01-07T00:00:00Z')
-const PW_THEMES = ['Ship a one-prompt web app', 'Rebuild a landing page from a screenshot',
-  'Agentic to-do that books its own calendar', 'Voice-first expense tracker',
-  'Turn a CSV into a dashboard', 'Chrome extension in under 50 prompts',
-  'Recreate a game from memory', 'Prompt your way to a working API']
-const PW_CITIES = ['Bengaluru', 'Delhi NCR', 'Hyderabad', 'Pune', 'Chennai', 'Mumbai']
-export const PW_CREDITS_PER_DROP = 50
-export const PW_STORE = [
-  { id: 'stickers', label: 'Sticker pack', cost: 100 },
-  { id: 'tee', label: 'Arena tee', cost: 300 },
-  { id: 'keycaps', label: 'Mechanical keycaps', cost: 600 },
-  { id: 'kit', label: 'Full arena kit', cost: 1000 },
-]
-
-export function pwDropIndex(when) {
-  const days = Math.floor(((when || TODAY) - PW_ANCHOR) / 86400000)
-  return Math.max(0, Math.floor(days / 14))
-}
-export function pwDrop(i) {
-  const start = new Date(PW_ANCHOR.getTime() + i * 14 * 86400000)
-  const close = new Date(start.getTime() + 13 * 86400000)
-  const no = i + 1
-  return { id: 'pw-' + no, no, theme: PW_THEMES[i % PW_THEMES.length],
-    city: PW_CITIES[i % PW_CITIES.length], opens: start.toISOString().slice(0, 10),
-    closes: close.toISOString().slice(0, 10) }
-}
-export const pwCurrent = st => pwDrop(pwDropIndex())
-export const pwNext = st => pwDrop(pwDropIndex() + 1)
-export const daysUntil = iso => Math.ceil((new Date(iso + 'T00:00:00Z') - TODAY) / 86400000)
-
-const PW_STATE = st => (st || {}).pw || {}
-export const pwEntries = st => PW_STATE(st).entries || []
-export const pwLedger = st => PW_STATE(st).ledger || []
-export const pwSubs = st => PW_STATE(st).subs || {}
-export const pwSub = (dropId, st) => pwSubs(st)[dropId] || null
-export const pwCredits = st => pwLedger(st).reduce((n, e) => n + e.delta, 0)
-export function pwStreak(st) {
-  const ids = pwEntries(st)
-  let n = 0
-  for (let i = pwDropIndex(); i >= 0; i--) { if (ids.indexOf(pwDrop(i).id) === -1) break; n++ }
-  return n
-}
-const PW_RUBRIC = ['Idea', 'Completeness', 'Economy']
-export function pwScore(dropId, sub) {
-  const r = rng(hashStr(dropId + (sub.repo || '') + sub.prompts))
-  const idea = 58 + Math.floor(r() * 38)
-  const done = (sub.url ? 70 : 55) + Math.floor(r() * 26)
-  const econ = Math.max(35, Math.min(97, 104 - Math.round(Number(sub.prompts || 60) * 0.8)))
-  const total = Math.round((idea + done + econ) / 3)
-  return { idea, done, econ, total }
-}
-export function pwFeedback(sc, sub) {
-  const bits = []
-  bits.push(sc.econ >= 75 ? 'Strong scope control for ' + sub.prompts + ' prompts.'
-    : 'It took ' + sub.prompts + ' prompts to get here — tightening the first few would lift economy most.')
-  bits.push(sub.url ? 'A live URL meant the evaluator could actually use it, which carried completeness.'
-    : 'No live URL, so completeness was judged from the repo alone — deploying it is the cheapest points on the board.')
-  bits.push(sc.idea >= 80 ? 'The idea reads as yours rather than the brief restated.'
-    : 'The idea sits close to the brief; a sharper angle is what separates the top ten.')
-  return bits.join(' ')
-}
-export function pwLeaderboard(dropId, st) {
-  st = st || {}
-  const r = rng(hashStr(dropId + 'board'))
-  const rivals = PEOPLE.map(name => ({ name, credits: 60 + Math.floor(r() * 260), you: false }))
-  const mine = pwCredits(st)
-  const board = rivals.concat(mine > 0 ? [{ name: st.name || 'You', credits: mine, you: true }] : [])
-  board.sort((a, b) => b.credits - a.credits || a.name.localeCompare(b.name))
-  return board.map((x, i) => Object.assign({ rank: i + 1 }, x))
-}
-export function pwRank(st) {
-  const row = pwLeaderboard(pwCurrent(st).id, st).find(x => x.you)
-  return row ? row.rank : null
-}
-export function pwBoard(scope, st) {
-  st = st || {}
-  if (scope === 'drop') return pwLeaderboard(pwCurrent(st).id, st)
-  const seedKey = scope === 'alltime' ? 'alltime' : 'city:' + scope
-  const r = rng(hashStr(seedKey))
-  const pool = scope === 'alltime' ? PEOPLE : PEOPLE.slice(0, 6)
-  const rivals = pool.map(name => ({ name, credits: (scope === 'alltime' ? 320 : 180) + Math.floor(r() * 900), you: false }))
-  const mine = pwCredits(st)
-  const board = rivals.concat(mine > 0 ? [{ name: st.name || 'You', credits: mine, you: true }] : [])
-  board.sort((a, b) => b.credits - a.credits || a.name.localeCompare(b.name))
-  return board.map((x, i) => Object.assign({ rank: i + 1 }, x))
-}
-
 /* ---- mentor / evaluator ---- */
 export const MENTOR_STAGES = ['pending', 'info', 'approved', 'rejected']
 export function mentorStatus(st) { return (st.mentorApp && st.mentorApp.status) || 'none' }
@@ -703,7 +615,7 @@ export const isProfilePublic = st => !!(st || {}).profilePublic
    fresh account (no st.settings yet) still renders real toggle states
    instead of undefined. Settings.jsx never reads st.settings directly. */
 export const NOTIFICATION_DEFAULTS = {
-  deadlines: true, applicationStatus: true, sessions: true, evaluations: true, programUpdates: true, channel: 'inapp',
+  deadlines: true, applicationStatus: true, sessions: true, evaluations: false, programUpdates: true, channel: 'inapp+email',
 }
 export function settingsFor(st) {
   const s = (st || {}).settings || {}
@@ -719,7 +631,6 @@ export function landingViews(st) {
   st = st || {}
   const out = [{ k: 'home', label: 'My Dashboard', ico: '🏠', blurb: "Everything you're doing, in one place" }]
   ;(st.intents || []).forEach(k => VIEWS[k] && out.push({ k, label: VIEWS[k].label, ico: VIEWS[k].ico, blurb: VIEWS[k].blurb }))
-  out.push({ k: 'arena', label: 'Arena', ico: '🎮', blurb: 'PromptWars — the vibe coding arena' })
   if (mentorStatus(st) === 'approved') out.push({ k: 'mentor', label: 'Mentor', ico: '🧭', blurb: 'Your queue, teams and challenges' })
   return out
 }

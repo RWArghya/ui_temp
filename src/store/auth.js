@@ -68,4 +68,11 @@ function changePassword(currentPw, newPw) {
   return { ok: true }
 }
 
-export const authStore = { read, save, clear, changePassword };
+// Settings' Danger zone (deactivate/delete) uses this to re-check identity
+// before an irreversible-ish action, the same hash changePassword checks.
+function verifyPassword(pw) {
+  const st = read()
+  return !!st.account && weakHash(pw) === st.account.pw
+}
+
+export const authStore = { read, save, clear, changePassword, verifyPassword };
