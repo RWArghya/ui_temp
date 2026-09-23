@@ -67,13 +67,14 @@ export default function EditItemModal({
           />
         </div>
 
-        {/* Optional Description */}
+        {/* Description */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Description (optional)
+            Description{isPub && <span className="text-signal"> *</span>}
           </label>
           <textarea
             rows={3}
+            required={isPub}
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder={isPub ? 'Abstract or key contributions of the paper...' : 'Details about the award, problem statement, or team achievement...'}
@@ -85,10 +86,11 @@ export default function EditItemModal({
         {isPub && (
           <div>
             <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              Link / DOI (optional)
+              Link / DOI <span className="text-signal">*</span>
             </label>
             <input
               type="text"
+              required
               value={link}
               onChange={e => setLink(e.target.value)}
               placeholder="e.g. arxiv.org/abs/2025.12345 or doi.org/..."

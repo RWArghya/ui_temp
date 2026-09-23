@@ -14,6 +14,7 @@ export default function EditProjectModal({
   const [description, setDescription] = useState('')
   const [techStack, setTechStack] = useState([])
   const [techInput, setTechInput] = useState('')
+  const [validationError, setValidationError] = useState('')
   const [sourceLink, setSourceLink] = useState('')
   const [liveLink, setLiveLink] = useState('')
   const [docsLink, setDocsLink] = useState('')
@@ -44,6 +45,7 @@ export default function EditProjectModal({
     if (!trimmed) return
     if (!techStack.some(t => t.toLowerCase() === trimmed.toLowerCase())) {
       setTechStack(prev => [...prev, trimmed])
+      setValidationError('')
     }
     setTechInput('')
   }
@@ -61,6 +63,15 @@ export default function EditProjectModal({
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    if (!techStack.length) {
+      setValidationError('Add at least one technology to the stack.')
+      return
+    }
+    if (!sourceLink.trim() && !liveLink.trim() && !docsLink.trim()) {
+      setValidationError('Add at least one project link — source, demo or docs.')
+      return
+    }
+    setValidationError('')
     onSave({
       ...(initialData || {}),
       title: title.trim(),
@@ -102,7 +113,7 @@ export default function EditProjectModal({
         {/* Tech Stack Pills Manager */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Tech stack
+            Tech stack <span className="text-signal">*</span>
           </label>
           {techStack.length > 0 && (
             <div className="flex flex-wrap gap-1.5 p-2.5 mb-2 bg-paper border border-paper-line rounded-[2px]">
@@ -147,10 +158,11 @@ export default function EditProjectModal({
         {/* Project Description */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Description / Overview
+            Description / Overview <span className="text-signal">*</span>
           </label>
           <textarea
             rows={3}
+            required
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="Brief overview of what this project does and problems it solves..."
@@ -158,48 +170,60 @@ export default function EditProjectModal({
           />
         </div>
 
-        {/* Source Code Link */}
-        <div>
-          <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Source code repository
+        {/* Proof of work: any one of the three links will do */}
+        <div className="pt-0.5">
+          <label className="block text-[12.5px] font-semibold text-ink-900 mb-2.5">
+            Project links <span className="text-signal">*</span>
+            <span className="font-normal text-graphite-dim"> — add at least one</span>
           </label>
-          <input
-            type="text"
-            value={sourceLink}
-            onChange={e => setSourceLink(e.target.value)}
-            placeholder="e.g. github.com/your-username/repo"
-            className="w-full px-3.5 py-2 text-[13px] border border-paper-line rounded-[2px] focus:outline-none focus:border-signal text-ink-900 bg-white"
-          />
-        </div>
 
-        {/* Live Demo & Documentation Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              Live website / Demo
+          {/* Source Code Link */}
+          <div className="mb-3">
+            <label className="block text-[12px] font-medium text-graphite-dim mb-1">
+              Source code repository
             </label>
             <input
               type="text"
-              value={liveLink}
-              onChange={e => setLiveLink(e.target.value)}
-              placeholder="e.g. https://myproject.com"
+              value={sourceLink}
+              onChange={e => { setSourceLink(e.target.value); setValidationError('') }}
+              placeholder="e.g. github.com/your-username/repo"
               className="w-full px-3.5 py-2 text-[13px] border border-paper-line rounded-[2px] focus:outline-none focus:border-signal text-ink-900 bg-white"
             />
           </div>
 
-          <div>
-            <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              Documentation (optional)
-            </label>
-            <input
-              type="text"
-              value={docsLink}
-              onChange={e => setDocsLink(e.target.value)}
-              placeholder="e.g. https://docs.myproject.com"
-              className="w-full px-3.5 py-2 text-[13px] border border-paper-line rounded-[2px] focus:outline-none focus:border-signal text-ink-900 bg-white"
-            />
+          {/* Live Demo & Documentation Links */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[12px] font-medium text-graphite-dim mb-1">
+                Live website / Demo
+              </label>
+              <input
+                type="text"
+                value={liveLink}
+                onChange={e => { setLiveLink(e.target.value); setValidationError('') }}
+                placeholder="e.g. https://myproject.com"
+                className="w-full px-3.5 py-2 text-[13px] border border-paper-line rounded-[2px] focus:outline-none focus:border-signal text-ink-900 bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[12px] font-medium text-graphite-dim mb-1">
+                Documentation
+              </label>
+              <input
+                type="text"
+                value={docsLink}
+                onChange={e => { setDocsLink(e.target.value); setValidationError('') }}
+                placeholder="e.g. https://docs.myproject.com"
+                className="w-full px-3.5 py-2 text-[13px] border border-paper-line rounded-[2px] focus:outline-none focus:border-signal text-ink-900 bg-white"
+              />
+            </div>
           </div>
         </div>
+
+        {validationError && (
+          <p className="text-[12px] text-danger font-medium">{validationError}</p>
+        )}
 
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-3 border-t border-paper-line">

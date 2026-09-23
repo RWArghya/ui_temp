@@ -119,7 +119,7 @@ export default function Resume() {
             <Icon name="Check" size={14} /> Done
           </Button>
         </PageToolbar>
-        <div className="max-w-[800px] mx-auto px-3 sm:px-4 pt-6">
+        <div className="max-w-[800px] mx-auto px-4 sm:px-6 pt-6">
           <ResumeCustomizer
             profile={profile}
             initiatives={inits}
@@ -224,7 +224,7 @@ export default function Resume() {
       </PageToolbar>
 
       {/* ── Printable Paper Sheet Container ── */}
-      <div className="max-w-[800px] mx-auto px-2 sm:px-4 pt-5">
+      <div className="max-w-[800px] mx-auto px-4 sm:px-6 pt-5">
         <div
           ref={resumeRef}
           className="resume-sheet doc-sheet bg-white mx-auto shadow-2xl rounded-[4px] px-8 py-7 sm:px-10 sm:py-9 border border-paper-line min-h-[1050px]"

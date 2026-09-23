@@ -105,10 +105,11 @@ export default function EditCertModal({
         {/* Issuing Organization */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Issuing organization
+            Issuing organization <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={org}
             onChange={e => setOrg(e.target.value)}
             placeholder="e.g. Amazon Web Services, Coursera, Google"
@@ -119,10 +120,11 @@ export default function EditCertModal({
         {/* Issue Date */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Issue date
+            Issue date <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={issueDate}
             onChange={e => setIssueDate(e.target.value)}
             placeholder="e.g. 2024, or May 2024"
@@ -132,9 +134,14 @@ export default function EditCertModal({
 
         {/* Proof of the certificate: a link, an image, or both — enforced on submit */}
         <div className="pt-0.5">
+          <label className="block text-[12.5px] font-semibold text-ink-900 mb-2.5">
+            Proof of certificate <span className="text-signal">*</span>
+            <span className="font-normal text-graphite-dim"> — a link, an image, or both</span>
+          </label>
+
           {/* Certificate link */}
           <div className="mb-3">
-            <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
+            <label className="block text-[12px] font-medium text-graphite-dim mb-1">
               Certificate link
             </label>
             <input
@@ -155,7 +162,7 @@ export default function EditCertModal({
 
           {/* Certificate image */}
           <div>
-            <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
+            <label className="block text-[12px] font-medium text-graphite-dim mb-1">
               Certificate image
             </label>
 

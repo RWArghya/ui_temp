@@ -88,10 +88,11 @@ export default function EditEducationModal({
         {/* Specialization / Field of Study */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Specialization / Stream
+            Specialization / Stream <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={specialization}
             onChange={e => setSpecialization(e.target.value)}
             placeholder="e.g. Computer Science, Science (PCM), Commerce"
@@ -117,10 +118,11 @@ export default function EditEducationModal({
         {/* Board or University */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Board or University
+            Board or University <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={boardOrUniversity}
             onChange={e => setBoardOrUniversity(e.target.value)}
             placeholder="e.g. MAKAUT, CBSE, ICSE, University of Mumbai"
@@ -131,10 +133,11 @@ export default function EditEducationModal({
         {/* Location */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Location
+            Location <span className="text-signal">*</span>
           </label>
           <input
             type="text"
+            required
             value={location}
             onChange={e => setLocation(e.target.value)}
             placeholder="e.g. New Delhi, India"
@@ -146,10 +149,11 @@ export default function EditEducationModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              Start year
+              Start year <span className="text-signal">*</span>
             </label>
             <input
               type="text"
+              required
               value={startYear}
               onChange={e => setStartYear(e.target.value)}
               placeholder="e.g. 2022"
@@ -159,10 +163,11 @@ export default function EditEducationModal({
 
           <div>
             <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              End year
+              End year <span className="text-signal">*</span>
             </label>
             <input
               type="text"
+              required={!isOngoing}
               disabled={isOngoing}
               value={isOngoing ? 'Present' : endYear}
               onChange={e => setEndYear(e.target.value)}

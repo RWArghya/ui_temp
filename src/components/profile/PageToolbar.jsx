@@ -16,16 +16,21 @@ import Icon from '../../dashboard/Icon.jsx'
  */
 
 /**
+ * The background is full-bleed but the content is not: it sits on the same
+ * max-width and the same px-4 sm:px-6 gutter as the sheet below, so the back
+ * arrow lands exactly above the sheet's left edge and the actions above its
+ * right. Pass the sheet's own max-width, or the column breaks.
+ *
  * @param {function} onBack
  * @param {string}   backLabel  The place the arrow returns to
  * @param {string}   title      Where the user is now
- * @param {string}   maxWidth   Tailwind max-w-* matching the sheet below it
+ * @param {string}   maxWidth   Tailwind max-w-* — must match the sheet below
  * @param {ReactNode} children  Actions, rendered far right
  */
 export default function PageToolbar({ onBack, backLabel, title, maxWidth = 'max-w-[1040px]', children }) {
   return (
-    <header className="no-print sticky top-0 z-40 bg-white border-b border-paper-line px-4 sm:px-8 py-3">
-      <div className={`${maxWidth} mx-auto flex items-center justify-between gap-4`}>
+    <header className="no-print sticky top-0 z-40 bg-white border-b border-paper-line py-3">
+      <div className={`${maxWidth} mx-auto px-4 sm:px-6 flex items-center justify-between gap-4`}>
         {/* far left: back, then where you are */}
         <div className="flex items-center gap-3 min-w-0">
           <button

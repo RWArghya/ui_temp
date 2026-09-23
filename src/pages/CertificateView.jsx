@@ -253,6 +253,7 @@ export default function CertificateView() {
         onBack={handleBack}
         backLabel="Certificates"
         title={activeCert.name}
+        maxWidth="max-w-[900px]"
       >
         <SaveMenu
           items={[
