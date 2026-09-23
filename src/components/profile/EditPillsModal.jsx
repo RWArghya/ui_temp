@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
 import Pill from './Pill.jsx'
+import Icon from '../../dashboard/Icon.jsx'
 
 export default function EditPillsModal({
   isOpen,
@@ -74,10 +75,11 @@ export default function EditPillsModal({
                   <button
                     type="button"
                     onClick={() => handleRemove(idx)}
-                    className="text-graphite-dim hover:text-danger text-[13px] font-bold leading-none cursor-pointer"
+                    className="text-graphite-dim hover:text-danger leading-none cursor-pointer inline-flex"
                     title={`Remove ${item}`}
+                    aria-label={`Remove ${item}`}
                   >
-                    ✕
+                    <Icon name="X" size={13} />
                   </button>
                 </span>
               ))}

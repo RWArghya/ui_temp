@@ -2,6 +2,7 @@
  * LinkedIn-style popup modal to edit headline and organization (e.g. IIT Delhi).
  */
 import { useState } from 'react'
+import Icon from '../../dashboard/Icon.jsx'
 
 export default function EditHeadlineModal({
   initialHeadline = '',
@@ -40,9 +41,10 @@ export default function EditHeadlineModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full text-graphite-dim hover:bg-paper hover:text-ink-900 flex items-center justify-center text-[16px] transition-colors"
+            className="w-8 h-8 rounded-full text-graphite-dim hover:bg-paper hover:text-ink-900 flex items-center justify-center transition-colors"
+            aria-label="Close"
           >
-            ✕
+            <Icon name="X" size={16} />
           </button>
         </div>
 

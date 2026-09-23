@@ -15,6 +15,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile.js'
 import ResumeCustomizer from '../components/profile/ResumeCustomizer.jsx'
 import { generateLatexResume, downloadLatexFile } from '../utils/latexGenerator.js'
+import Icon from '../dashboard/Icon.jsx'
 
 export default function Resume() {
   const navigate = useNavigate()
@@ -261,7 +262,7 @@ export default function Resume() {
                   }}
                   className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
                 >
-                  <span className="text-[14px]">📄</span>
+                  <Icon name="FileText" size={14} />
                   <div>
                     <div className="font-semibold text-[12px] text-ink-900">PDF</div>
                     <div className="text-[10px] text-graphite-dim">Save / Print as PDF</div>
@@ -277,7 +278,7 @@ export default function Resume() {
                   }}
                   className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
                 >
-                  <span className="text-[14px]">📝</span>
+                  <Icon name="Edit3" size={14} />
                   <div>
                     <div className="font-semibold text-[12px] text-ink-900">LaTeX</div>
                     <div className="text-[10px] text-graphite-dim">Download .tex code</div>

@@ -4,6 +4,7 @@
  * ---- TEAMMATE BOUNDARY END ---- */
 
 import Meter from './Meter.jsx'
+import Icon from '../../dashboard/Icon.jsx'
 
 /**
  * LevelStrip — glanceable level + XP bar + badge count + credits.
@@ -50,7 +51,9 @@ export default function LevelStrip({ level, xp, xpNext, xpPct, badgeCount, credi
         </p>
       </div>
 
-      <span className="text-[13px] text-graphite-dim" aria-hidden="true">→</span>
+      <span className="text-graphite-dim flex-none" aria-hidden="true">
+        <Icon name="ArrowRight" size={14} />
+      </span>
     </button>
   )
 }

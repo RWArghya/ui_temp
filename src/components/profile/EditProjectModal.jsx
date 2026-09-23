@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import Icon from '../../dashboard/Icon.jsx'
 
 export default function EditProjectModal({
   isOpen,
@@ -114,9 +115,10 @@ export default function EditProjectModal({
                   <button
                     type="button"
                     onClick={() => handleRemoveTech(idx)}
-                    className="text-graphite-dim hover:text-danger text-[12px] font-bold leading-none cursor-pointer"
+                    className="text-graphite-dim hover:text-danger leading-none cursor-pointer inline-flex"
+                    aria-label={`Remove ${tech}`}
                   >
-                    ✕
+                    <Icon name="X" size={12} />
                   </button>
                 </span>
               ))}

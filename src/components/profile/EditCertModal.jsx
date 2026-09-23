@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import Icon from '../../dashboard/Icon.jsx'
 
 export default function EditCertModal({
   isOpen,
@@ -173,7 +174,9 @@ export default function EditCertModal({
                   />
                 </div>
                 <div className="flex items-center justify-between gap-3 border-t border-paper-line bg-white px-2.5 py-2">
-                  <span className="text-[11px] text-dash-ok font-medium">✓ Image attached</span>
+                  <span className="text-[11px] text-dash-ok font-medium inline-flex items-center gap-1">
+                    <Icon name="Check" size={12} /> Image attached
+                  </span>
                   <div className="flex items-center gap-2">
                     <label className="px-2.5 py-1 text-[11.5px] font-medium border border-paper-line bg-white hover:bg-paper rounded-[2px] text-ink-900 cursor-pointer transition-colors">
                       Change

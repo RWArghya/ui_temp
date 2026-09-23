@@ -39,6 +39,8 @@ import EditItemModal from '../components/profile/EditItemModal.jsx'
 import EditCertModal from '../components/profile/EditCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
+import IconChip from '../components/profile/IconChip.jsx'
+import Icon from '../dashboard/Icon.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
 /* ---- TEAMMATE BOUNDARY END ---- */
 
@@ -471,7 +473,9 @@ export default function Profile() {
   if (error) return (
     <div className="min-h-screen bg-paper flex items-center justify-center p-8">
       <div className="text-center max-w-md">
-        <div className="text-4xl mb-4">⚠️</div>
+        <div className="flex justify-center mb-4">
+          <IconChip name="AlertTriangle" tone="amber" size="lg" />
+        </div>
         <h2 className="text-[22px] font-display font-bold text-ink-900 mb-2">Failed to load profile</h2>
         <p className="text-[14px] text-graphite-dim mb-6">{error}</p>
         <button
@@ -632,19 +636,13 @@ export default function Profile() {
   // ---- JOURNEY (Platform journey from profile creation to ongoing: most recent on top) ----
   const journeyTimeline = buildPlatformJourney(profile, inits, 'recent')
   const JourneyTab = (
-    <SectionCard
-      title="Your journey"
-      action={
-        <span className="text-[11px] font-mono text-graphite-dim font-medium bg-paper border border-paper-line px-2 py-0.5 rounded-[2px] inline-flex items-center gap-1">
-          <span>⚡</span> Most recent on top
-        </span>
-      }
-    >
-      <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Your complete journey on Hack2skill — ordered with your latest milestones and active initiatives at the top, down to profile creation at the bottom.
+    <SectionCard title="Your journey">
+      <p className="text-[13px] text-graphite-dim mt-1 mb-5">
+        Your complete journey on Hack2skill, newest first — from your latest milestones and
+        active initiatives down to the day you created your profile.
       </p>
       {journeyTimeline.length > 0 ? (
-        <div className="relative pl-6 before:content-[''] before:absolute before:left-[6px] before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-paper-line space-y-1">
+        <div className="relative pl-6 before:content-[''] before:absolute before:left-[4px] before:top-[10px] before:bottom-[10px] before:w-[2px] before:bg-paper-line">
           {journeyTimeline.map(item => (
             <TimelineItem
               key={item.id}
@@ -652,6 +650,7 @@ export default function Profile() {
               title={item.title}
               subtitle={item.subtitle}
               date={item.date}
+              icon={item.icon}
             />
           ))}
         </div>
@@ -704,7 +703,7 @@ export default function Profile() {
                 onEdit={() => setEditEducationModal({ mode: 'edit', item: e })}
               >
                 <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-[20px] flex-none mt-0.5">🎓</span>
+                  <IconChip name="GraduationCap" tone="blue" className="mt-0.5" />
                   <div className="min-w-0">
                     <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
                       {degreeText || 'Education'}
@@ -767,7 +766,7 @@ export default function Profile() {
                 onEdit={() => setEditProjectModal({ mode: 'edit', item: p })}
               >
                 <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-[20px] flex-none mt-0.5">📁</span>
+                  <IconChip name="Code2" tone="blue" className="mt-0.5" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
@@ -806,7 +805,7 @@ export default function Profile() {
                             className="relative z-[1] text-signal hover:underline inline-flex items-center gap-1 font-medium"
                             onClick={e => e.stopPropagation()}
                           >
-                            <span>Source code ↗</span>
+                            <span>Source code</span><Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                           </a>
                         )}
                         {p.liveLink && (
@@ -817,7 +816,7 @@ export default function Profile() {
                             className="relative z-[1] text-signal hover:underline inline-flex items-center gap-1 font-medium"
                             onClick={e => e.stopPropagation()}
                           >
-                            <span>Live demo ↗</span>
+                            <span>Live demo</span><Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                           </a>
                         )}
                         {p.docsLink && (
@@ -828,7 +827,7 @@ export default function Profile() {
                             className="relative z-[1] text-signal hover:underline inline-flex items-center gap-1 font-medium"
                             onClick={e => e.stopPropagation()}
                           >
-                            <span>Docs ↗</span>
+                            <span>Docs</span><Icon name="ExternalLink" size={11} className="flex-none opacity-80" />
                           </a>
                         )}
                       </div>
@@ -875,7 +874,7 @@ export default function Profile() {
                 onEdit={() => setEditItemModal({ type: 'publication', mode: 'edit', item: p })}
               >
                 <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-[20px] flex-none mt-0.5">📄</span>
+                  <IconChip name="FileText" tone="slate" className="mt-0.5" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
@@ -897,7 +896,7 @@ export default function Profile() {
                         className="relative z-[1] text-signal hover:underline text-[12px] mt-1.5 inline-block font-medium"
                         onClick={e => e.stopPropagation()}
                       >
-                        Paper / Link ↗
+                        <span className="inline-flex items-center gap-1">Paper / Link <Icon name="ExternalLink" size={11} className="flex-none opacity-80" /></span>
                       </a>
                     )}
                   </div>
@@ -945,7 +944,7 @@ export default function Profile() {
                 onEdit={() => setEditItemModal({ type: 'achievement', mode: 'edit', item: a })}
               >
                 <div className="flex items-start gap-3 min-w-0">
-                  <span className="text-[20px] flex-none mt-0.5">🏅</span>
+                  <IconChip name="Trophy" tone="amber" className="mt-0.5" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
@@ -1009,7 +1008,7 @@ export default function Profile() {
               onEdit={() => setEditCertModal({ mode: 'edit', item: c })}
             >
               <div className="flex items-start gap-3 min-w-0">
-                <span className="text-[20px] flex-none mt-0.5">📜</span>
+                <IconChip name="Award" tone="slate" className="mt-0.5" />
                 <div className="min-w-0">
                   <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
                     {c.title}
@@ -1090,7 +1089,8 @@ export default function Profile() {
                 }}
                 className="py-3.5 flex items-center justify-between gap-3 group cursor-pointer hover:bg-paper/60 -mx-3 px-3 rounded-[2px] transition-colors"
               >
-                <span className="flex items-center gap-2 min-w-0">
+                <span className="flex items-center gap-3 min-w-0">
+                  <IconChip name="BadgeCheck" tone="green" size="sm" />
                   <span className="text-[13.5px] font-semibold text-ink-900 group-hover:text-signal transition-colors truncate">
                     {o.name}
                   </span>
@@ -1142,9 +1142,9 @@ export default function Profile() {
               onEdit={() => setEditLinkModal({ mode: 'edit', item })}
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-9 h-9 rounded-[2px] bg-paper border border-paper-line flex items-center justify-center text-ink-900 flex-none group-hover:border-signal/40 transition-colors">
+                <IconChip tone="slate" className="group-hover:border-signal/40 transition-colors">
                   {getPlatformIcon(item.platform)}
-                </div>
+                </IconChip>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="text-[13.5px] font-bold text-ink-900 leading-snug group-hover:text-signal transition-colors">
@@ -1172,7 +1172,9 @@ export default function Profile() {
         </div>
       ) : (
         <div className="py-8 text-center border border-dashed border-paper-line rounded-[2px] mt-3">
-          <div className="text-[28px] mb-2">🔗</div>
+          <div className="flex justify-center mb-2">
+            <IconChip name="Link2" tone="blue" size="lg" />
+          </div>
           <p className="text-[14px] text-graphite-dim">No connected profiles added yet.</p>
           <p className="text-[12px] text-graphite-dim mt-1.5">Add your GitHub, LeetCode, LinkedIn, or portfolio.</p>
           <button
@@ -1216,7 +1218,7 @@ export default function Profile() {
                 className="w-24 h-28 flex flex-col items-center justify-center gap-2 border border-paper-line rounded-[4px] bg-paper hover:border-signal/40 hover:bg-signal-soft/20 transition-colors flex-none"
                 title={b.label}
               >
-                <span className="text-[28px] leading-none">{b.ico}</span>
+                <IconChip name={b.ico} tone="blue" size="lg" />
                 <p className="text-[10.5px] text-graphite-dim font-medium text-center leading-tight px-2 w-full break-words">{b.label}</p>
               </div>
             ))}
@@ -1286,7 +1288,7 @@ export default function Profile() {
                   className={GHOST_BTN}
                   title="Generate resume"
                 >
-                  📄 Resume
+                  <Icon name="FileText" size={13} /> Resume
                 </button>
 
                 {/* Share */}
@@ -1298,7 +1300,7 @@ export default function Profile() {
                   title="Share profile link"
                   aria-expanded={shareOpen}
                 >
-                  🔗 {shareOpen ? 'Hide link' : 'Share'}
+                  <Icon name="Link2" size={13} /> {shareOpen ? 'Hide link' : 'Share'}
                 </button>
 
                 {/* Private / Public toggle */}
@@ -1315,7 +1317,8 @@ export default function Profile() {
                   title={profile.isPublic ? 'Profile is public — click to make private' : 'Profile is private — click to make public'}
                   aria-pressed={profile.isPublic}
                 >
-                  {profile.isPublic ? '🌐 Public' : '🔒 Private'}
+                  <Icon name={profile.isPublic ? 'Globe' : 'Lock'} size={13} />
+                  {profile.isPublic ? 'Public' : 'Private'}
                 </button>
               </div>
             </div>
@@ -1330,7 +1333,9 @@ export default function Profile() {
                 {profile.org ? <> · {profile.org}</> : null}
               </p>
               {profile.region && (
-                <p className="text-[12px] text-graphite-dim mt-1">📍 {profile.region}</p>
+                <p className="text-[12px] text-graphite-dim mt-1 inline-flex items-center gap-1">
+                  <Icon name="MapPin" size={12} /> {profile.region}
+                </p>
               )}
             </div>
 
@@ -1345,7 +1350,9 @@ export default function Profile() {
                     onClick={handleCopyLink}
                     className="px-3 py-1 text-[11px] font-semibold bg-signal text-white rounded-[2px] hover:bg-signal-dark transition-colors cursor-pointer whitespace-nowrap"
                   >
-                    {copyDone ? '✓ Copied!' : 'Copy link'}
+                    {copyDone
+                      ? <span className="inline-flex items-center gap-1"><Icon name="Check" size={12} /> Copied!</span>
+                      : 'Copy link'}
                   </button>
                 </div>
               </div>
