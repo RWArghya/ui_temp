@@ -11,9 +11,11 @@ import Icon from '../../dashboard/Icon.jsx'
  * index.css instead, which proto.css re-points under dark mode, so one
  * component covers every profile surface in both themes.
  *
- * Geometry and tones track `.icon-chip` deliberately: 38 / 30 / 48px at
- * 10 / 8 / 14px radius. If the two systems are ever merged, this becomes a
- * rename.
+ * Sizes track `.icon-chip` (38 / 30 / 48px); the radius does not. proto's chip
+ * is 10px, but the profile sits on index.css's 2px control / 4px card scale —
+ * which is also what ui.jsx's Card uses across Arena, Evaluate, Mentor and
+ * Workspace. Settings is the file on proto's 8px scale, not this one. So the
+ * chips follow the page they are on: 4 / 6 / 8px.
  */
 
 const TONES = {
@@ -24,9 +26,9 @@ const TONES = {
 }
 
 const SIZES = {
-  sm: ['w-[30px] h-[30px] rounded-[8px]', 16],
-  md: ['w-[38px] h-[38px] rounded-[10px]', 18],
-  lg: ['w-12 h-12 rounded-[14px]', 24],
+  sm: ['w-[30px] h-[30px] rounded-[4px]', 16],
+  md: ['w-[38px] h-[38px] rounded-[6px]', 18],
+  lg: ['w-12 h-12 rounded-[8px]', 24],
 }
 
 /**

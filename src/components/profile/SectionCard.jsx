@@ -4,14 +4,23 @@
  * ---- TEAMMATE BOUNDARY END ---- */
 
 /**
- * SectionCard — white bordered card with optional heading and header action.
+ * SectionCard — white bordered card with optional heading, subtitle and action.
  *
- * @param {string}      title      - Optional card heading
- * @param {ReactNode}   action     - Optional action button placed in top right
- * @param {ReactNode}   children
- * @param {string}      className  - Extra Tailwind classes
+ * The card owns the gap between its header and its body. It used to not: every
+ * call site added its own `mt-4` (or `mt-3`, on the preview page) and its own
+ * `mt-1 mb-4` description paragraph, which is why vertical rhythm drifted
+ * between sections and between the two pages. Pass `subtitle` instead of
+ * writing a paragraph, and give `children` no top margin.
+ *
+ * @param {ReactNode} title      Card heading
+ * @param {ReactNode} subtitle   One line under the heading, explaining the section
+ * @param {ReactNode} action     Control in the top right (see CardAction)
+ * @param {ReactNode} children
+ * @param {string}    className  Extra Tailwind classes
  */
-export default function SectionCard({ title, action, children, className = '' }) {
+export default function SectionCard({ title, subtitle, action, children, className = '' }) {
+  const hasHeader = title || subtitle || action
+
   return (
     <div
       className={[
@@ -20,15 +29,24 @@ export default function SectionCard({ title, action, children, className = '' })
         className,
       ].join(' ')}
     >
-      {(title || action) && (
-        <div className="flex items-center justify-between gap-2 mb-0">
-          {title ? (
-            <h3 className="text-[15px] font-bold text-ink-900 font-display">{title}</h3>
-          ) : <div />}
-          {action && <div>{action}</div>}
+      {hasHeader && (
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {title && (
+              <h3 className="text-[15px] font-bold text-ink-900 font-display leading-snug">
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className="text-[13px] text-graphite-dim mt-1 leading-relaxed">{subtitle}</p>
+            )}
+          </div>
+          {action && <div className="flex-none">{action}</div>}
         </div>
       )}
-      {children}
+      {children != null && (
+        <div className={hasHeader ? 'mt-4' : ''}>{children}</div>
+      )}
     </div>
   )
 }

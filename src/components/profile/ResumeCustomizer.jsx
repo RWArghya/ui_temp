@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import SectionCard from './SectionCard.jsx'
+import Button from './Button.jsx'
 
 export default function ResumeCustomizer({
   profile,
@@ -148,21 +149,18 @@ export default function ResumeCustomizer({
   return (
     <SectionCard
       title="Resume Structure & Preview"
+      subtitle="Drag the handle to reorder sections or items; use the checkboxes to include or exclude entries."
       action={
-        <button
-          type="button"
+        <Button
           id="btn-save-customizer"
+          variant="primary"
+          size="sm"
           onClick={onSave || onGenerate || onBack}
-          className="px-4 py-1.5 text-[12px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors shadow-sm inline-flex items-center gap-1.5"
         >
           Save
-        </button>
+        </Button>
       }
     >
-      <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Hold and drag the <span className="font-mono font-bold text-ink-900">≡</span> handle to reorder sections or individual items. Use the checkboxes to include or exclude specific entries from your resume.
-      </p>
-
       {/* ── HEADER LINKS PANEL ── */}
       <div className="mb-3 border border-paper-line rounded-[2px]">
         {/* Header Row */}

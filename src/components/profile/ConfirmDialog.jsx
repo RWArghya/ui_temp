@@ -1,3 +1,5 @@
+import Button from './Button.jsx'
+
 /* ---- TEAMMATE BOUNDARY: ConfirmDialog ----
  * Generic two-button confirmation overlay modal.
  * If you already have a Dialog/Modal component, use that instead.
@@ -35,25 +37,17 @@ export default function ConfirmDialog({
         <h3 className="text-[16px] font-display font-bold text-ink-900">{title}</h3>
         <p className="text-[13.5px] text-graphite-dim leading-relaxed">{message}</p>
         <div className="flex gap-2 justify-end pt-1">
-          <button
-            id="confirm-dialog-cancel"
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
-          >
+          <Button id="confirm-dialog-cancel" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             id="confirm-dialog-confirm"
-            type="button"
+            variant="danger"
             onClick={onConfirm}
-            className={
-              confirmClass ||
-              'px-4 py-2 text-[13px] font-semibold text-white bg-danger rounded-[2px] hover:brightness-90 cursor-pointer transition-colors'
-            }
+            className={confirmClass || ''}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

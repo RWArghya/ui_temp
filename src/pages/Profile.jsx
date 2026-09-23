@@ -40,6 +40,8 @@ import EditCertModal from '../components/profile/EditCertModal.jsx'
 import EditLinkModal from '../components/profile/EditLinkModal.jsx'
 import Modal from '../components/profile/Modal.jsx'
 import IconChip from '../components/profile/IconChip.jsx'
+import EmptyState from '../components/profile/EmptyState.jsx'
+import Button from '../components/profile/Button.jsx'
 import Icon from '../dashboard/Icon.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
 /* ---- TEAMMATE BOUNDARY END ---- */
@@ -130,14 +132,6 @@ const TABS = [
   { key: 'links',         label: 'Links'         },
   { key: 'rewards',       label: 'Rewards'       },
 ]
-
-// ---- ghost button shared style ----
-const GHOST_BTN = [
-  'inline-flex items-center gap-1.5 px-[11px] py-[5px] text-[12px] font-semibold',
-  'border border-paper-line rounded-[2px] bg-white text-ink-900',
-  'hover:border-signal hover:text-signal transition-colors cursor-pointer',
-  'disabled:opacity-50',
-].join(' ')
 
 // ---- shared inline icons ----
 const PencilIcon = ({ className = 'w-3.5 h-3.5' }) => (
@@ -478,12 +472,7 @@ export default function Profile() {
         </div>
         <h2 className="text-[22px] font-display font-bold text-ink-900 mb-2">Failed to load profile</h2>
         <p className="text-[14px] text-graphite-dim mb-6">{error}</p>
-        <button
-          onClick={refetch}
-          className="px-5 py-2.5 bg-signal text-white rounded-[2px] text-[13.5px] font-semibold hover:bg-signal-dark cursor-pointer"
-        >
-          Try again
-        </button>
+        <Button variant="primary" onClick={refetch}>Try again</Button>
       </div>
     </div>
   )
@@ -518,7 +507,7 @@ export default function Profile() {
           </CardAction>
         }
       >
-        <div className="mt-4 space-y-0">
+        <div className="space-y-0">
           <KVRow label="Full name"    value={profile.name}   />
           <KVRow label="Headline"     value={profile.headline} />
           <KVRow label="Organisation" value={profile.org}    />
@@ -541,7 +530,7 @@ export default function Profile() {
           </CardAction>
         }
       >
-        <div className="mt-4">
+        <div>
           {profile.about ? (
             <p className="text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
               {profile.about}
@@ -573,7 +562,7 @@ export default function Profile() {
           </CardAction>
         }
       >
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-2">
           {(profile.interests ?? []).length > 0
             ? (profile.interests ?? []).map(x => <Pill key={x}>{x}</Pill>)
             : <span className="text-[13px] text-graphite-dim">Nothing added yet</span>
@@ -598,7 +587,7 @@ export default function Profile() {
           </CardAction>
         }
       >
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-2">
           {(profile.skills ?? []).length > 0
             ? (profile.skills ?? []).map(x => <Pill key={x}>{x}</Pill>)
             : <span className="text-[13px] text-graphite-dim">Nothing added yet</span>
@@ -623,7 +612,7 @@ export default function Profile() {
           </CardAction>
         }
       >
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-2">
           {(profile.domains ?? []).length > 0
             ? (profile.domains ?? []).map(x => <Pill key={x} variant="accent">{x}</Pill>)
             : <span className="text-[13px] text-graphite-dim">Nothing added yet</span>
@@ -636,11 +625,10 @@ export default function Profile() {
   // ---- JOURNEY (Platform journey from profile creation to ongoing: most recent on top) ----
   const journeyTimeline = buildPlatformJourney(profile, inits, 'recent')
   const JourneyTab = (
-    <SectionCard title="Your journey">
-      <p className="text-[13px] text-graphite-dim mt-1 mb-5">
-        Your complete journey on Hack2skill, newest first — from your latest milestones and
-        active initiatives down to the day you created your profile.
-      </p>
+    <SectionCard
+      title="Your journey"
+      subtitle="Everything you have done on Hack2skill, newest first — from your latest milestones and active initiatives down to the day you created your profile."
+    >
       {journeyTimeline.length > 0 ? (
         <div className="relative pl-6 before:content-[''] before:absolute before:left-[4px] before:top-[10px] before:bottom-[10px] before:w-[2px] before:bg-paper-line">
           {journeyTimeline.map(item => (
@@ -655,9 +643,11 @@ export default function Profile() {
           ))}
         </div>
       ) : (
-        <div className="py-10 text-center">
-          <p className="text-[14px] text-graphite-dim">Nothing yet — register for something and it starts here.</p>
-        </div>
+        <EmptyState
+          icon="Rocket"
+          title="Your journey starts here"
+          message="Register for a hackathon, course or build challenge and every milestone lands on this timeline."
+        />
       )}
     </SectionCard>
   )
@@ -687,7 +677,7 @@ export default function Profile() {
       }
     >
       {sortedEducation.length > 0 ? (
-        <div className="mt-4 divide-y divide-paper-line">
+        <div className="divide-y divide-paper-line">
           {sortedEducation.map(e => {
             const degreeText = [e.degree || e.title, e.specialization].filter(Boolean).join(' · ')
             const instText = [e.institution || e.org, e.boardOrUniversity].filter(Boolean).join(' · ')
@@ -725,17 +715,12 @@ export default function Profile() {
           })}
         </div>
       ) : (
-        <div className="py-10 text-center">
-          <p className="text-[14px] text-graphite-dim">No education added.</p>
-          <p className="text-[12px] text-graphite-dim mt-1.5">Add your educational background.</p>
-          <button
-            type="button"
-            onClick={() => setEditEducationModal({ mode: 'add', item: null })}
-            className="mt-4 px-4 py-2 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
-          >
-            + Add Education
-          </button>
-        </div>
+        <EmptyState
+          icon="GraduationCap"
+          title="No education added"
+          message="Add your degrees, schools and the years you attended."
+          action={{ label: 'Add education', onClick: () => setEditEducationModal({ mode: 'add', item: null }) }}
+        />
       )}
     </SectionCard>
   )
@@ -758,7 +743,7 @@ export default function Profile() {
         }
       >
         {(profile.projects ?? []).length > 0 ? (
-          <div className="mt-4 divide-y divide-paper-line">
+          <div className="divide-y divide-paper-line">
             {(profile.projects ?? []).map(p => (
               <EditableRow
                 key={p.id}
@@ -838,17 +823,12 @@ export default function Profile() {
             ))}
           </div>
         ) : (
-          <div className="py-8 text-center">
-            <p className="text-[14px] text-graphite-dim">No projects added yet.</p>
-            <p className="text-[12px] text-graphite-dim mt-1.5">Showcase your technical work.</p>
-            <button
-              type="button"
-              onClick={() => setEditProjectModal({ mode: 'add', item: null })}
-              className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
-            >
-              + Add Project
-            </button>
-          </div>
+          <EmptyState
+            icon="Code2"
+            title="No projects yet"
+            message="Show the things you have built — what it does, what it is made of, and where to see it."
+            action={{ label: 'Add project', onClick: () => setEditProjectModal({ mode: 'add', item: null }) }}
+          />
         )}
       </SectionCard>
 
@@ -866,7 +846,7 @@ export default function Profile() {
         }
       >
         {(profile.publications ?? []).length > 0 ? (
-          <div className="mt-4 divide-y divide-paper-line">
+          <div className="divide-y divide-paper-line">
             {(profile.publications ?? []).map(p => (
               <EditableRow
                 key={p.id}
@@ -905,23 +885,20 @@ export default function Profile() {
             ))}
           </div>
         ) : (
-          <div className="py-8 text-center">
-            <p className="text-[14px] text-graphite-dim">No publications added yet.</p>
-            <p className="text-[12px] text-graphite-dim mt-1.5">Share your research and papers.</p>
-            <button
-              type="button"
-              onClick={() => setEditItemModal({ type: 'publication', mode: 'add', item: null })}
-              className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
-            >
-              + Add Publication
-            </button>
-          </div>
+          <EmptyState
+            icon="FileText"
+            tone="slate"
+            title="No publications yet"
+            message="Papers, articles and research you have authored or co-authored."
+            action={{ label: 'Add publication', onClick: () => setEditItemModal({ type: 'publication', mode: 'add', item: null }) }}
+          />
         )}
       </SectionCard>
 
       {/* Achievements */}
       <SectionCard
         title="Achievements"
+        subtitle="Hackathon wins, honors and milestones."
         action={
           <CardAction
             id="btn-add-achievement"
@@ -932,11 +909,8 @@ export default function Profile() {
           </CardAction>
         }
       >
-        <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-          Highlight hackathon wins, honors, or milestones.
-        </p>
         {(profile.achievements ?? []).length > 0 ? (
-          <div className="mt-4 divide-y divide-paper-line">
+          <div className="divide-y divide-paper-line">
             {[...(profile.achievements ?? [])].reverse().map(a => (
               <EditableRow
                 key={a.id}
@@ -963,7 +937,13 @@ export default function Profile() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim py-4">Nothing added yet.</p>
+          <EmptyState
+            icon="Trophy"
+            tone="amber"
+            title="No achievements yet"
+            message="Hackathon placings, honors, scholarships — anything worth putting in front of a recruiter."
+            action={{ label: 'Add achievement', onClick: () => setEditItemModal({ type: 'achievement', mode: 'add', item: null }) }}
+          />
         )}
       </SectionCard>
     </div>
@@ -977,6 +957,7 @@ export default function Profile() {
   const SelfAddedCertsSection = (
     <SectionCard
       title="Other certificates added by you"
+      subtitle="Certificates you earned from organizations outside Hack2skill."
       action={
         <CardAction
           id="btn-add-cert"
@@ -987,9 +968,6 @@ export default function Profile() {
         </CardAction>
       }
     >
-      <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Certificates earned from external organizations
-      </p>
       {(() => {
         const sortedSelfCerts = [...(profile.selfCerts ?? [])].sort((a, b) => {
           const parseDate = item => {
@@ -1000,7 +978,7 @@ export default function Profile() {
           return parseDate(b) - parseDate(a)
         })
         return sortedSelfCerts.length > 0 ? (
-          <div className="mt-4 divide-y divide-paper-line">
+          <div className="divide-y divide-paper-line">
             {sortedSelfCerts.map(c => (
             <EditableRow
               key={c.id}
@@ -1035,17 +1013,13 @@ export default function Profile() {
           ))}
         </div>
       ) : (
-        <div className="py-8 text-center">
-          <p className="text-[14px] text-graphite-dim">No certificates added yet.</p>
-          <p className="text-[12px] text-graphite-dim mt-1.5">Add external certificates you have earned.</p>
-          <button
-            type="button"
-            onClick={() => setEditCertModal({ mode: 'add', item: null })}
-            className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
-          >
-            + Add Certificate
-          </button>
-        </div>
+        <EmptyState
+          icon="Award"
+          tone="slate"
+          title="No external certificates yet"
+          message="Add certificates you earned elsewhere — attach the credential link or an image of it."
+          action={{ label: 'Add certificate', onClick: () => setEditCertModal({ mode: 'add', item: null }) }}
+        />
       )})()}
     </SectionCard>
   )
@@ -1062,7 +1036,7 @@ export default function Profile() {
         }
       >
         {earnedCerts.length > 0 ? (
-          <div className="mt-4 divide-y divide-paper-line">
+          <div className="divide-y divide-paper-line">
             {earnedCerts.map(o => (
               <div
                 key={o.id}
@@ -1103,9 +1077,12 @@ export default function Profile() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim py-4">
-            Nothing yet — certificates appear automatically when an initiative closes.
-          </p>
+          <EmptyState
+            icon="BadgeCheck"
+            tone="green"
+            title="No verified certificates yet"
+            message="These are issued by Hack2skill and appear here automatically when an initiative closes."
+          />
         )}
       </SectionCard>
 
@@ -1118,6 +1095,7 @@ export default function Profile() {
   const LinksTab = (
     <SectionCard
       title="Connected Profiles"
+      subtitle="Your developer accounts, coding profiles and online presence."
       action={
         <CardAction
           id="btn-add-link"
@@ -1128,12 +1106,8 @@ export default function Profile() {
         </CardAction>
       }
     >
-      <p className="text-[13px] text-graphite-dim mt-1 mb-4">
-        Connect your developer accounts, coding profiles, and online presence.
-      </p>
-
       {(profile.connectedProfiles ?? []).length > 0 ? (
-        <div className="mt-4 divide-y divide-paper-line">
+        <div className="divide-y divide-paper-line">
           {(profile.connectedProfiles ?? []).map(item => (
             <EditableRow
               key={item.id}
@@ -1171,20 +1145,12 @@ export default function Profile() {
           ))}
         </div>
       ) : (
-        <div className="py-8 text-center border border-dashed border-paper-line rounded-[2px] mt-3">
-          <div className="flex justify-center mb-2">
-            <IconChip name="Link2" tone="blue" size="lg" />
-          </div>
-          <p className="text-[14px] text-graphite-dim">No connected profiles added yet.</p>
-          <p className="text-[12px] text-graphite-dim mt-1.5">Add your GitHub, LeetCode, LinkedIn, or portfolio.</p>
-          <button
-            type="button"
-            onClick={() => setEditLinkModal({ mode: 'add', item: null })}
-            className="mt-3 px-4 py-1.5 text-[13px] font-semibold text-signal border border-signal hover:bg-signal-soft rounded-[2px] cursor-pointer transition-colors"
-          >
-            + Add Connected Profile
-          </button>
-        </div>
+        <EmptyState
+          icon="Link2"
+          title="No profiles connected"
+          message="Add your GitHub, LeetCode, LinkedIn or portfolio so people can see your work in full."
+          action={{ label: 'Add connected profile', onClick: () => setEditLinkModal({ mode: 'add', item: null }) }}
+        />
       )}
     </SectionCard>
   )
@@ -1194,7 +1160,7 @@ export default function Profile() {
     <div className="space-y-4">
       {/* Level & XP */}
       <SectionCard title="Level & XP">
-        <div className="flex items-center gap-4 mt-4">
+        <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full flex-none grid place-items-center bg-signal-soft text-signal-dark font-bold text-[20px] font-display">
             {level}
           </div>
@@ -1211,7 +1177,7 @@ export default function Profile() {
       {/* Badges */}
       <SectionCard title="Badges">
         {badges.length > 0 ? (
-          <div className="flex flex-wrap gap-3 mt-4">
+          <div className="flex flex-wrap gap-3">
             {badges.map(b => (
               <div
                 key={b.id}
@@ -1224,13 +1190,17 @@ export default function Profile() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-4 py-4">No badges yet.</p>
+          <EmptyState
+            icon="Award"
+            title="No badges yet"
+            message="Badges unlock as you submit projects, finish initiatives and complete your profile."
+          />
         )}
       </SectionCard>
 
       {/* Credit points */}
       <SectionCard title="Credit points">
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-3">
           <strong className="text-[26px] text-ink-900">{credits}</strong>
           <span className="text-[14px] text-graphite-dim">credits</span>
         </div>
@@ -1281,45 +1251,43 @@ export default function Profile() {
               {/* action buttons */}
               <div className="flex flex-wrap gap-2 pb-1">
                 {/* Resume */}
-                <button
+                <Button
                   id="btn-resume"
-                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={openResume}
-                  className={GHOST_BTN}
                   title="Generate resume"
                 >
                   <Icon name="FileText" size={13} /> Resume
-                </button>
+                </Button>
 
                 {/* Share */}
-                <button
+                <Button
                   id="btn-share"
-                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShareOpen(v => !v)}
-                  className={GHOST_BTN}
                   title="Share profile link"
                   aria-expanded={shareOpen}
                 >
                   <Icon name="Link2" size={13} /> {shareOpen ? 'Hide link' : 'Share'}
-                </button>
+                </Button>
 
                 {/* Private / Public toggle */}
-                <button
+                <Button
                   id="btn-privacy"
-                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={togglePublic}
-                  className={[
-                    GHOST_BTN,
-                    profile.isPublic
-                      ? 'border-dash-ok text-dash-ok bg-dash-ok-soft'
-                      : '',
-                  ].join(' ')}
+                  className={profile.isPublic
+                    ? '!border-dash-ok !text-dash-ok !bg-dash-ok-soft'
+                    : ''}
                   title={profile.isPublic ? 'Profile is public — click to make private' : 'Profile is private — click to make public'}
                   aria-pressed={profile.isPublic}
                 >
                   <Icon name={profile.isPublic ? 'Globe' : 'Lock'} size={13} />
                   {profile.isPublic ? 'Public' : 'Private'}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1344,16 +1312,17 @@ export default function Profile() {
               <div className="mt-4 rounded-[2px] border border-paper-line bg-paper px-3.5 py-3 text-[12px]">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <span className="font-mono text-ink-900 break-all">{profileUrl}</span>
-                  <button
+                  <Button
                     id="btn-copy-share-link"
-                    type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={handleCopyLink}
-                    className="px-3 py-1 text-[11px] font-semibold bg-signal text-white rounded-[2px] hover:bg-signal-dark transition-colors cursor-pointer whitespace-nowrap"
+                    className="whitespace-nowrap"
                   >
                     {copyDone
-                      ? <span className="inline-flex items-center gap-1"><Icon name="Check" size={12} /> Copied!</span>
+                      ? <><Icon name="Check" size={12} /> Copied!</>
                       : 'Copy link'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

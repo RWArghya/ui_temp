@@ -23,6 +23,7 @@ import Pill from '../components/profile/Pill.jsx'
 import KVRow from '../components/profile/KVRow.jsx'
 import Modal from '../components/profile/Modal.jsx'
 import IconChip from '../components/profile/IconChip.jsx'
+import Button from '../components/profile/Button.jsx'
 import Icon from '../dashboard/Icon.jsx'
 import TimelineItem from '../components/profile/TimelineItem.jsx'
 import { buildPlatformJourney } from '../utils/journeyBuilder.js'
@@ -114,7 +115,7 @@ export default function ProfilePreview() {
       {/* About */}
       {profile.about && (
         <SectionCard title="About">
-          <p className="mt-3 text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
+          <p className="text-[13.5px] text-ink-900 leading-relaxed whitespace-pre-wrap">
             {profile.about}
           </p>
         </SectionCard>
@@ -125,7 +126,7 @@ export default function ProfilePreview() {
       {/* Skills & Domains */}
       {((profile.skills && profile.skills.length > 0) || (profile.domains && profile.domains.length > 0)) && (
         <SectionCard title="Skills & Domains">
-          <div className="mt-3 space-y-3">
+          <div className="space-y-3">
             {profile.skills && profile.skills.length > 0 && (
               <div>
                 <span className="text-[11px] font-mono uppercase text-graphite-dim font-medium tracking-wider">
@@ -157,7 +158,7 @@ export default function ProfilePreview() {
 
       {/* Personal Details Card at the very bottom */}
       <SectionCard title="Personal Details">
-        <div className="mt-3 space-y-0">
+        <div className="space-y-0">
           {[
             { label: 'Full Name', value: profile.name },
             { label: 'Headline', value: profile.headline },
@@ -200,7 +201,7 @@ export default function ProfilePreview() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No platform journey milestones recorded yet.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No platform journey milestones recorded yet.</p>
         )}
       </SectionCard>
     </div>
@@ -211,7 +212,7 @@ export default function ProfilePreview() {
     <div className="space-y-4">
       <SectionCard title="Education">
         {profile.education && profile.education.length > 0 ? (
-          <div className="mt-3 space-y-3">
+          <div className="space-y-3">
             {[...profile.education]
               .sort((a, b) => {
                 if (a.isOngoing && !b.isOngoing) return -1
@@ -238,7 +239,7 @@ export default function ProfilePreview() {
               })}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No education history listed.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No education history listed.</p>
         )}
       </SectionCard>
     </div>
@@ -249,7 +250,7 @@ export default function ProfilePreview() {
     <div className="space-y-4">
       <SectionCard title="Featured Projects">
         {publicProjects.length > 0 ? (
-          <div className="mt-3 space-y-3">
+          <div className="space-y-3">
             {publicProjects.map(p => (
               <div
                 key={p.id}
@@ -313,14 +314,14 @@ export default function ProfilePreview() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No public projects shared yet.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No public projects shared yet.</p>
         )}
       </SectionCard>
 
       {/* Publications */}
       {publicPubs.length > 0 && (
         <SectionCard title="Publications & Research">
-          <div className="mt-3 divide-y divide-paper-line">
+          <div className="divide-y divide-paper-line">
             {publicPubs.map(pub => (
               <div key={pub.id} className="py-2.5 first:pt-0 last:pb-0">
                 <div className="flex items-center justify-between gap-2">
@@ -388,10 +389,7 @@ export default function ProfilePreview() {
                     title="View certificate"
                     aria-label="View certificate"
                   >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
+                    <Icon name="Eye" size={14} />
                   </button>
                   <IconChip name="BadgeCheck" tone="green" size="sm" />
                 </div>
@@ -406,7 +404,7 @@ export default function ProfilePreview() {
       {/* External Certifications & Honors */}
       {(publicAchievements.length > 0 || publicSelfCerts.length > 0) && (
         <SectionCard title="Honors & External Certifications">
-          <div className="mt-3 divide-y divide-paper-line">
+          <div className="divide-y divide-paper-line">
             {publicAchievements.map(a => (
               <div key={a.id} className="py-2.5 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-2">
@@ -480,7 +478,7 @@ export default function ProfilePreview() {
   const LinksTab = (
     <div className="space-y-4">
       <SectionCard title="Connected Profiles">
-        <div className="mt-3 divide-y divide-paper-line">
+        <div className="divide-y divide-paper-line">
           {publicLinks.length > 0 ? (
             publicLinks.map(item => (
               <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
@@ -509,7 +507,7 @@ export default function ProfilePreview() {
     <div className="space-y-4">
       <SectionCard title="Earned Badges">
         {badges.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {badges.map(b => (
               <div
                 key={b.id}
@@ -521,12 +519,12 @@ export default function ProfilePreview() {
             ))}
           </div>
         ) : (
-          <p className="text-[13px] text-graphite-dim mt-3 py-3">No badges earned yet.</p>
+          <p className="text-[13px] text-graphite-dim py-2">No badges earned yet.</p>
         )}
       </SectionCard>
 
       <SectionCard title="Credit Points">
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3">
           <strong className="text-[26px] text-ink-900">{credits}</strong>
           <span className="text-[14px] text-graphite-dim">credits</span>
         </div>
@@ -573,16 +571,16 @@ export default function ProfilePreview() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
               id="btn-copy-preview-link"
-              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleCopy}
-              className="px-2.5 py-1 text-[11.5px] font-medium border border-paper-line rounded-[2px] bg-white hover:border-signal cursor-pointer"
             >
               {copied
                 ? <span className="inline-flex items-center gap-1"><Icon name="Check" size={12} /> Copied URL</span>
                 : 'Copy link'}
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -704,13 +702,7 @@ export default function ProfilePreview() {
               />
             </div>
             <div className="mt-4 flex items-center justify-end w-full pt-3 border-t border-paper-line">
-              <button
-                type="button"
-                onClick={() => setViewingPhoto(null)}
-                className="px-5 py-1.5 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
-              >
-                Close
-              </button>
+              <Button variant="primary" onClick={() => setViewingPhoto(null)}>Close</Button>
             </div>
           </div>
         </Modal>

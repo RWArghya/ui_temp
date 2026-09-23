@@ -3,6 +3,7 @@
  */
 import { useState } from 'react'
 import Icon from '../../dashboard/Icon.jsx'
+import Button from './Button.jsx'
 
 export default function EditHeadlineModal({
   initialHeadline = '',
@@ -87,20 +88,19 @@ export default function EditHeadlineModal({
 
           {/* Footer actions */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-paper-line">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-4 py-2 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               type="submit"
               id="btn-save-headline"
-              className="px-5 py-2 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
             >
               Save changes
-            </button>
+            </Button>
           </div>
         </form>
       </div>
