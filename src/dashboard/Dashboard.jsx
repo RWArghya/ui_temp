@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { useH2S, seedDemoPatch } from './store'
-import { authStore } from '../store/auth'
 import { logout } from '../api/auth'
 import './proto.css'
 import {
@@ -35,11 +34,6 @@ export default function Dashboard({ defaultView }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [sp] = useSearchParams()
-  const logged = useMemo(() => authStore.read(), [])
-
-  useEffect(() => {
-    if (!logged.onboarded) navigate('/onboarding', { replace: true })
-  }, [logged.onboarded])
 
   function go(view, id, tab) {
     if (id) { navigate('/dashboard/workspace?id=' + id + (view ? '&from=' + view : '')); return }

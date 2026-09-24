@@ -155,20 +155,16 @@ export default function Auth() {
     return "to continue"
   }, [next])
 
+  /* Straight into the product. There is no onboarding step: everything it
+     would have asked for either has a working default (intents, landing view)
+     or is collected progressively by the "Complete your profile" card, which
+     does the same job without a wall at the highest-intent moment. */
   function afterAuth() {
-    const state = authStore.read()
-    if (state.onboarded) {
-      if (!next && intent === "mentor") {
-        navigate("/dashboard?view=mentor", { replace: true })
-        return
-      }
-      navigate(next || "/dashboard", { replace: true })
+    if (!next && intent === "mentor") {
+      navigate("/dashboard?view=mentor", { replace: true })
       return
     }
-    const params = new URLSearchParams()
-    if (intent) params.set("intent", intent)
-    if (next) params.set("next", next)
-    navigate("/onboarding" + (params.toString() ? "?" + params : ""), { replace: true })
+    navigate(next || "/dashboard", { replace: true })
   }
 
   async function handleSubmit() {
@@ -253,7 +249,7 @@ export default function Auth() {
       created: new Date().toISOString().slice(0, 10),
     }
     authStore.save({ account: a, name: a.name, email: a.email, onboarded: true })
-    // Social providers hand back a verified account, so skip onboarding straight to the dashboard.
+    // Social providers hand back an already-verified account.
     navigate(next || "/dashboard", { replace: true })
   }
 

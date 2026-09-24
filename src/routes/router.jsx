@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom"
+import { createBrowserRouter, Navigate } from "react-router-dom"
 import Layout from "../layouts/Layout"
 import Home from "../pages/Home"
 import About from "../pages/About"
@@ -7,7 +7,6 @@ import Enterprise from "../pages/Enterprise"
 import CustomerRegister from "../pages/CustomerRegister"
 import Sponsor from "../pages/Sponsor"
 import Auth from "../pages/Auth"
-import Onboarding from "../pages/Onboarding"
 import Dashboard from "../dashboard/Dashboard"
 import ProfilePreview from "../pages/ProfilePreview"
 import Resume from "../pages/Resume"
@@ -36,8 +35,11 @@ const router = createBrowserRouter([
     element: <Auth />,
   },
   {
+    // Onboarding was removed — it gated the dashboard behind a page that
+    // collected nothing the app could not default or gather later. Kept as a
+    // redirect so old links and bookmarks land somewhere real.
     path: "/onboarding",
-    element: <Onboarding />,
+    element: <Navigate to="/dashboard" replace />,
   },
   {
     // wildcard: Dashboard.jsx's own `sub` logic handles /dashboard/workspace,

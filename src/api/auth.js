@@ -31,11 +31,9 @@ export function clearTokens() {
 /**
  * Persist whatever a successful sign-in returned.
  *
- * The backend has no onboarding endpoint yet and always reports
- * `onboarded: false`, so a returning user would be bounced to /onboarding on
- * every login. Treat them as onboarded if the API says so OR if this browser
- * already recorded it for the same email — onboarding stays local until there
- * is somewhere to store it.
+ * `onboarded` is stored as the API reports it but nothing routes on it any
+ * more — the onboarding gate is gone. It is kept because the backend sends it
+ * and it costs nothing to carry.
  */
 export function applySession(res) {
   if (!res?.ok || !res.user) return res
@@ -44,7 +42,8 @@ export function applySession(res) {
   const local = authStore.read()
   const sameUser = (local.email || '').trim().toLowerCase() === (res.user.email || '').trim().toLowerCase()
   const onboarded = Boolean(res.user.onboarded) || (sameUser && Boolean(local.onboarded))
-
+  // keep whatever this browser already held for the same person (the mock
+  // password hash, avatar, created date) rather than flattening the record
   const prevAccount = sameUser && local.account ? local.account : {}
   authStore.save({
     account: { ...prevAccount, name: res.user.name, email: res.user.email, verified: true },
