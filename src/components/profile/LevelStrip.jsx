@@ -4,6 +4,7 @@
  * ---- TEAMMATE BOUNDARY END ---- */
 
 import Meter from './Meter.jsx'
+import Icon from '../../dashboard/Icon.jsx'
 
 /**
  * LevelStrip — glanceable level + XP bar + badge count + credits.
@@ -25,7 +26,7 @@ export default function LevelStrip({ level, xp, xpNext, xpPct, badgeCount, credi
       className={[
         'flex items-center gap-3 max-w-[340px]',
         'border border-paper-line rounded-card px-3.5 py-2.5 cursor-pointer',
-        'hover:border-signal hover:shadow-sm transition-all duration-150 text-left w-full',
+        'hover:border-signal hover:shadow-sm transition-all duration-150 text-left w-full group',
       ].join(' ')}
       aria-label={`Level ${level} — click to see Rewards`}
     >
@@ -50,7 +51,12 @@ export default function LevelStrip({ level, xp, xpNext, xpPct, badgeCount, credi
         </p>
       </div>
 
-      <span className="text-[13px] text-graphite-dim" aria-hidden="true">→</span>
+      <span
+        className="text-graphite-dim group-hover:text-signal group-hover:translate-x-0.5 transition-all flex-none"
+        aria-hidden="true"
+      >
+        <Icon name="ChevronRight" size={16} />
+      </span>
     </button>
   )
 }

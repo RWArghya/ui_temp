@@ -2,9 +2,9 @@ export default function QuoteCard({ status, placeholder, quote, role }) {
   return (
     <div className="rounded-card border border-paper-line bg-paper p-6">
       <div className="mb-4 flex gap-[5px]">
-        <i className="h-[5px] w-[5px] rounded-full bg-[#cbd0e4]" />
-        <i className="h-[5px] w-[5px] rounded-full bg-[#cbd0e4]" />
-        <i className="h-[5px] w-[5px] rounded-full bg-[#cbd0e4]" />
+        <i className="h-[5px] w-[5px] rounded-full bg-paper-line" />
+        <i className="h-[5px] w-[5px] rounded-full bg-paper-line" />
+        <i className="h-[5px] w-[5px] rounded-full bg-paper-line" />
       </div>
       <p className="text-[0.9rem] text-graphite">{status === "pending" ? placeholder : quote}</p>
       <div className="mt-[18px] font-mono text-[0.66rem] uppercase leading-relaxed tracking-[0.09em] text-graphite-dim">

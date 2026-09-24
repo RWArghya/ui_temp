@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { useH2S, seedDemoPatch } from './store'
-import { authStore } from '../store/auth'
+import { logout } from '../api/auth'
 import './proto.css'
 import {
   VIEWS, initials, mentorStatus, mentorRoleLabel,
@@ -11,7 +11,6 @@ import { Sidebar, Topbar } from './Shell'
 import { ProfileProgressCard } from './Cards'
 import { Home, Continuing, Recommended, Saved, Recent } from './HomeViews'
 import { Competing, Learning, LearnCompete } from './PurposeViews'
-import Arena from './Arena'
 import ProfilePage from '../pages/Profile'
 import { Certs, PublicPreview } from './Profile'
 import { MentorGate } from './Mentor'
@@ -23,7 +22,7 @@ import MyActivity from './ActivityView'
 const VIEW_COMPONENTS = {
   home: Home, continuing: Continuing, recommended: Recommended, saved: Saved, recent: Recent,
   competing: Competing, learning: Learning, learncompete: LearnCompete,
-  arena: Arena, profile: ProfilePage, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
+  profile: ProfilePage, certs: Certs, publicpreview: PublicPreview, mentor: MentorGate,
   settings: Settings, activity: MyActivity,
 }
 /* "View all" destinations and the Home nav item together decide whether the
@@ -35,11 +34,6 @@ export default function Dashboard({ defaultView }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [sp] = useSearchParams()
-  const logged = useMemo(() => authStore.read(), [])
-
-  useEffect(() => {
-    if (!logged.onboarded) navigate('/onboarding', { replace: true })
-  }, [logged.onboarded])
 
   function go(view, id, tab) {
     if (id) { navigate('/dashboard/workspace?id=' + id + (view ? '&from=' + view : '')); return }
@@ -139,7 +133,7 @@ function SubShell({ st, sv, go, children }) {
   const onBack = () => go(backTarget)
   const currentTitle = sub === 'evaluate' ? `Evaluate ${o ? o.name : ''}` : (o ? o.name : 'Workspace')
 
-  const out = () => { sv({}); authStore.clear(); navigate('/auth') }
+  const out = () => { sv({}); logout(); navigate('/auth') }
   return (
     <div className="dash-root">
       <div className="shell">
@@ -174,16 +168,13 @@ function SubShell({ st, sv, go, children }) {
 function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, switchPersona }) {
   const navigate = useNavigate()
   const msup = mode === 'mentor'
-  const out = () => { reset(); authStore.clear(); navigate('/auth') }
+  const out = () => { reset(); logout(); navigate('/auth') }
   const loadSample = () => sv(seedDemoPatch(st))
   const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
-  /* homeRail() in app.html: below 100% profile completion the rail is only
-     the profile card, on every view — there's no separate XP/"Getting
-     started" rail in the prototype. At 100% it's removed entirely (not
-     display:none) and `.shell:not(.has-rail) .grid.g3` in proto.css
-     reflows the freed width into the main column. */
+  /* below 100% profile completion the rail is only the profile card, on
+     every view except profile itself; at 100% it's removed entirely. */
   const { pct } = profileScore(st)
-  const hasRail = pct < 100
+  const hasRail = pct < 100 && view !== 'profile'
   const activeKey = view === 'continuing' || view === 'recommended' ? 'home' : view
   /* Mentor's own tab state (queue/teams/sessions/challenges/impact — an
      existing feature richer than prototype_v2's own mentor surfaces, which
@@ -207,11 +198,14 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     learning: 'Learn',
     competing: 'Compete',
     learncompete: 'Build',
-    arena: 'Arena',
     saved: 'Saved',
     recent: 'Recent',
   }
   const currentTitle = subNav ? subNav.title : (VIEW_TITLES[view] || (msup ? 'Mentor Workspace' : 'Dashboard'))
+  /* Learn/Build/Compete used to print their blurb as the first line of the
+     page body, pushing the filters and cards down. It belongs with the
+     heading it describes, and the heading lives in the topbar. */
+  const currentSubtitle = subNav ? null : (VIEWS[view]?.blurb || null)
 
   return (
     <div className="dash-root">
@@ -232,6 +226,7 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
             onBack={onBack}
             backLabel={backLabel}
             currentTitle={currentTitle}
+            currentSubtitle={currentSubtitle}
             onProfile={() => show('profile')}
             onActivity={() => show('activity')}
             onSettings={() => show('settings')}
@@ -257,7 +252,3 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     </div>
   )
 }
-
-/* The old "Getting started" XP journey rail lived here — removed. The
-   prototype has no such rail; every view's right column is just the profile
-   card (ProfileProgressCard, from ./Cards), gone entirely at 100%. */

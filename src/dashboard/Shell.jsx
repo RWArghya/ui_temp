@@ -14,7 +14,6 @@ const NAV_INNOVATOR = [
   { k: 'learning', label: 'Learn', ico: 'BookOpen' },
   { k: 'competing', label: 'Compete', ico: 'Trophy' },
   { k: 'learncompete', label: 'Build', ico: 'Wrench' },
-  { k: 'arena', label: 'Arena', ico: 'Gamepad2' },
 ]
 const NAV_INNOVATOR_UTILITY = [
   { k: 'saved', label: 'Saved', ico: 'Bookmark' },
@@ -122,7 +121,7 @@ function SidePersonaPill({ active, onSwitch, onSponsor, dark }) {
           gap glitch when moving cursor between trigger and ribbon. */}
       <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 z-50 -ml-1 pl-3 py-2.5 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
         <div className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 shadow-dash-lg backdrop-blur-md ${
-          light ? 'border-dash-line bg-white/95 text-dash-ink' : 'border-white/10 bg-ink-900/95 text-white'
+          light ? 'border-dash-line bg-dash-bg text-dash-ink' : 'border-white/10 bg-ink-900/95 text-white'
         }`}>
           <span className={`px-1 font-mono text-[10.5px] font-semibold uppercase tracking-[0.13em] ${
             light ? 'text-dash-muted' : 'text-white/40'
@@ -271,6 +270,7 @@ export function Topbar({
   onBack,
   backLabel,
   currentTitle,
+  currentSubtitle,
   onProfile,
   onActivity,
   onSettings,
@@ -309,9 +309,20 @@ export function Topbar({
               <span className="text-dash-faint select-none">/</span>
             </>
           ) : null}
-          <span className="font-semibold text-dash-ink truncate text-[14.5px]">
-            {currentTitle || (onBack ? '' : 'Innovator Dashboard')}
-          </span>
+          {currentSubtitle ? (
+            <span className="flex flex-col min-w-0 leading-tight">
+              <span className="font-semibold text-dash-ink truncate text-[14.5px]">
+                {currentTitle || (onBack ? '' : 'Innovator Dashboard')}
+              </span>
+              <span className="text-dash-muted truncate text-[11.5px] font-normal">
+                {currentSubtitle}
+              </span>
+            </span>
+          ) : (
+            <span className="font-semibold text-dash-ink truncate text-[14.5px]">
+              {currentTitle || (onBack ? '' : 'Innovator Dashboard')}
+            </span>
+          )}
         </div>
       </div>
 

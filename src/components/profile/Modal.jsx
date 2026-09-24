@@ -1,3 +1,5 @@
+import Icon from '../../dashboard/Icon.jsx'
+
 /* ---- Modal ----
  * Reusable modal matching the exact design tokens of ConfirmDialog.jsx and the project.
  */
@@ -8,6 +10,7 @@ export default function Modal({
   children,
   onClose,
   maxWidth = 'max-w-md',
+  headerExtra = null,
 }) {
   if (!isOpen) return null
 
@@ -28,13 +31,17 @@ export default function Modal({
               <p className="text-[12px] text-graphite-dim mt-0.5">{subtitle}</p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-7 h-7 rounded-[2px] text-graphite-dim hover:text-ink-900 hover:bg-paper flex items-center justify-center text-[15px] cursor-pointer transition-colors"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-1">
+            {headerExtra}
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-7 h-7 rounded-[2px] text-graphite-dim hover:text-ink-900 hover:bg-paper flex items-center justify-center cursor-pointer transition-colors"
+              aria-label="Close"
+            >
+              <Icon name="X" size={15} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}

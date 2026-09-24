@@ -10,10 +10,10 @@
 const styles = {
   default: 'bg-paper-line text-graphite-dim',
   hat:     'bg-signal-soft text-signal-dark font-bold',
-  accent:  'bg-violet-soft text-violet font-bold',
-  ok:      'bg-[#e7f6ee] text-[#0f9d58]',
-  warn:    'bg-[#fff4e0] text-[#b26a00]',
-  live:    'bg-[#ffe9e9] text-[#c0392b] before:content-[""] before:inline-block before:w-[6px] before:h-[6px] before:rounded-full before:bg-[#c0392b] before:mr-1.5',
+  accent:  'bg-signal-soft text-signal-dark font-bold',
+  ok:      'bg-dash-ok-soft text-dash-ok',
+  warn:    'bg-dash-warn-soft text-dash-warn',
+  live:    'bg-dash-live-bg text-dash-live before:content-[""] before:inline-block before:w-[6px] before:h-[6px] before:rounded-full before:bg-dash-live before:mr-1.5',
 }
 
 export default function Pill({ children, variant = 'default', className = '' }) {

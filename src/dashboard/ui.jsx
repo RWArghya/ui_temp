@@ -34,7 +34,7 @@ export const Empty = ({ msg, cta }) => (
 const PILL_TONE = {
   live: 'bg-dash-live-bg text-dash-live',
   ok: 'bg-dash-ok-soft text-dash-ok',
-  warn: 'bg-dash-warn-soft text-dash-warn',
+  warn: 'bg-signal-soft text-signal-dark', // "in progress" / current step: blue = active. Amber is reserved for closing-soon and caution.
   hat: 'bg-signal-soft font-bold text-signal-dark',
   default: 'bg-dash-line-soft text-dash-muted',
 }
@@ -118,7 +118,7 @@ export const StepStrip = ({ steps, cur }) => (
     {steps.map((s, i) => (
       <span
         key={s}
-        className={`rounded-full px-3 py-1 text-xs font-medium ${i < cur ? 'bg-dash-ok-soft text-dash-ok' : i === cur ? 'border border-dash-warn/30 bg-dash-warn-soft text-dash-warn' : 'border border-dash-line bg-transparent text-dash-muted'}`}
+        className={`rounded-full px-3 py-1 text-xs font-medium ${i < cur ? 'bg-dash-ok-soft text-dash-ok' : i === cur ? 'border border-signal/30 bg-signal-soft text-signal-dark' : 'border border-dash-line bg-transparent text-dash-muted'}`}
       >
         {i + 1}. {s}
       </span>

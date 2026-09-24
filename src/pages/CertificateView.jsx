@@ -3,38 +3,36 @@
  *
  * Displays a formatted H2S certificate for a single earned initiative.
  * Data is passed via router location.state to avoid extra API calls.
- * Includes a "Save as PDF / Image" button (window.print) and a ← back button
- * that returns to wherever the user came from (Certificates tab or AllCertificates).
+ * Chrome comes from the shared PageToolbar / SaveMenu, so this page and the
+ * resume have one toolbar between them; back returns to wherever the user
+ * came from (Certificates tab or AllCertificates).
  */
 
-import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
+import { MOCK_USER_INITIATIVES } from '../api/mock/initiatives.js'
+import '../dashboard/proto.css'
+import PageToolbar from '../components/profile/PageToolbar.jsx'
+import SaveMenu from '../components/profile/SaveMenu.jsx'
+import EmptyState from '../components/profile/EmptyState.jsx'
+import Icon from '../dashboard/Icon.jsx'
 
 export default function CertificateView() {
   const navigate = useNavigate()
   const location = useLocation()
   const { certId } = useParams()
 
-  // Dropdown state for Save button (PDF / Image JPEG)
-  const [saveDropdownOpen, setSaveDropdownOpen] = useState(false)
-  const saveDropdownRef = useRef(null)
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (saveDropdownRef.current && !saveDropdownRef.current.contains(event.target)) {
-        setSaveDropdownOpen(false)
-      }
-    }
-    if (saveDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [saveDropdownOpen])
-
-  // Data passed from the parent via navigate state
+  // Data passed from the parent via navigate state, with fallback for direct links / page refresh
   const { cert, userName, returnTo } = location.state || {}
+  const activeCert = cert || (MOCK_USER_INITIATIVES.completed || []).find(
+    c => c.id === certId || String(c.id).replace('init-', '') === certId
+  ) || (certId ? {
+    id: certId,
+    name: 'Hack2skill Certificate of Completion',
+    org: 'Hack2skill',
+    completedDate: 'Upon Completion',
+    verifiableId: certId,
+  } : null)
+  const activeUserName = userName || 'Aarav Sharma'
 
   const handleBack = () => {
     if (returnTo) {
@@ -49,7 +47,7 @@ export default function CertificateView() {
   }
 
   const handleSaveJpeg = () => {
-    if (!cert) return
+    if (!activeCert) return
     // Render certificate to high-res 2x canvas and download as JPEG
     const canvas = document.createElement('canvas')
     const scale = 2
@@ -143,7 +141,7 @@ export default function CertificateView() {
     // Participant Name
     ctx.fillStyle = '#1a237e'
     ctx.font = 'bold 40px Georgia, serif'
-    ctx.fillText(userName || 'Participant', width / 2, 305)
+    ctx.fillText(activeUserName || 'Participant', width / 2, 305)
 
     // "has successfully completed"
     ctx.fillStyle = '#6b7280'
@@ -153,12 +151,12 @@ export default function CertificateView() {
     // Certificate Name
     ctx.fillStyle = '#111827'
     ctx.font = 'bold 26px Georgia, serif'
-    ctx.fillText(cert.name || 'Initiative Completion', width / 2, 420)
+    ctx.fillText(activeCert.name || 'Initiative Completion', width / 2, 420)
 
     // Organiser
     ctx.fillStyle = '#4b5563'
     ctx.font = '16px Inter, sans-serif'
-    ctx.fillText(`Organised by ${cert.org || 'Hack2skill'}`, width / 2, 460)
+    ctx.fillText(`Organised by ${activeCert.org || 'Hack2skill'}`, width / 2, 460)
 
     // Divider line above footer
     ctx.strokeStyle = '#e5e7eb'
@@ -176,7 +174,7 @@ export default function CertificateView() {
     ctx.fillText('DATE ISSUED', 90, 605)
     ctx.fillStyle = '#111827'
     ctx.font = 'bold 18px Georgia, serif'
-    ctx.fillText(cert.completedDate || 'Upon Completion', 90, 635)
+    ctx.fillText(activeCert.completedDate || 'Upon Completion', 90, 635)
 
     // Center: Verified Badge / Seal
     ctx.textAlign = 'center'
@@ -187,8 +185,15 @@ export default function CertificateView() {
     ctx.beginPath()
     ctx.arc(width / 2, 622, 32, 0, Math.PI * 2)
     ctx.fill()
-    ctx.font = '26px sans-serif'
-    ctx.fillText('🏆', width / 2, 630)
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 4
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.beginPath()
+    ctx.moveTo(width / 2 - 13, 622)
+    ctx.lineTo(width / 2 - 4, 631)
+    ctx.lineTo(width / 2 + 13, 612)
+    ctx.stroke()
     ctx.fillStyle = '#9ca3af'
     ctx.font = '600 11px Inter, sans-serif'
     ctx.fillText('VERIFIED', width / 2, 675)
@@ -200,41 +205,34 @@ export default function CertificateView() {
     ctx.fillText('CREDENTIAL ID', width - 90, 605)
     ctx.fillStyle = '#111827'
     ctx.font = 'bold 16px "Courier New", monospace'
-    ctx.fillText(cert.verifiableId || '', width - 90, 635)
+    ctx.fillText(activeCert.verifiableId || '', width - 90, 635)
 
     // Export to JPEG download
     const dataUrl = canvas.toDataURL('image/jpeg', 0.95)
     const link = document.createElement('a')
-    link.download = `${cert.verifiableId || 'certificate'}.jpeg`
+    link.download = `${activeCert.verifiableId || 'certificate'}.jpeg`
     link.href = dataUrl
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
-  if (!cert) {
+  if (!activeCert) {
     return (
-      <div className="min-h-screen bg-[#f4f4f6] flex items-center justify-center p-8">
-        <div className="text-center max-w-sm">
-          <div className="text-4xl mb-4">🏆</div>
-          <h2 className="text-[18px] font-display font-bold text-ink-900 mb-2">Certificate not found</h2>
-          <p className="text-[13px] text-graphite-dim mb-5">
-            We couldn't load the certificate data. Please go back and try again.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/profile')}
-            className="px-4 py-2 text-[13px] font-semibold bg-signal text-white rounded-[2px] cursor-pointer"
-          >
-            ← Back to Profile
-          </button>
-        </div>
+      <div className="doc-root min-h-screen bg-paper flex items-center justify-center p-8">
+        <EmptyState
+          icon="AlertTriangle"
+          tone="amber"
+          title="Certificate not found"
+          message="We couldn't load this certificate. Go back to your profile and open it again."
+          action={{ label: 'Back to profile', onClick: () => navigate('/profile') }}
+        />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#e8eaed] pb-16">
+    <div className="doc-root min-h-screen bg-paper pb-16">
       {/* Print styles */}
       <style>{`
         @media print {
@@ -251,84 +249,24 @@ export default function CertificateView() {
       `}</style>
 
       {/* ── Toolbar (hidden on print) ── */}
-      <div className="no-print sticky top-0 z-30 bg-white border-b border-paper-line shadow-sm px-4 py-3">
-        <div className="max-w-[900px] mx-auto flex items-center justify-between flex-wrap gap-3">
-          <button
-            id="btn-back-from-cert"
-            type="button"
-            onClick={handleBack}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper transition-colors cursor-pointer"
-          >
-            ← Back
-          </button>
-
-          <div className="flex items-center gap-3">
-            <span className="text-[12px] text-graphite-dim hidden sm:inline">
-              Verifiable ID: <span className="font-mono text-ink-900">{cert.verifiableId}</span>
-            </span>
-
-            {/* ── Single Save Button with Dropdown ── */}
-            <div className="relative inline-block text-left" ref={saveDropdownRef}>
-              <button
-                id="btn-save-dropdown"
-                type="button"
-                onClick={() => setSaveDropdownOpen(prev => !prev)}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-semibold rounded-[3px] bg-signal hover:bg-signal-dark text-white transition-colors shadow-sm cursor-pointer"
-              >
-                <span>Save</span>
-                <svg
-                  className={`w-3.5 h-3.5 transition-transform duration-150 ${saveDropdownOpen ? 'rotate-180' : ''}`}
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-
-              {saveDropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-44 rounded-[4px] bg-white shadow-xl border border-gray-200 py-1 z-50 text-ink-900 font-sans animate-in fade-in zoom-in-95 duration-100">
-                  <button
-                    id="btn-save-pdf"
-                    type="button"
-                    onClick={() => {
-                      setSaveDropdownOpen(false)
-                      handleSavePdf()
-                    }}
-                    className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
-                  >
-                    <span className="text-[14px]">📄</span>
-                    <div>
-                      <div className="font-semibold text-[12px] text-ink-900">PDF</div>
-                      <div className="text-[10px] text-graphite-dim">Save / Print as PDF</div>
-                    </div>
-                  </button>
-                  <div className="border-t border-paper-line my-0.5" />
-                  <button
-                    id="btn-save-jpeg"
-                    type="button"
-                    onClick={() => {
-                      setSaveDropdownOpen(false)
-                      handleSaveJpeg()
-                    }}
-                    className="w-full text-left px-3.5 py-2 text-[12.5px] hover:bg-paper flex items-center gap-2.5 text-ink-900 font-medium cursor-pointer transition-colors"
-                  >
-                    <span className="text-[14px]">🖼️</span>
-                    <div>
-                      <div className="font-semibold text-[12px] text-ink-900">Image (JPEG)</div>
-                      <div className="text-[10px] text-graphite-dim">Download .jpeg file</div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageToolbar
+        onBack={handleBack}
+        backLabel="Certificates"
+        title={activeCert.name}
+        maxWidth="max-w-[900px]"
+      >
+        <SaveMenu
+          items={[
+            { icon: 'FileText', label: 'PDF', hint: 'Print or save as PDF', onSelect: handleSavePdf },
+            { icon: 'LayoutGrid', label: 'Image (JPEG)', hint: 'High-resolution .jpeg', onSelect: handleSaveJpeg },
+          ]}
+        />
+      </PageToolbar>
 
       {/* ── Certificate Sheet ── */}
       <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-8">
         <div
-          className="cert-sheet bg-white shadow-2xl rounded-[4px] overflow-hidden"
+          className="cert-sheet doc-sheet bg-white shadow-2xl rounded-[4px] overflow-hidden"
           style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}
         >
           {/* Top accent stripe */}
@@ -370,18 +308,18 @@ export default function CertificateView() {
                 className="text-[32px] sm:text-[38px] font-bold text-[#1a237e]"
                 style={{ fontFamily: '"Georgia", serif', letterSpacing: '0.01em' }}
               >
-                {userName || 'Participant'}
+                {activeUserName || 'Participant'}
               </p>
 
               <p className="text-[14px] text-gray-500 italic tracking-wide">has successfully completed</p>
 
               <p className="text-[18px] sm:text-[22px] font-bold text-ink-900 max-w-lg mx-auto leading-tight px-4">
-                {cert.name}
+                {activeCert.name}
               </p>
 
               <p className="text-[13.5px] text-gray-600">
                 Organised by{' '}
-                <span className="font-semibold text-ink-900">{cert.org}</span>
+                <span className="font-semibold text-ink-900">{activeCert.org}</span>
               </p>
             </div>
 
@@ -390,13 +328,13 @@ export default function CertificateView() {
               {/* Issue date */}
               <div className="text-center sm:text-left">
                 <p className="text-[11px] uppercase tracking-widest text-gray-400 mb-1 font-sans">Date Issued</p>
-                <p className="text-[15px] font-semibold text-ink-900">{cert.completedDate || 'Upon Completion'}</p>
+                <p className="text-[15px] font-semibold text-ink-900">{activeCert.completedDate || 'Upon Completion'}</p>
               </div>
 
               {/* Centre seal / badge */}
               <div className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#1a237e] to-[#3949ab] flex items-center justify-center shadow-md">
-                  <span className="text-2xl">🏆</span>
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#1a237e] to-[#3949ab] flex items-center justify-center shadow-md text-white">
+                  <Icon name="Check" size={30} />
                 </div>
                 <p className="text-[10px] uppercase tracking-widest text-gray-400 mt-1.5 font-sans">Verified</p>
               </div>
@@ -404,7 +342,7 @@ export default function CertificateView() {
               {/* Verifiable ID */}
               <div className="text-center sm:text-right">
                 <p className="text-[11px] uppercase tracking-widest text-gray-400 mb-1 font-sans">Credential ID</p>
-                <p className="text-[13px] font-mono font-semibold text-ink-900">{cert.verifiableId}</p>
+                <p className="text-[13px] font-mono font-semibold text-ink-900">{activeCert.verifiableId}</p>
               </div>
             </div>
           </div>
@@ -412,11 +350,6 @@ export default function CertificateView() {
           {/* Bottom accent stripe */}
           <div className="h-2 bg-gradient-to-r from-[#e91e63] via-[#3949ab] to-[#1a237e]" />
         </div>
-
-        {/* Below-cert instructions (hidden on print) */}
-        <p className="no-print text-center text-[12px] text-gray-500 mt-4">
-          Click <strong>Save</strong> above and choose <strong>PDF</strong> or <strong>Image (JPEG)</strong> to download your certificate.
-        </p>
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from './Modal.jsx'
+import Button from './Button.jsx'
 
 export default function EditItemModal({
   isOpen,
@@ -47,7 +48,6 @@ export default function EditItemModal({
     <Modal
       isOpen={isOpen}
       title={modalTitle}
-      subtitle={isPub ? 'Share research papers, articles, and preprints.' : 'Highlight hackathon placements, honors, or awards.'}
       onClose={onClose}
       maxWidth="max-w-md"
     >
@@ -67,13 +67,14 @@ export default function EditItemModal({
           />
         </div>
 
-        {/* Optional Description */}
+        {/* Description */}
         <div>
           <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-            Description (optional)
+            Description{isPub && <span className="text-signal"> *</span>}
           </label>
           <textarea
             rows={3}
+            required={isPub}
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder={isPub ? 'Abstract or key contributions of the paper...' : 'Details about the award, problem statement, or team achievement...'}
@@ -85,10 +86,11 @@ export default function EditItemModal({
         {isPub && (
           <div>
             <label className="block text-[12.5px] font-semibold text-ink-900 mb-1">
-              Link / DOI (optional)
+              Link / DOI <span className="text-signal">*</span>
             </label>
             <input
               type="text"
+              required
               value={link}
               onChange={e => setLink(e.target.value)}
               placeholder="e.g. arxiv.org/abs/2025.12345 or doi.org/..."
@@ -102,29 +104,28 @@ export default function EditItemModal({
         {/* Footer actions */}
         <div className="flex items-center justify-between pt-3 border-t border-paper-line">
           {initialData && onDelete ? (
-            <button
-              type="button"
+            <Button
+              variant="dangerQuiet"
+              size="sm"
               onClick={() => onDelete(initialData.id, initialData.title)}
-              className="px-3 py-1.5 text-[12px] font-semibold text-[#c0392b] hover:bg-[#fff0f0] rounded-[2px] cursor-pointer transition-colors"
             >
               Delete
-            </button>
+            </Button>
           ) : <div />}
 
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onClose}
-              className="px-4 py-2 text-[13px] font-medium text-graphite-dim border border-paper-line rounded-[2px] bg-white hover:bg-paper cursor-pointer transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
               type="submit"
-              className="px-5 py-2 text-[13px] font-semibold text-white bg-signal hover:bg-signal-dark rounded-[2px] cursor-pointer transition-colors"
             >
               Save changes
-            </button>
+            </Button>
           </div>
         </div>
       </form>

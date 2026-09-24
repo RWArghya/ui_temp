@@ -118,6 +118,7 @@ create table users (
   email_verified_at timestamptz,
   password_hash     text not null,               -- argon2id encoded hash, never plaintext
   name              text not null,
+  mobile            text,                        -- "+91 98765 43210" — country code + number as one string, matching Auth.jsx's signup form
   headline          text,
   org               text,
   region            text,
@@ -157,14 +158,23 @@ create table email_change_requests (
 );
 create index on email_change_requests (user_id) where verified_at is null;
 
-create table password_reset_requests (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references users(id),
-  token_hash  text not null unique,
-  expires_at  timestamptz not null,
-  used_at     timestamptz,
-  created_at  timestamptz not null default now()
+-- One table for every one-time code the frontend uses: signup email verification, OTP login,
+-- and forgot-password (Auth.jsx's "reset link" is really this same code, delivered as a link
+-- instead of a typed 6-digit code — no separate password_reset_requests table on purpose; a
+-- fourth mostly-identical token table would be duplication, not design).
+create type otp_purpose as enum ('signup_verify', 'login', 'password_reset');
+
+create table otp_codes (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references users(id),
+  purpose       otp_purpose not null,
+  code_hash     text not null,             -- sha256 of the code/token — never the raw value
+  expires_at    timestamptz not null,       -- 10 minutes for signup/login OTP, 1 hour for password_reset
+  attempt_count int not null default 0,     -- 5 wrong guesses locks it, forces a fresh request
+  consumed_at   timestamptz,
+  created_at    timestamptz not null default now()
 );
+create index on otp_codes (user_id, purpose) where consumed_at is null;
 
 -- Every security-sensitive account action, per golden rule #4.
 create table audit_logs (

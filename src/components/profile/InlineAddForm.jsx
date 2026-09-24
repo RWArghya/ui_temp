@@ -188,7 +188,7 @@ export default function InlineAddForm({
                         'inline-flex items-center gap-2 px-3.5 py-[10px] text-[13px] font-semibold font-sans',
                         'border rounded-[2px] bg-white text-graphite-dim cursor-pointer whitespace-nowrap',
                         'hover:border-signal hover:text-signal transition-colors',
-                        errors[f.id] ? 'border-[#c0392b]' : 'border-paper-line',
+                        errors[f.id] ? 'border-danger' : 'border-paper-line',
                       ].join(' ')}
                     >
                       {previews[f.id] ? (
@@ -213,7 +213,7 @@ export default function InlineAddForm({
                       />
                     </label>
                     {errors[f.id] && (
-                      <span className="text-[11px] text-[#c0392b]">{errors[f.id]}</span>
+                      <span className="text-[11px] text-danger">{errors[f.id]}</span>
                     )}
                   </div>
                 ) : (
@@ -235,13 +235,13 @@ export default function InlineAddForm({
                       className={[
                         'px-3.5 py-[11px] text-[14px] font-sans',
                         'border rounded-[2px] outline-none bg-white text-ink-900',
-                        'focus:border-signal focus:shadow-[0_0_0_3px_#e8edfa]',
+                        'focus:border-signal focus:shadow-[0_0_0_3px_var(--color-signal-soft)]',
                         'disabled:opacity-50',
-                        errors[f.id] ? 'border-[#c0392b]' : 'border-paper-line',
+                        errors[f.id] ? 'border-danger' : 'border-paper-line',
                       ].join(' ')}
                     />
                     {errors[f.id] && (
-                      <span className="text-[11px] text-[#c0392b] mt-0.5">{errors[f.id]}</span>
+                      <span className="text-[11px] text-danger mt-0.5">{errors[f.id]}</span>
                     )}
                   </div>
                 )}

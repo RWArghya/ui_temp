@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useSearchParams, Link, useNavigate } from "react-router-dom"
 import { authStore } from "../store/auth"
+import * as auth from "../api/auth"
+import { USE_MOCK } from "../api/config"
 
 const VALIDATION = {
   name: (v) => v.trim().length >= 2 || "Enter your full name",
@@ -21,15 +23,12 @@ function pwScore(v) {
 const PW_LABELS = ["Too weak", "Weak", "Okay", "Strong", "Very strong"]
 const COUNTRY_CODES = ["+91", "+1", "+44", "+65", "+971"]
 
-// The reference page sources these from an unprovided app.js (landingViews()/landingKey()) —
-// TBD once that contract is available; these four are a placeholder set.
-const LANDING_VIEWS = [
-  { k: "dashboard", ico: "\u{1F3E0}", label: "My Dashboard", blurb: "Everything you're doing, in one place" },
-  { k: "compete", ico: "\u{1F3C6}", label: "Compete", blurb: "Join hackathons, build, submit, win" },
-  { k: "arena", ico: "\u{1F3AE}", label: "Arena", blurb: "PromptWars — the vibe coding arena" },
-]
+const ERROR_COLOR = "#c2304a"
 
-const ERROR_COLOR = "#c0392b"
+/* Real mode has no local account record to resume an unfinished signup from —
+   the account lives on the server, unverified. Remember which email is waiting
+   so a refresh lands back on the verify step. */
+const PENDING_SIGNUP_KEY = "h2s_pending_signup_email"
 
 export default function Auth() {
   const [searchParams] = useSearchParams()
@@ -47,7 +46,6 @@ export default function Auth() {
   const [generatedOtp, setGeneratedOtp] = useState("")
   const [otpCountdown, setOtpCountdown] = useState(30)
   const [agreed, setAgreed] = useState(false)
-  const [selectedLanding, setSelectedLanding] = useState(null)
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState("")
 
@@ -59,8 +57,17 @@ export default function Auth() {
     pw: "",
   })
 
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotError, setForgotError] = useState("")
+  const [newPw, setNewPw] = useState("")
+  const [confirmNewPw, setConfirmNewPw] = useState("")
+  const [resetErrors, setResetErrors] = useState({})
+  const [resetDone, setResetDone] = useState(false)
+
   const otpRef = useRef(null)
   const otpTimerRef = useRef(null)
+  /* a ref, not state: guards double-submit without touching the UI */
+  const busyRef = useRef(false)
 
   const login = mode === "login"
 
@@ -105,9 +112,10 @@ export default function Auth() {
     }, 1000)
   }, [])
 
-  const generateOtp = useCallback(() => {
-    const code = String(Math.floor(100000 + Math.random() * 900000))
-    setGeneratedOtp(code)
+  /* `devCode` is only ever set in mock mode, where there is no email sender;
+     the real client never returns one, which is what hides the prototype hint. */
+  const beginOtpStep = useCallback((devCode) => {
+    setGeneratedOtp(devCode || "")
     setOtp("")
     setErrors({})
     startOtpCountdown()
@@ -116,22 +124,28 @@ export default function Auth() {
   // "Log in with OTP" — passwordless login for an existing account. Unlike
   // signup's OTP (which verifies a brand-new email), this looks an account
   // up by email first, same existence check the password path already does.
-  function requestLoginOtp() {
+  async function requestLoginOtp() {
     const email = form.email.trim()
     const r = VALIDATION.email(email)
     if (r !== true) {
       setErrors((prev) => ({ ...prev, email: r }))
       return
     }
-    const existing = authStore.read().account
-    if (!existing || existing.email.toLowerCase() !== email.toLowerCase()) {
-      setFormError("No account found for that email.")
-      return
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      const res = await auth.requestLoginOtp({ email })
+      if (!res.ok) {
+        setFormError(res.message)
+        return
+      }
+      setFormError("")
+      setOtpPurpose("login")
+      beginOtpStep(res.devCode)
+      setStep("verify")
+    } finally {
+      busyRef.current = false
     }
-    setFormError("")
-    setOtpPurpose("login")
-    generateOtp()
-    setStep("verify")
   }
 
   const contextBanner = useMemo(() => {
@@ -141,28 +155,19 @@ export default function Auth() {
     return "to continue"
   }, [next])
 
+  /* Straight into the product. There is no onboarding step: everything it
+     would have asked for either has a working default (intents, landing view)
+     or is collected progressively by the "Complete your profile" card, which
+     does the same job without a wall at the highest-intent moment. */
   function afterAuth() {
-    const state = authStore.read()
-    if (state.onboarded) {
-      if (!next && intent === "mentor") {
-        navigate("/dashboard?view=mentor", { replace: true })
-        return
-      }
-      if (!next) {
-        setSelectedLanding(state.primary || null)
-        setStep("landing")
-        return
-      }
-      navigate(next || "/dashboard", { replace: true })
+    if (!next && intent === "mentor") {
+      navigate("/dashboard?view=mentor", { replace: true })
       return
     }
-    const params = new URLSearchParams()
-    if (intent) params.set("intent", intent)
-    if (next) params.set("next", next)
-    navigate("/onboarding" + (params.toString() ? "?" + params : ""), { replace: true })
+    navigate(next || "/dashboard", { replace: true })
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     let bad = false
     const check = (field, rule) => {
       const r = VALIDATION[rule](form[field])
@@ -188,50 +193,47 @@ export default function Auth() {
       bad = true
     }
     if (bad) return
-
-    const existing = authStore.read().account
-
-    if (login) {
-      if (!existing || existing.email.toLowerCase() !== form.email.trim().toLowerCase()) {
-        setFormError("No account found for that email.")
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      if (login) {
+        const res = await auth.login({ email: form.email.trim(), password: form.pw })
+        if (!res.ok) {
+          setFormError(res.message)
+          return
+        }
+        afterAuth()
         return
       }
-      if (existing.pw !== weakHash(form.pw)) {
-        setFormError("That password doesn't match.")
+
+      const res = await auth.register({
+        name: form.name,
+        email: form.email,
+        countryCode: form.cc,
+        mobile: form.mobile,
+        password: form.pw,
+      })
+      if (!res.ok) {
+        setFormError(
+          res.code === "email_taken" ? (
+            <>
+              That email is already registered —{" "}
+              <button type="button" onClick={() => setMode("login")} className="text-signal underline">
+                log in instead
+              </button>
+              .
+            </>
+          ) : res.message
+        )
         return
       }
-      afterAuth()
-      return
+      try { sessionStorage.setItem(PENDING_SIGNUP_KEY, form.email.trim()) } catch { /* private mode */ }
+      setOtpPurpose("signup")
+      beginOtpStep(res.devCode)
+      setStep("verify")
+    } finally {
+      busyRef.current = false
     }
-
-    if (existing && existing.email.toLowerCase() === form.email.trim().toLowerCase()) {
-      setFormError(
-        <>
-          That email is already registered —{" "}
-          <button type="button" onClick={() => setMode("login")} className="text-signal underline">
-            log in instead
-          </button>
-          .
-        </>
-      )
-      return
-    }
-
-    authStore.save({
-      account: {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        mobile: form.cc + " " + form.mobile.replace(/\D/g, ""),
-        pw: weakHash(form.pw),
-        verified: false,
-        created: new Date().toISOString().slice(0, 10),
-      },
-      name: form.name.trim(),
-      email: form.email.trim(),
-    })
-    setOtpPurpose("signup")
-    generateOtp()
-    setStep("verify")
   }
 
   function handleSocial(provider) {
@@ -247,43 +249,78 @@ export default function Auth() {
       created: new Date().toISOString().slice(0, 10),
     }
     authStore.save({ account: a, name: a.name, email: a.email, onboarded: true })
-    // Social providers hand back a verified account, so skip onboarding and ask where to land.
-    if (next) {
-      navigate(next, { replace: true })
-      return
-    }
-    setSelectedLanding(authStore.read().primary || null)
-    setStep("landing")
+    // Social providers hand back an already-verified account.
+    navigate(next || "/dashboard", { replace: true })
   }
 
-  function handleOtpVerify() {
+  async function handleOtpVerify() {
     const v = otp.trim()
     if (v.length !== 6) {
       setErrors({ otp: "Enter all 6 digits" })
       return
     }
-    if (v !== generatedOtp) {
-      setErrors({ otp: "That code is incorrect. Check and try again." })
-      return
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      const email = form.email.trim()
+      const res = otpPurpose === "login"
+        ? await auth.verifyLoginOtp({ email, code: v })
+        : await auth.verifySignupOtp({ email, code: v })
+      if (!res.ok) {
+        setErrors({ otp: res.message })
+        return
+      }
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+      try { sessionStorage.removeItem(PENDING_SIGNUP_KEY) } catch { /* private mode */ }
+      afterAuth()
+    } finally {
+      busyRef.current = false
     }
-    if (otpTimerRef.current) clearInterval(otpTimerRef.current)
-    const acct = authStore.read().account
-    if (!acct.verified) authStore.save({ account: { ...acct, verified: true } })
-    afterAuth()
+  }
+
+  /* Resend goes to whichever endpoint started this step. */
+  async function handleOtpResend() {
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      const email = form.email.trim()
+      const res = otpPurpose === "login"
+        ? await auth.requestLoginOtp({ email })
+        : await auth.resendSignupOtp({ email })
+      if (!res.ok) {
+        setErrors({ otp: res.message })
+        return
+      }
+      beginOtpStep(res.devCode)
+    } finally {
+      busyRef.current = false
+    }
   }
 
   function handleForgotSubmit() {
+    const r = VALIDATION.email(forgotEmail)
+    if (r !== true) { setForgotError(r); return }
+    setForgotError("")
+    // Deliberately the same response whether or not the account exists —
+    // confirming which emails are registered leaks accounts.
     setStep("forgot-sent")
   }
 
-  function handleLandingContinue() {
-    if (selectedLanding) authStore.save({ primary: selectedLanding })
-    // Carry the chosen landing view so the dashboard (once built) can route to it.
-    navigate(`/dashboard?view=${selectedLanding || ""}`, { replace: true })
+  function handleResetPassword() {
+    const errs = {}
+    if (!newPw || newPw.length < 8) errs.newPw = "At least 8 characters, including a number."
+    else if (!/\d/.test(newPw)) errs.newPw = "At least 8 characters, including a number."
+    if (confirmNewPw !== newPw) errs.confirmNewPw = "Passwords don't match."
+    setResetErrors(errs)
+    if (Object.keys(errs).length) return
+    const res = authStore.resetPassword(forgotEmail, newPw)
+    if (!res.ok) { setResetErrors({ newPw: res.error }); return }
+    setResetDone(true)
   }
 
   function switchMode(newMode) {
     setMode(newMode)
+    setStep("credentials")
     setErrors({})
     setFormError("")
     setForm({ name: "", email: "", cc: "+91", mobile: "", pw: "" })
@@ -293,11 +330,34 @@ export default function Auth() {
 
   // Resume incomplete signup on mount
   useEffect(() => {
+    if (urlMode !== "signup") return
+    if (!USE_MOCK) {
+      /* Real mode: the half-finished account is on the server. Reopen the
+         verify step for the remembered email but do not request a new code —
+         OTP requests are rate-limited per email, so that is the user's call. */
+      let pendingEmail = null
+      try { pendingEmail = sessionStorage.getItem(PENDING_SIGNUP_KEY) } catch { /* private mode */ }
+      if (pendingEmail) {
+        setForm((prev) => ({ ...prev, email: pendingEmail }))
+        setOtpPurpose("signup")
+        setGeneratedOtp("")
+        setOtpCountdown(0)
+        setStep("verify")
+      }
+      return
+    }
     const acct = authStore.read().account
-    if (urlMode === "signup" && acct && !acct.verified) {
-      generateOtp()
+    if (acct && !acct.verified) {
+      /* The mock's pending code lives in module scope, so a reload loses it.
+         Issue a fresh one — which is what this branch did before — and seed
+         form.email, since verify now sends the email along with the code. */
+      setForm((prev) => ({ ...prev, email: acct.email || "" }))
+      setOtpPurpose("signup")
       setStep("verify")
-    } else if (urlMode === "signup" && acct && acct.verified && !authStore.read().onboarded) {
+      auth.resendSignupOtp({ email: acct.email || "" }).then((res) => {
+        if (res.ok) beginOtpStep(res.devCode)
+      })
+    } else if (acct && acct.verified && !authStore.read().onboarded) {
       afterAuth()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -464,7 +524,7 @@ export default function Auth() {
                               pwStrength <= 1
                                 ? ERROR_COLOR
                                 : pwStrength === 2
-                                  ? "#d97706"
+                                  ? "#965a06"
                                   : "var(--color-status)",
                           }}
                         />
@@ -597,13 +657,16 @@ export default function Auth() {
                 )}
               </div>
 
-              {/* Prototype hint */}
-              <div className="mt-4 rounded-card border border-signal-soft bg-signal-soft/40 p-3">
-                <p className="text-[0.75rem] text-graphite-dim">
-                  Prototype — no email is actually sent. Your code is{" "}
-                  <strong className="text-ink-900">{generatedOtp}</strong>
-                </p>
-              </div>
+              {/* Prototype hint — mock mode only: in real mode the code is emailed
+                  (or logged by the backend) and never reaches the client. */}
+              {generatedOtp && (
+                <div className="mt-4 rounded-card border border-signal-soft bg-signal-soft/40 p-3">
+                  <p className="text-[0.75rem] text-graphite-dim">
+                    Prototype — no email is actually sent. Your code is{" "}
+                    <strong className="text-ink-900">{generatedOtp}</strong>
+                  </p>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -619,7 +682,7 @@ export default function Auth() {
                 ) : (
                   <button
                     type="button"
-                    onClick={generateOtp}
+                    onClick={handleOtpResend}
                     className="text-signal hover:underline"
                   >
                     Resend code
@@ -658,8 +721,16 @@ export default function Auth() {
                   id="auth-forgot-email"
                   type="email"
                   placeholder="you@example.com"
+                  value={forgotEmail}
+                  onChange={(e) => { setForgotEmail(e.target.value); setForgotError("") }}
                   className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
+                  style={forgotError ? { borderColor: ERROR_COLOR } : undefined}
                 />
+                {forgotError && (
+                  <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>
+                    {forgotError}
+                  </p>
+                )}
               </div>
 
               <button
@@ -689,60 +760,107 @@ export default function Auth() {
                 If an account exists for that address, a reset link is on its way. It's deliberately
                 worded that way — confirming which emails are registered leaks accounts.
               </p>
+
+              <div className="mt-4 rounded-card border border-signal-soft bg-signal-soft/40 p-3">
+                <p className="text-[0.75rem] text-graphite-dim">
+                  Prototype — no email is actually sent. Use the button below to stand in for
+                  clicking the link.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setNewPw(""); setConfirmNewPw(""); setResetErrors({}); setResetDone(false); setStep("reset") }}
+                  className="mt-2 text-[0.78rem] font-semibold text-signal hover:underline"
+                >
+                  (Prototype) Simulate clicking the reset link
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setStep("credentials")}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-btn border border-paper-line bg-transparent px-4 py-3 text-[0.9rem] font-medium text-graphite transition-colors hover:bg-paper"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-btn border border-paper-line bg-transparent px-4 py-3 text-[0.9rem] font-medium text-graphite transition-colors hover:bg-paper"
               >
                 Back to log in
               </button>
             </>
           )}
 
-          {/* ───── Step: Landing Picker ───── */}
-          {step === "landing" && (
+          {/* ───── Step: Reset Password ───── */}
+          {step === "reset" && (
             <>
-              <h2 className="font-display text-[1.5rem] font-extrabold text-ink-900">
-                Where do you want to land?
-              </h2>
-              <p className="mt-2 text-[0.88rem] text-graphite">
-                Your starting screen from now on — changeable any time in Profile &rarr; Roles.
-              </p>
-
-              <div className="mt-6 space-y-2">
-                {LANDING_VIEWS.map((v) => (
+              {resetDone ? (
+                <>
+                  <h2 className="font-display text-[1.5rem] font-extrabold text-ink-900">
+                    Password reset
+                  </h2>
+                  <p className="mt-2 text-[0.88rem] text-graphite">
+                    Your password has been changed. Log in with your new password.
+                  </p>
                   <button
-                    key={v.k}
                     type="button"
-                    onClick={() => setSelectedLanding(v.k)}
-                    className={`auth-land-row flex w-full items-center gap-3 rounded-card border px-4 py-3 text-left transition-colors ${
-                      selectedLanding === v.k
-                        ? "border-signal bg-signal-soft"
-                        : "border-paper-line hover:border-ink-line"
-                    }`}
+                    onClick={() => switchMode("login")}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-btn bg-signal px-4 py-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-signal-dark"
                   >
-                    <span className="text-[1.2rem]">{v.ico}</span>
-                    <span className="flex-1">
-                      <strong className="block text-[0.88rem] text-ink-900">{v.label}</strong>
-                      <span className="text-[0.78rem] text-graphite-dim">{v.blurb}</span>
-                    </span>
-                    {selectedLanding === v.k && (
-                      <span className="text-status text-[0.9rem]">&#10003;</span>
-                    )}
+                    Back to log in
                   </button>
-                ))}
-              </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="font-display text-[1.5rem] font-extrabold text-ink-900">
+                    Choose a new password
+                  </h2>
+                  <p className="mt-2 text-[0.88rem] text-graphite">
+                    For <strong className="text-ink-900">{forgotEmail}</strong>.
+                  </p>
 
-              <button
-                type="button"
-                onClick={handleLandingContinue}
-                disabled={!selectedLanding}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-btn bg-signal px-4 py-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-signal-dark disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Continue
-              </button>
+                  <div className="mt-5">
+                    <label htmlFor="auth-reset-pw" className="mb-1.5 block text-[0.85rem] font-medium text-ink-900">
+                      New password
+                    </label>
+                    <input
+                      id="auth-reset-pw"
+                      type="password"
+                      placeholder="••••••••"
+                      value={newPw}
+                      onChange={(e) => { setNewPw(e.target.value); setResetErrors((p) => ({ ...p, newPw: "" })) }}
+                      className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
+                      style={resetErrors.newPw ? { borderColor: ERROR_COLOR } : undefined}
+                    />
+                    {resetErrors.newPw && (
+                      <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>{resetErrors.newPw}</p>
+                    )}
+                  </div>
+
+                  <div className="mt-3">
+                    <label htmlFor="auth-reset-pw-confirm" className="mb-1.5 block text-[0.85rem] font-medium text-ink-900">
+                      Confirm new password
+                    </label>
+                    <input
+                      id="auth-reset-pw-confirm"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmNewPw}
+                      onChange={(e) => { setConfirmNewPw(e.target.value); setResetErrors((p) => ({ ...p, confirmNewPw: "" })) }}
+                      className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
+                      style={resetErrors.confirmNewPw ? { borderColor: ERROR_COLOR } : undefined}
+                    />
+                    {resetErrors.confirmNewPw && (
+                      <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>{resetErrors.confirmNewPw}</p>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-btn bg-signal px-4 py-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-signal-dark"
+                  >
+                    Reset password
+                  </button>
+                </>
+              )}
             </>
           )}
+
         </div>
 
         {/* Footer text */}
@@ -802,9 +920,3 @@ function Field({ id, label, type = "text", placeholder, value, onChange, error }
   )
 }
 
-/* ───── Prototype-compatible weak hash (client-side only, never used in production) ───── */
-function weakHash(s) {
-  let h = 5381
-  for (const c of s) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0
-  return h
-}

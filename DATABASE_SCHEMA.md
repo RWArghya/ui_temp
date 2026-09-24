@@ -68,6 +68,7 @@ create table users (
   email_verified_at timestamptz,
   password_hash     text not null,               -- argon2id encoded hash, never plaintext
   name              text not null,
+  mobile            text,                        -- "+91 98765 43210" — country code + number as one string, matching Auth.jsx's signup form
   headline          text,
   org               text,
   region            text,
@@ -97,17 +98,19 @@ create table auth_sessions (
 );
 create index on auth_sessions (user_id) where revoked_at is null;
 
--- One-time codes for both OTP flows Auth.jsx has: signup email verification AND passwordless
--- login ("Log in with OTP instead"). One table, distinguished by `purpose` — mirrors how the
--- frontend reuses one OTP state machine for both (otpPurpose state in Auth.jsx).
-create type otp_purpose as enum ('signup_verify', 'login');
+-- One-time codes for every code/link Auth.jsx sends: signup email verification, passwordless
+-- login ("Log in with OTP instead"), AND forgot-password's "reset link" — that link is the same
+-- one-time-token idea as the other two, just delivered as a URL token instead of a typed 6-digit
+-- code, so it reuses this table under purpose='password_reset' rather than getting its own
+-- near-identical password_reset_requests table.
+create type otp_purpose as enum ('signup_verify', 'login', 'password_reset');
 
 create table otp_codes (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null references users(id),
   purpose       otp_purpose not null,
   code_hash     text not null,             -- sha256(code) — the raw 6-digit code is never stored
-  expires_at    timestamptz not null,       -- now() + 10 minutes
+  expires_at    timestamptz not null,       -- now() + 10 minutes (signup/login), + 1 hour (password_reset)
   attempt_count int not null default 0,     -- 5 wrong guesses locks the code, forces a fresh request
   consumed_at   timestamptz,
   created_at    timestamptz not null default now()
@@ -126,15 +129,6 @@ create table email_change_requests (
   created_at  timestamptz not null default now()
 );
 create index on email_change_requests (user_id) where verified_at is null;
-
-create table password_reset_requests (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references users(id),
-  token_hash  text not null unique,
-  expires_at  timestamptz not null,
-  used_at     timestamptz,
-  created_at  timestamptz not null default now()
-);
 
 -- Every security-sensitive account action Settings.jsx exposes as a distinct, deliberate user
 -- action: email change requested/verified, password changed, deactivated, deleted, session
@@ -508,6 +502,7 @@ Answering "why doesn't X have its own table" up front, since a schema review alw
 | Would-be table | Why it isn't one |
 |---|---|
 | `notification_prefs` | `Settings.jsx` dropped its notification-toggle UI entirely ("No tabs, no Notifications/Privacy/Preferences — out of scope"). Nothing writes to this today. Add it back alongside the UI that needs it, not before. |
+| `password_reset_requests` | Forgot-password's "reset link" is the same one-time-token concept as signup verification and OTP login — it reuses `otp_codes` with `purpose = 'password_reset'` instead of a fourth near-identical token table. |
 | `user_xp` / `user_level` / `user_badges` | All three are pure functions of `xp_events` (+ `registrations`, `certificates`) — computed on read, exactly like `xpFor()`/`levelFor()`/`badgesFor()` in `data.js` today. A stored counter can drift from its own history; a derived read cannot. |
 | `pending_certificates` | A finished initiative the user registered for with no `certificates` row — a query, not a table. |
 | `areas_join` (initiative↔area, profile↔area many-to-many) | `areas`/`interests`/`domains`/`skills` are small, low-cardinality, filter-only vocabularies. A `text[]` column with a GIN index answers every real query ("initiatives tagged AI/GenAI") without an extra join — a join table would cost a table and a join for nothing a GIN index doesn't already give. |
