@@ -270,6 +270,7 @@ export function Topbar({
   onBack,
   backLabel,
   currentTitle,
+  currentSubtitle,
   onProfile,
   onActivity,
   onSettings,
@@ -308,9 +309,20 @@ export function Topbar({
               <span className="text-dash-faint select-none">/</span>
             </>
           ) : null}
-          <span className="font-semibold text-dash-ink truncate text-[14.5px]">
-            {currentTitle || (onBack ? '' : 'Innovator Dashboard')}
-          </span>
+          {currentSubtitle ? (
+            <span className="flex flex-col min-w-0 leading-tight">
+              <span className="font-semibold text-dash-ink truncate text-[14.5px]">
+                {currentTitle || (onBack ? '' : 'Innovator Dashboard')}
+              </span>
+              <span className="text-dash-muted truncate text-[11.5px] font-normal">
+                {currentSubtitle}
+              </span>
+            </span>
+          ) : (
+            <span className="font-semibold text-dash-ink truncate text-[14.5px]">
+              {currentTitle || (onBack ? '' : 'Innovator Dashboard')}
+            </span>
+          )}
         </div>
       </div>
 

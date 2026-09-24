@@ -207,6 +207,10 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
     recent: 'Recent',
   }
   const currentTitle = subNav ? subNav.title : (VIEW_TITLES[view] || (msup ? 'Mentor Workspace' : 'Dashboard'))
+  /* Learn/Build/Compete used to print their blurb as the first line of the
+     page body, pushing the filters and cards down. It belongs with the
+     heading it describes, and the heading lives in the topbar. */
+  const currentSubtitle = subNav ? null : (VIEWS[view]?.blurb || null)
 
   return (
     <div className="dash-root">
@@ -227,6 +231,7 @@ function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, s
             onBack={onBack}
             backLabel={backLabel}
             currentTitle={currentTitle}
+            currentSubtitle={currentSubtitle}
             onProfile={() => show('profile')}
             onActivity={() => show('activity')}
             onSettings={() => show('settings')}

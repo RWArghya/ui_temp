@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Icon from './Icon'
 import { InitiativeCard } from './Cards'
-import { VIEWS, REGIONS, purposeOpenList, purposeAreasList, purposeModesList } from './data'
+import { REGIONS, purposeOpenList, purposeAreasList, purposeModesList } from './data'
 
 /* ============================================================================
    Ported from prototype_v2/app.html — purposeMain()/purposeFilterBar()/
@@ -50,23 +50,16 @@ function FilterBar({ view, filters, setFilters }) {
 }
 
 function PurposePage({ view, st, sv }) {
-  const meta = VIEWS[view]
   const [filters, setFilters] = useState({ q: '', area: 'all', region: 'all', status: 'all', mode: 'all' })
   const list = purposeOpenList(view, st, filters)
 
   return (
     <>
-      <div className="mb16">
-        <p className="small muted">{meta.blurb}</p>
-      </div>
-
-      <div className="mt20">
-        <FilterBar view={view} filters={filters} setFilters={setFilters} />
-        <div className="grid g3 mt16">
-          {list.length
-            ? list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)
-            : <div className="empty-state" style={{ gridColumn: '1/-1' }}><p className="small muted">Nothing matches right now — check back soon.</p></div>}
-        </div>
+      <FilterBar view={view} filters={filters} setFilters={setFilters} />
+      <div className="grid g3 mt16">
+        {list.length
+          ? list.map(o => <InitiativeCard key={o.id} o={o} st={st} sv={sv} />)
+          : <div className="empty-state" style={{ gridColumn: '1/-1' }}><p className="small muted">Nothing matches right now — check back soon.</p></div>}
       </div>
     </>
   )

@@ -23,10 +23,15 @@ export function EmptyState({ ico, title, msg, cta }) {
   )
 }
 
+/* Must stay in step with --card-min in proto.css: the CSS decides how wide a
+   card is, this decides how many of them to render, and if the two disagree
+   Home's cards come out a different size from Learn/Build/Compete's. */
+const CARD_MIN = 260
+
 /* One row of cards. Columns come from CSS (.dash-cards-row); this only works
    out how many fit so the row shows exactly that many — the rest are one
    "View all" away. */
-function SingleRowGrid({ items, renderCard, minColWidth = 240, gap = 16 }) {
+function SingleRowGrid({ items, renderCard, minColWidth = CARD_MIN, gap = 16 }) {
   const containerRef = useRef(null)
   const [cols, setCols] = useState(3)
 
