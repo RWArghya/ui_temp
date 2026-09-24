@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useSearchParams, Link, useNavigate } from "react-router-dom"
 import { authStore } from "../store/auth"
+import * as auth from "../api/auth"
+import { USE_MOCK } from "../api/config"
 
 const VALIDATION = {
   name: (v) => v.trim().length >= 2 || "Enter your full name",
@@ -22,6 +24,11 @@ const PW_LABELS = ["Too weak", "Weak", "Okay", "Strong", "Very strong"]
 const COUNTRY_CODES = ["+91", "+1", "+44", "+65", "+971"]
 
 const ERROR_COLOR = "#c2304a"
+
+/* Real mode has no local account record to resume an unfinished signup from —
+   the account lives on the server, unverified. Remember which email is waiting
+   so a refresh lands back on the verify step. */
+const PENDING_SIGNUP_KEY = "h2s_pending_signup_email"
 
 export default function Auth() {
   const [searchParams] = useSearchParams()
@@ -59,6 +66,8 @@ export default function Auth() {
 
   const otpRef = useRef(null)
   const otpTimerRef = useRef(null)
+  /* a ref, not state: guards double-submit without touching the UI */
+  const busyRef = useRef(false)
 
   const login = mode === "login"
 
@@ -103,9 +112,10 @@ export default function Auth() {
     }, 1000)
   }, [])
 
-  const generateOtp = useCallback(() => {
-    const code = String(Math.floor(100000 + Math.random() * 900000))
-    setGeneratedOtp(code)
+  /* `devCode` is only ever set in mock mode, where there is no email sender;
+     the real client never returns one, which is what hides the prototype hint. */
+  const beginOtpStep = useCallback((devCode) => {
+    setGeneratedOtp(devCode || "")
     setOtp("")
     setErrors({})
     startOtpCountdown()
@@ -114,22 +124,28 @@ export default function Auth() {
   // "Log in with OTP" — passwordless login for an existing account. Unlike
   // signup's OTP (which verifies a brand-new email), this looks an account
   // up by email first, same existence check the password path already does.
-  function requestLoginOtp() {
+  async function requestLoginOtp() {
     const email = form.email.trim()
     const r = VALIDATION.email(email)
     if (r !== true) {
       setErrors((prev) => ({ ...prev, email: r }))
       return
     }
-    const existing = authStore.read().account
-    if (!existing || existing.email.toLowerCase() !== email.toLowerCase()) {
-      setFormError("No account found for that email.")
-      return
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      const res = await auth.requestLoginOtp({ email })
+      if (!res.ok) {
+        setFormError(res.message)
+        return
+      }
+      setFormError("")
+      setOtpPurpose("login")
+      beginOtpStep(res.devCode)
+      setStep("verify")
+    } finally {
+      busyRef.current = false
     }
-    setFormError("")
-    setOtpPurpose("login")
-    generateOtp()
-    setStep("verify")
   }
 
   const contextBanner = useMemo(() => {
@@ -155,7 +171,7 @@ export default function Auth() {
     navigate("/onboarding" + (params.toString() ? "?" + params : ""), { replace: true })
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     let bad = false
     const check = (field, rule) => {
       const r = VALIDATION[rule](form[field])
@@ -181,50 +197,47 @@ export default function Auth() {
       bad = true
     }
     if (bad) return
-
-    const existing = authStore.read().account
-
-    if (login) {
-      if (!existing || existing.email.toLowerCase() !== form.email.trim().toLowerCase()) {
-        setFormError("No account found for that email.")
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      if (login) {
+        const res = await auth.login({ email: form.email.trim(), password: form.pw })
+        if (!res.ok) {
+          setFormError(res.message)
+          return
+        }
+        afterAuth()
         return
       }
-      if (existing.pw !== weakHash(form.pw)) {
-        setFormError("That password doesn't match.")
+
+      const res = await auth.register({
+        name: form.name,
+        email: form.email,
+        countryCode: form.cc,
+        mobile: form.mobile,
+        password: form.pw,
+      })
+      if (!res.ok) {
+        setFormError(
+          res.code === "email_taken" ? (
+            <>
+              That email is already registered —{" "}
+              <button type="button" onClick={() => setMode("login")} className="text-signal underline">
+                log in instead
+              </button>
+              .
+            </>
+          ) : res.message
+        )
         return
       }
-      afterAuth()
-      return
+      try { sessionStorage.setItem(PENDING_SIGNUP_KEY, form.email.trim()) } catch { /* private mode */ }
+      setOtpPurpose("signup")
+      beginOtpStep(res.devCode)
+      setStep("verify")
+    } finally {
+      busyRef.current = false
     }
-
-    if (existing && existing.email.toLowerCase() === form.email.trim().toLowerCase()) {
-      setFormError(
-        <>
-          That email is already registered —{" "}
-          <button type="button" onClick={() => setMode("login")} className="text-signal underline">
-            log in instead
-          </button>
-          .
-        </>
-      )
-      return
-    }
-
-    authStore.save({
-      account: {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        mobile: form.cc + " " + form.mobile.replace(/\D/g, ""),
-        pw: weakHash(form.pw),
-        verified: false,
-        created: new Date().toISOString().slice(0, 10),
-      },
-      name: form.name.trim(),
-      email: form.email.trim(),
-    })
-    setOtpPurpose("signup")
-    generateOtp()
-    setStep("verify")
   }
 
   function handleSocial(provider) {
@@ -244,20 +257,48 @@ export default function Auth() {
     navigate(next || "/dashboard", { replace: true })
   }
 
-  function handleOtpVerify() {
+  async function handleOtpVerify() {
     const v = otp.trim()
     if (v.length !== 6) {
       setErrors({ otp: "Enter all 6 digits" })
       return
     }
-    if (v !== generatedOtp) {
-      setErrors({ otp: "That code is incorrect. Check and try again." })
-      return
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      const email = form.email.trim()
+      const res = otpPurpose === "login"
+        ? await auth.verifyLoginOtp({ email, code: v })
+        : await auth.verifySignupOtp({ email, code: v })
+      if (!res.ok) {
+        setErrors({ otp: res.message })
+        return
+      }
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+      try { sessionStorage.removeItem(PENDING_SIGNUP_KEY) } catch { /* private mode */ }
+      afterAuth()
+    } finally {
+      busyRef.current = false
     }
-    if (otpTimerRef.current) clearInterval(otpTimerRef.current)
-    const acct = authStore.read().account
-    if (!acct.verified) authStore.save({ account: { ...acct, verified: true } })
-    afterAuth()
+  }
+
+  /* Resend goes to whichever endpoint started this step. */
+  async function handleOtpResend() {
+    if (busyRef.current) return
+    busyRef.current = true
+    try {
+      const email = form.email.trim()
+      const res = otpPurpose === "login"
+        ? await auth.requestLoginOtp({ email })
+        : await auth.resendSignupOtp({ email })
+      if (!res.ok) {
+        setErrors({ otp: res.message })
+        return
+      }
+      beginOtpStep(res.devCode)
+    } finally {
+      busyRef.current = false
+    }
   }
 
   function handleForgotSubmit() {
@@ -293,11 +334,34 @@ export default function Auth() {
 
   // Resume incomplete signup on mount
   useEffect(() => {
+    if (urlMode !== "signup") return
+    if (!USE_MOCK) {
+      /* Real mode: the half-finished account is on the server. Reopen the
+         verify step for the remembered email but do not request a new code —
+         OTP requests are rate-limited per email, so that is the user's call. */
+      let pendingEmail = null
+      try { pendingEmail = sessionStorage.getItem(PENDING_SIGNUP_KEY) } catch { /* private mode */ }
+      if (pendingEmail) {
+        setForm((prev) => ({ ...prev, email: pendingEmail }))
+        setOtpPurpose("signup")
+        setGeneratedOtp("")
+        setOtpCountdown(0)
+        setStep("verify")
+      }
+      return
+    }
     const acct = authStore.read().account
-    if (urlMode === "signup" && acct && !acct.verified) {
-      generateOtp()
+    if (acct && !acct.verified) {
+      /* The mock's pending code lives in module scope, so a reload loses it.
+         Issue a fresh one — which is what this branch did before — and seed
+         form.email, since verify now sends the email along with the code. */
+      setForm((prev) => ({ ...prev, email: acct.email || "" }))
+      setOtpPurpose("signup")
       setStep("verify")
-    } else if (urlMode === "signup" && acct && acct.verified && !authStore.read().onboarded) {
+      auth.resendSignupOtp({ email: acct.email || "" }).then((res) => {
+        if (res.ok) beginOtpStep(res.devCode)
+      })
+    } else if (acct && acct.verified && !authStore.read().onboarded) {
       afterAuth()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -597,13 +661,16 @@ export default function Auth() {
                 )}
               </div>
 
-              {/* Prototype hint */}
-              <div className="mt-4 rounded-card border border-signal-soft bg-signal-soft/40 p-3">
-                <p className="text-[0.75rem] text-graphite-dim">
-                  Prototype — no email is actually sent. Your code is{" "}
-                  <strong className="text-ink-900">{generatedOtp}</strong>
-                </p>
-              </div>
+              {/* Prototype hint — mock mode only: in real mode the code is emailed
+                  (or logged by the backend) and never reaches the client. */}
+              {generatedOtp && (
+                <div className="mt-4 rounded-card border border-signal-soft bg-signal-soft/40 p-3">
+                  <p className="text-[0.75rem] text-graphite-dim">
+                    Prototype — no email is actually sent. Your code is{" "}
+                    <strong className="text-ink-900">{generatedOtp}</strong>
+                  </p>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -619,7 +686,7 @@ export default function Auth() {
                 ) : (
                   <button
                     type="button"
-                    onClick={generateOtp}
+                    onClick={handleOtpResend}
                     className="text-signal hover:underline"
                   >
                     Resend code
@@ -857,9 +924,3 @@ function Field({ id, label, type = "text", placeholder, value, onChange, error }
   )
 }
 
-/* ───── Prototype-compatible weak hash (client-side only, never used in production) ───── */
-function weakHash(s) {
-  let h = 5381
-  for (const c of s) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0
-  return h
-}

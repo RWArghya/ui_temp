@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { useH2S, seedDemoPatch } from './store'
 import { authStore } from '../store/auth'
+import { logout } from '../api/auth'
 import './proto.css'
 import {
   VIEWS, initials, mentorStatus, mentorRoleLabel,
@@ -138,7 +139,7 @@ function SubShell({ st, sv, go, children }) {
   const onBack = () => go(backTarget)
   const currentTitle = sub === 'evaluate' ? `Evaluate ${o ? o.name : ''}` : (o ? o.name : 'Workspace')
 
-  const out = () => { sv({}); authStore.clear(); navigate('/auth') }
+  const out = () => { sv({}); logout(); navigate('/auth') }
   return (
     <div className="dash-root">
       <div className="shell">
@@ -173,7 +174,7 @@ function SubShell({ st, sv, go, children }) {
 function Shell({ st, sv, view, mode, show, go, reset, mentorTab, setMentorTab, switchPersona }) {
   const navigate = useNavigate()
   const msup = mode === 'mentor'
-  const out = () => { reset(); authStore.clear(); navigate('/auth') }
+  const out = () => { reset(); logout(); navigate('/auth') }
   const loadSample = () => sv(seedDemoPatch(st))
   const doReset = () => { if (confirm('Reset all demo activity?')) reset() }
   /* below 100% profile completion the rail is only the profile card, on

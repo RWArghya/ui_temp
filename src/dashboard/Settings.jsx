@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authStore } from '../store/auth'
+import { logout } from '../api/auth'
 import { S } from './store'
 import { settingsFor } from './data'
 import { getTheme, setTheme } from './theme'
@@ -239,14 +240,14 @@ export default function Settings({ st, sv, navLayout = 'tabs', requireTypeToDele
   const deactivateAccount = () => {
     if (!authStore.verifyPassword(dangerPw)) { setDangerPwError('Incorrect password.'); return }
     authStore.save({ account: { ...authStore.read().account, deactivated: true } })
-    authStore.clear()
+    logout()
     flash('Account deactivated. Signing you out…')
     setTimeout(() => navigate('/auth'), 900)
   }
   const deleteAccount = () => {
     if (!deleteOk) return
     if (!authStore.verifyPassword(dangerPw)) { setDangerPwError('Incorrect password.'); return }
-    S.reset(); authStore.clear()
+    S.reset(); logout()
     flash('Account deleted. Signing you out…')
     setTimeout(() => navigate('/auth'), 900)
   }

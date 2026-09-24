@@ -25,7 +25,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # "false" builds an image that talks to the real backend
+        VITE_USE_MOCK: ${VITE_USE_MOCK:-true}
     container_name: h2s-frontend
+    environment:
+      # Where nginx proxies /api/v1. The H2S Go API is h2s-api:8080; the
+      # default keeps today's behaviour unchanged.
+      API_UPSTREAM: ${API_UPSTREAM:-backend:8080}
     ports:
       - "3000:80"                    # localhost:3000 → Nginx
     networks:
