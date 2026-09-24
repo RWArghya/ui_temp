@@ -75,4 +75,17 @@ function verifyPassword(pw) {
   return !!st.account && weakHash(pw) === st.account.pw
 }
 
-export const authStore = { read, save, clear, changePassword, verifyPassword };
+// Forgot-password completion: no current password to check (that's the whole
+// point), but still needs the right account — gated by whoever verified the
+// reset code in Auth.jsx, not by this function.
+function resetPassword(email, newPw) {
+  const st = read()
+  if (!st.account || st.account.email.toLowerCase() !== email.trim().toLowerCase()) {
+    return { ok: false, error: "No account found." }
+  }
+  if (!newPw || newPw.length < 8) return { ok: false, error: "New password must be at least 8 characters." }
+  save({ account: { ...st.account, pw: weakHash(newPw) } })
+  return { ok: true }
+}
+
+export const authStore = { read, save, clear, changePassword, verifyPassword, resetPassword };

@@ -50,6 +50,13 @@ export default function Auth() {
     pw: "",
   })
 
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotError, setForgotError] = useState("")
+  const [newPw, setNewPw] = useState("")
+  const [confirmNewPw, setConfirmNewPw] = useState("")
+  const [resetErrors, setResetErrors] = useState({})
+  const [resetDone, setResetDone] = useState(false)
+
   const otpRef = useRef(null)
   const otpTimerRef = useRef(null)
 
@@ -254,11 +261,29 @@ export default function Auth() {
   }
 
   function handleForgotSubmit() {
+    const r = VALIDATION.email(forgotEmail)
+    if (r !== true) { setForgotError(r); return }
+    setForgotError("")
+    // Deliberately the same response whether or not the account exists —
+    // confirming which emails are registered leaks accounts.
     setStep("forgot-sent")
+  }
+
+  function handleResetPassword() {
+    const errs = {}
+    if (!newPw || newPw.length < 8) errs.newPw = "At least 8 characters, including a number."
+    else if (!/\d/.test(newPw)) errs.newPw = "At least 8 characters, including a number."
+    if (confirmNewPw !== newPw) errs.confirmNewPw = "Passwords don't match."
+    setResetErrors(errs)
+    if (Object.keys(errs).length) return
+    const res = authStore.resetPassword(forgotEmail, newPw)
+    if (!res.ok) { setResetErrors({ newPw: res.error }); return }
+    setResetDone(true)
   }
 
   function switchMode(newMode) {
     setMode(newMode)
+    setStep("credentials")
     setErrors({})
     setFormError("")
     setForm({ name: "", email: "", cc: "+91", mobile: "", pw: "" })
@@ -633,8 +658,16 @@ export default function Auth() {
                   id="auth-forgot-email"
                   type="email"
                   placeholder="you@example.com"
+                  value={forgotEmail}
+                  onChange={(e) => { setForgotEmail(e.target.value); setForgotError("") }}
                   className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
+                  style={forgotError ? { borderColor: ERROR_COLOR } : undefined}
                 />
+                {forgotError && (
+                  <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>
+                    {forgotError}
+                  </p>
+                )}
               </div>
 
               <button
@@ -664,13 +697,104 @@ export default function Auth() {
                 If an account exists for that address, a reset link is on its way. It's deliberately
                 worded that way — confirming which emails are registered leaks accounts.
               </p>
+
+              <div className="mt-4 rounded-card border border-signal-soft bg-signal-soft/40 p-3">
+                <p className="text-[0.75rem] text-graphite-dim">
+                  Prototype — no email is actually sent. Use the button below to stand in for
+                  clicking the link.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setNewPw(""); setConfirmNewPw(""); setResetErrors({}); setResetDone(false); setStep("reset") }}
+                  className="mt-2 text-[0.78rem] font-semibold text-signal hover:underline"
+                >
+                  (Prototype) Simulate clicking the reset link
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setStep("credentials")}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-btn border border-paper-line bg-transparent px-4 py-3 text-[0.9rem] font-medium text-graphite transition-colors hover:bg-paper"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-btn border border-paper-line bg-transparent px-4 py-3 text-[0.9rem] font-medium text-graphite transition-colors hover:bg-paper"
               >
                 Back to log in
               </button>
+            </>
+          )}
+
+          {/* ───── Step: Reset Password ───── */}
+          {step === "reset" && (
+            <>
+              {resetDone ? (
+                <>
+                  <h2 className="font-display text-[1.5rem] font-extrabold text-ink-900">
+                    Password reset
+                  </h2>
+                  <p className="mt-2 text-[0.88rem] text-graphite">
+                    Your password has been changed. Log in with your new password.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => switchMode("login")}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-btn bg-signal px-4 py-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-signal-dark"
+                  >
+                    Back to log in
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2 className="font-display text-[1.5rem] font-extrabold text-ink-900">
+                    Choose a new password
+                  </h2>
+                  <p className="mt-2 text-[0.88rem] text-graphite">
+                    For <strong className="text-ink-900">{forgotEmail}</strong>.
+                  </p>
+
+                  <div className="mt-5">
+                    <label htmlFor="auth-reset-pw" className="mb-1.5 block text-[0.85rem] font-medium text-ink-900">
+                      New password
+                    </label>
+                    <input
+                      id="auth-reset-pw"
+                      type="password"
+                      placeholder="••••••••"
+                      value={newPw}
+                      onChange={(e) => { setNewPw(e.target.value); setResetErrors((p) => ({ ...p, newPw: "" })) }}
+                      className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
+                      style={resetErrors.newPw ? { borderColor: ERROR_COLOR } : undefined}
+                    />
+                    {resetErrors.newPw && (
+                      <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>{resetErrors.newPw}</p>
+                    )}
+                  </div>
+
+                  <div className="mt-3">
+                    <label htmlFor="auth-reset-pw-confirm" className="mb-1.5 block text-[0.85rem] font-medium text-ink-900">
+                      Confirm new password
+                    </label>
+                    <input
+                      id="auth-reset-pw-confirm"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmNewPw}
+                      onChange={(e) => { setConfirmNewPw(e.target.value); setResetErrors((p) => ({ ...p, confirmNewPw: "" })) }}
+                      className="w-full rounded-btn border border-paper-line bg-paper-raised px-3 py-2.5 text-[0.9rem] text-ink-900 outline-none focus:border-signal"
+                      style={resetErrors.confirmNewPw ? { borderColor: ERROR_COLOR } : undefined}
+                    />
+                    {resetErrors.confirmNewPw && (
+                      <p className="mt-1 text-[0.75rem]" style={{ color: ERROR_COLOR }}>{resetErrors.confirmNewPw}</p>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-btn bg-signal px-4 py-3.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-signal-dark"
+                  >
+                    Reset password
+                  </button>
+                </>
+              )}
             </>
           )}
 
