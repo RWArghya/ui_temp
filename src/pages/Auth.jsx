@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useSearchParams, Link, useNavigate } from "react-router-dom"
 import { authStore } from "../store/auth"
+import { register as registerApi, verifySignupOtp, login as loginApi } from "../api/auth"
 
 const VALIDATION = {
   name: (v) => v.trim().length >= 2 || "Enter your full name",
@@ -155,7 +156,7 @@ export default function Auth() {
     navigate("/onboarding" + (params.toString() ? "?" + params : ""), { replace: true })
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     let bad = false
     const check = (field, rule) => {
       const r = VALIDATION[rule](form[field])
@@ -182,49 +183,48 @@ export default function Auth() {
     }
     if (bad) return
 
-    const existing = authStore.read().account
-
     if (login) {
-      if (!existing || existing.email.toLowerCase() !== form.email.trim().toLowerCase()) {
-        setFormError("No account found for that email.")
-        return
+      try {
+        const session = await loginApi({ email: form.email.trim(), password: form.pw })
+        localStorage.setItem("token", session.accessToken)
+        localStorage.setItem("refreshToken", session.refreshToken)
+        afterAuth()
+      } catch (err) {
+        const code = err.response?.data?.error
+        if (code === "email_not_found") setFormError("No account found for that email.")
+        else if (code === "password_mismatch") setFormError("That password doesn't match.")
+        else setFormError("Something went wrong. Try again.")
       }
-      if (existing.pw !== weakHash(form.pw)) {
-        setFormError("That password doesn't match.")
-        return
-      }
-      afterAuth()
       return
     }
 
-    if (existing && existing.email.toLowerCase() === form.email.trim().toLowerCase()) {
-      setFormError(
-        <>
-          That email is already registered —{" "}
-          <button type="button" onClick={() => setMode("login")} className="text-signal underline">
-            log in instead
-          </button>
-          .
-        </>
-      )
-      return
-    }
-
-    authStore.save({
-      account: {
+    try {
+      await registerApi({
         name: form.name.trim(),
         email: form.email.trim(),
         mobile: form.cc + " " + form.mobile.replace(/\D/g, ""),
-        pw: weakHash(form.pw),
-        verified: false,
-        created: new Date().toISOString().slice(0, 10),
-      },
-      name: form.name.trim(),
-      email: form.email.trim(),
-    })
-    setOtpPurpose("signup")
-    generateOtp()
-    setStep("verify")
+        password: form.pw,
+      })
+      setOtpPurpose("signup")
+      setOtp("")
+      setErrors({})
+      startOtpCountdown()
+      setStep("verify")
+    } catch (err) {
+      if (err.response?.data?.error === "email_taken") {
+        setFormError(
+          <>
+            That email is already registered —{" "}
+            <button type="button" onClick={() => setMode("login")} className="text-signal underline">
+              log in instead
+            </button>
+            .
+          </>
+        )
+      } else {
+        setFormError("Something went wrong. Try again.")
+      }
+    }
   }
 
   function handleSocial(provider) {
@@ -244,20 +244,39 @@ export default function Auth() {
     navigate(next || "/dashboard", { replace: true })
   }
 
-  function handleOtpVerify() {
+  async function handleOtpVerify() {
     const v = otp.trim()
     if (v.length !== 6) {
       setErrors({ otp: "Enter all 6 digits" })
       return
     }
-    if (v !== generatedOtp) {
-      setErrors({ otp: "That code is incorrect. Check and try again." })
+
+    // Signup verify hits the real backend; login-via-OTP is still mocked
+    // (out of scope for this wiring pass — see requestLoginOtp above).
+    if (otpPurpose !== "signup") {
+      if (v !== generatedOtp) {
+        setErrors({ otp: "That code is incorrect. Check and try again." })
+        return
+      }
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+      const acct = authStore.read().account
+      if (!acct.verified) authStore.save({ account: { ...acct, verified: true } })
+      afterAuth()
       return
     }
-    if (otpTimerRef.current) clearInterval(otpTimerRef.current)
-    const acct = authStore.read().account
-    if (!acct.verified) authStore.save({ account: { ...acct, verified: true } })
-    afterAuth()
+
+    try {
+      const session = await verifySignupOtp({ email: form.email.trim(), code: v })
+      if (otpTimerRef.current) clearInterval(otpTimerRef.current)
+      localStorage.setItem("token", session.accessToken)
+      localStorage.setItem("refreshToken", session.refreshToken)
+      afterAuth()
+    } catch (err) {
+      const code = err.response?.data?.error
+      if (code === "otp_locked") setErrors({ otp: "Too many attempts. Request a new code." })
+      else if (code === "otp_expired") setErrors({ otp: "That code expired. Request a new one." })
+      else setErrors({ otp: "That code is incorrect. Check and try again." })
+    }
   }
 
   function handleForgotSubmit() {
@@ -600,8 +619,13 @@ export default function Auth() {
               {/* Prototype hint */}
               <div className="mt-4 rounded-card border border-signal-soft bg-signal-soft/40 p-3">
                 <p className="text-[0.75rem] text-graphite-dim">
-                  Prototype — no email is actually sent. Your code is{" "}
-                  <strong className="text-ink-900">{generatedOtp}</strong>
+                  {otpPurpose === "signup" ? (
+                    "No email sender is wired up yet — check the email_outbox table's data.code column for your code."
+                  ) : (
+                    <>Prototype — no email is actually sent. Your code is{" "}
+                      <strong className="text-ink-900">{generatedOtp}</strong>
+                    </>
+                  )}
                 </p>
               </div>
 
